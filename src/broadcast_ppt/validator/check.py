@@ -36,9 +36,12 @@ def validate_deck(deck: Path, plan: dict, catalog_path: Path, widths_path: Path 
     findings: list[Finding] = []
     prs = Presentation(str(deck))
     cat = load_catalog(catalog_path)
-    # the validator is deliberately stricter than the planner: no calibrated width bonus
+    # stricter than the planner, but not blind: the planner uses the calibrated width factor (never
+    # under-estimated on the calibration set); the validator removes most of that bonus so warnings mark
+    # chunks that are close to overflowing, not every chunk.
     planner_model = load_model(widths_path)
-    strict = WidthModel(em=planner_model.em, line_height=planner_model.line_height, width_scale=1.0)
+    strict = WidthModel(em=planner_model.em, line_height=planner_model.line_height,
+                        width_scale=max(1.0, planner_model.width_scale - 0.06))
     ops = plan["ops"]
     slides = list(prs.slides)
 
