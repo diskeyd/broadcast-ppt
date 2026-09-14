@@ -1,0 +1,27 @@
+# worship slides, analysis dumps and requirements stay local (names, church info)
+local/
+work/
+input/
+output/
+*.pptx
+*.ppt
+*.mp4
+*.png
+*.jpg
+tests/local/
+
+# secrets
+.env
+*.key
+secrets/
+
+# python / tooling
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+dist/
+build/
+*.egg-info/
+.DS_Store

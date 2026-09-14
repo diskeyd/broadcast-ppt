@@ -1,0 +1,29 @@
+[project]
+name = "broadcast-ppt"
+version = "0.1.0"
+description = "Map live worship PowerPoint slides onto existing broadcast (chroma-key) templates: structure analysis, rules first, AI fallback"
+readme = "README.md"
+authors = [
+    { name = "diskeyd", email = "102720121+diskeyd@users.noreply.github.com" }
+]
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "pillow>=12.3.0",
+    "python-pptx>=1.0.2",
+    "pyyaml>=6.0.3",
+]
+
+[project.scripts]
+broadcast-ppt = "broadcast_ppt.cli:main"
+
+[build-system]
+requires = ["uv_build>=0.12.13,<0.13.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1.1",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
