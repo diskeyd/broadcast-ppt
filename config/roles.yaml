@@ -1,0 +1,43 @@
+# Hand-curated roles for local/templates/24.상반기.pptx (yellow FFFF00 card set only).
+# Shapes are keyed by cNvPr id. `slots` maps the box's formatting segments in reading order
+# (paragraph by paragraph); `null` keeps that segment's template text. Modes:
+#   fill      value required; leftover template text is a CRITICAL validation error
+#   optional  filled when a value exists, otherwise the template text stays (e.g. English subtitles)
+#   fixed     never written
+# `backing` lists shapes drawn behind a growable text box. Sample text is never stored.
+version: 1
+slides:
+  3:  {role: card_call_to_worship, family: card.call_to_worship,
+       shapes: {3: {slots: [label], mode: optional}, 4: {slots: [subtitle_en], mode: optional}}}
+  4:  {role: card_prayer, family: card.prayer,
+       shapes: {3: {slots: [label, person]}, 4: {slots: [subtitle_en], mode: optional}}}
+  6:  {role: card_scripture, family: card.scripture,
+       shapes: {3: {slots: [label], mode: optional}, 6: {slots: [ref, page]}}}
+  7:  {role: card_sermon, family: card.sermon,
+       shapes: {3: {slots: [label, title]}, 4: {slots: [subtitle_en], mode: optional}, 6: {slots: [ref]}}}
+  8:  {role: meditation, family: meditation,
+       shapes: {2262: {slots: [null, quote]}, 2263: {mode: fixed}, 2264: {mode: fixed}}}
+  17: {role: card_generic, family: card.generic,
+       shapes: {3: {slots: [label]}, 4: {slots: [subtitle_en], mode: optional}}}
+  20: {role: card_announcement, family: card.announcement,
+       shapes: {3: {slots: [label], mode: optional}, 4: {slots: [subtitle_en], mode: optional}}}
+  21: {role: announcement_first, family: announcement.first,
+       shapes: {4: {slots: [label]}, 5: {slots: [body]}}, backing: {5: [6, 8, 2]}}
+  23: {role: announcement_item, family: announcement.item,
+       shapes: {4: {slots: [label, body]}}, backing: {4: [6, 8, 2]}}
+  31: {role: card_offertory, family: card.offertory,
+       shapes: {4: {slots: [label], mode: optional}, 3: {slots: [subtitle_en], mode: optional}}}
+  55: {role: caption_1, family: caption,
+       shapes: {4: {slots: [body]}}, backing: {4: [3]}}
+  67: {role: caption_3, family: caption,
+       shapes: {5: {slots: [body], single_segment: true}}}
+  58: {role: scripture_2, family: scripture,
+       shapes: {4: {slots: [body], single_segment: true}}, backing: {4: [2]}}
+  59: {role: scripture_3, family: scripture,
+       shapes: {3: {slots: [body], single_segment: true}}, backing: {3: [2]}}
+  60: {role: scripture_ref_1, family: scripture_ref,
+       shapes: {11: {slots: [ref]}, 12: {slots: [body], single_segment: true}}}
+  61: {role: scripture_ref_2, family: scripture_ref,
+       shapes: {7: {slots: [ref]}, 3: {slots: [body], single_segment: true}}}
+  62: {role: scripture_ref_3, family: scripture_ref,
+       shapes: {13: {slots: [ref]}, 4: {slots: [body], single_segment: true}}}

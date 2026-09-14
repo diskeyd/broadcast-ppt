@@ -1,0 +1,19 @@
+version: 1
+line_height: 1.212
+em:
+  hangul: 0.9318
+  latin_upper: 0.642
+  latin_lower: 0.4341
+  digit: 0.5973
+  space: 0.226
+  punct: 0.4504
+  wide: 0.9
+stats:
+  single_samples: 1744
+  kept: 1738
+  width_error_median: 0.013
+  width_error_p90: 0.0399
+  wrapping_samples: 929
+  lines_exact: 0.7998
+  lines_within_1: 1.0
+sources: 71

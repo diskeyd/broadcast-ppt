@@ -1,0 +1,1632 @@
+version: 1
+source:
+  file: 24.상반기.pptx
+  sha256: ebc589f5efa223dc61f86d97560aabbfd15592845f3aa4a926c6a74cb42fd339
+  slide_size:
+  - 12192000
+  - 6858000
+  slides: 91
+  master_bg: 00FF00
+slides:
+  3:
+    role: card_call_to_worship
+    family: card.call_to_worship
+    layout: 빈 화면
+    has_slide_bg: true
+    shapes:
+      3:
+        id: 3
+        name: TextBox 2
+        bbox:
+        - 3954228
+        - 5417466
+        - 4283545
+        - 923330
+        bbox_frac:
+        - 0.3243
+        - 0.7899
+        - 0.3513
+        - 0.1346
+        in_group: false
+        bodyPr:
+          lIns: 91440
+          rIns: 91440
+          tIns: 45720
+          bIns: 45720
+          wrap: none
+          anchor: null
+          autofit: spAutoFit
+        paragraphs:
+        - align: ctr
+          segments:
+          - sz: 54.0
+            color: FFFF00
+            font: 나눔고딕 ExtraBold
+            bold: false
+            sample_len: 7
+            sample_sha1: 87c843fa2569dd04fb167e4084d384bd24ea8740
+        line_emu: 831189
+        lines_measured: 1.0
+        max_lines: 1
+        order: 1
+        mode: optional
+        single_segment: false
+        slot_map:
+        - label
+      4:
+        id: 4
+        name: TextBox 3
+        bbox:
+        - 4955302
+        - 6150114
+        - 2281394
+        - 707886
+        bbox_frac:
+        - 0.4064
+        - 0.8968
+        - 0.1871
+        - 0.1032
+        in_group: false
+        bodyPr:
+          lIns: 91440
+          rIns: 91440
+          tIns: 45720
+          bIns: 45720
+          wrap: none
+          anchor: null
+          autofit: spAutoFit
+        paragraphs:
+        - align: null
+          segments:
+          - sz: 40.0
+            color: null
+            font: Script MT Bold
+            bold: false
+            sample_len: 10
+            sample_sha1: 6e77a66b8e67e05ca75aba5a51b541fc7bc39227
+        line_emu: 615696
+        lines_measured: 1.0
+        max_lines: 1
+        order: 2
+        mode: optional
+        single_segment: false
+        slot_map:
+        - subtitle_en
+    line_capacity: 1
+    color_set: a
+  4:
+    role: card_prayer
+    family: card.prayer
+    layout: 빈 화면
+    has_slide_bg: true
+    shapes:
+      3:
+        id: 3
+        name: TextBox 2
+        bbox:
+        - 3945409
+        - 5241111
+        - 4301177
+        - 923330
+        bbox_frac:
+        - 0.3236
+        - 0.7642
+        - 0.3528
+        - 0.1346
+        in_group: false
+        bodyPr:
+          lIns: 91440
+          rIns: 91440
+          tIns: 45720
+          bIns: 45720
+          wrap: none
+          anchor: null
+          autofit: spAutoFit
+        paragraphs:
+        - align: ctr
+          segments:
+          - sz: 54.0
+            color: FFFF00
+            font: 나눔고딕 ExtraBold
+            bold: false
+            sample_len: 2
+            sample_sha1: 4728109fc09e0f7a4ff0ec62ee4667aa1c6e3b2f
+          - sz: 36.0
+            color: null
+            font: 나눔고딕 ExtraBold
+            bold: false
+            sample_len: 8
+            sample_sha1: c6c6a6063bf195f5ebfa29fc805b6ab0d9bc876c
+        line_emu: 831189
+        lines_measured: 1.0
+        max_lines: 1
+        order: 1
+        mode: fill
+        single_segment: false
+        slot_map:
+        - label
+        - person
+      4:
+        id: 4
+        name: TextBox 3
+        bbox:
+        - 4125747
+        - 6007844
+        - 3940502
+        - 707886
+        bbox_frac:
+        - 0.3384
+        - 0.876
+        - 0.3232
+        - 0.1032
+        in_group: false
+        bodyPr:
+          lIns: 91440
+          rIns: 91440
+          tIns: 45720
+          bIns: 45720
+          wrap: none
+          anchor: null
+          autofit: spAutoFit
+        paragraphs:
+        - align: null
+          segments:
+          - sz: 40.0
+            color: null
+            font: Script MT Bold
+            bold: false
+            sample_len: 17
+            sample_sha1: ab70f3d601b32bc687109ff3070f75f839118019
+        line_emu: 615696
+        lines_measured: 1.0
+        max_lines: 1
+        order: 2
+        mode: optional
+        single_segment: false
+        slot_map:
+        - subtitle_en
+    line_capacity: 1
+    color_set: a
+  6:
+    role: card_scripture
+    family: card.scripture
+    layout: 빈 화면
+    has_slide_bg: false
+    shapes:
+      3:
+        id: 3
+        name: TextBox 2
+        bbox:
+        - 4702024
+        - 4816360
+        - 2787943
+        - 923330
+        bbox_frac:
+        - 0.3857
+        - 0.7023
+        - 0.2287
+        - 0.1346
+        in_group: false
+        bodyPr:
+          lIns: 91440
+          rIns: 91440
+          tIns: 45720
+          bIns: 45720
+          wrap: none
+          anchor: null
+          autofit: spAutoFit
+        paragraphs:
+        - align: null
+          segments:
+          - sz: 54.0
+            color: FFFF00
+            font: 나눔고딕 ExtraBold
+            bold: false
+            sample_len: 4
+            sample_sha1: 56ade4342cf755531cf38bdbddece4153ea63fb6
+        line_emu: 831189
+        lines_measured: 1.0
+        max_lines: 1
+        order: 1
+        mode: optional
+        single_segment: false
+        slot_map:
+        - label
+      6:
+        id: 6
+        name: TextBox 5
+        bbox:
+        - 4351770
+        - 5856244
+        - 3488455
+        - 878446
+        bbox_frac:
+        - 0.3569
+        - 0.8539
+        - 0.2861
+        - 0.1281
+        in_group: false
+        bodyPr:
+          lIns: 91440
+          rIns: 91440
+          tIns: 45720
+          bIns: 45720
+          wrap: none
+          anchor: null
+          autofit: spAutoFit
+        paragraphs:
+        - align: ctr
+          segments:
+          - sz: 36.0
+            color: null
+            font: 나눔고딕 ExtraBold
+            bold: false
+            sample_len: 11
+            sample_sha1: d848e8301595c685a3fa10c409c5181547750b93
+        - align: ctr
+          segments:
+          - sz: 30.0
+            color: null
+            font: 나눔고딕 ExtraBold
+            bold: false
+            sample_len: 11
+            sample_sha1: 5ff42f4b3897f2aa83a7d42bbb5cfea0cadf1d8b
+        line_emu: 554126
+        lines_measured: 1.42
+        max_lines: 2
+        order: 2
+        mode: fill
+        single_segment: false
+        slot_map:
+        - ref
+        - page
+    line_capacity: 1
+    color_set: a
+  7:
+    role: card_sermon
+    family: card.sermon
+    layout: 빈 화면
+    has_slide_bg: false
+    shapes:
+      3:
+        id: 3
+        name: TextBox 2
+        bbox:
+        - 2972744
+        - 4893998
+        - 6397905
+        - 923330
+        bbox_frac:
+        - 0.2438
+        - 0.7136
+        - 0.5248
+        - 0.1346
+        in_group: false
+        bodyPr:
+          lIns: 91440
+          rIns: 91440
+          tIns: 45720
+          bIns: 45720
+          wrap: none
+          anchor: null
+          autofit: spAutoFit
+        paragraphs:
+        - align: ctr
+          segments:
+          - sz: 54.0
+            color: FFFF00
+            font: 나눔고딕 ExtraBold
+            bold: false
+            sample_len: 2
+            sample_sha1: 1afd1d7c1bbb825d3a73e9955b1e5c60e965020c
+          - sz: 40.0
+            color: null
+            font: 나눔고딕 ExtraBold
+            bold: false
+            sample_len: 13
+            sample_sha1: 6039bc5ff5e3557928aa0dca0d21605f5d82ecf9
+        line_emu: 831189
+        lines_measured: 1.0
+        max_lines: 1
+        order: 1
+        mode: fill
+        single_segment: false
+        slot_map:
+        - label
+        - title
+      4:
+        id: 4
+        name: TextBox 3
+        bbox:
+        - 5485644
+        - 6307041
+        - 1372107
+        - 490840
+        bbox_frac:
+        - 0.4499
+        - 0.9197
+        - 0.1125
+        - 0.0716
+        in_group: false
+        bodyPr:
+          lIns: 91440
+          rIns: 91440
+          tIns: 45720
+          bIns: 45720
+          wrap: none
+          anchor: null
+          autofit: spAutoFit
+        paragraphs:
+        - align: ctr
+          segments:
+          - sz: 32.0
+            color: null
+            font: null
+            bold: false
+            sample_len: 6
+            sample_sha1: 476b785c4760f8f2c6ca5c84f9691612cca7bb88
+        line_emu: 492556
+        lines_measured: 0.81
+        max_lines: 1
+        order: 2
+        mode: optional
+        single_segment: false
+        slot_map:
+        - subtitle_en
+      6:
+        id: 6
+        name: TextBox 5
+        bbox:
+        - 4612622
+        - 5838348
+        - 3118162
+        - 486287
+        bbox_frac:
+        - 0.3783
+        - 0.8513
+        - 0.2558
+        - 0.0709
+        in_group: false
+        bodyPr:
+          lIns: 91440
+          rIns: 91440
+          tIns: 45720
+          bIns: 45720
+          wrap: none
+          anchor: null
+          autofit: spAutoFit
+        paragraphs:
+        - align: ctr
+          segments:
+          - sz: 32.0
+            color: null
+            font: 나눔고딕 ExtraBold
+            bold: false
+            sample_len: 11
+            sample_sha1: f6244a0970c2b3969b9c6d4378a0d627dea27925
+        line_emu: 492556
+        lines_measured: 0.8
+        max_lines: 1
+        order: 3
+        mode: fill
+        single_segment: false
+        slot_map:
+        - ref
+    line_capacity: 1
+    color_set: a
+  8:
+    role: meditation
+    family: meditation
+    layout: 빈 화면
+    has_slide_bg: false
+    shapes:
+      2262:
+        id: 2262
+        name: “일어나 가서 전하라”
+        bbox:
+        - 422855
+        - 4779264
+        - 11346293
+        - 2003373
+        bbox_frac:
+        - 0.0347
+        - 0.6969
+        - 0.9306
+        - 0.2921
+        in_group: false
+        bodyPr:
+          lIns: 17144
+          rIns: 17144
+          tIns: 17144
+          bIns: 17144
+          wrap: square
+          anchor: ctr
+          autofit: null
+        paragraphs:
+        - align: just
+          segments: []
+        - align: just
+          segments:
+          - sz: 26.67
+            color: null
+            font: null
+            bold: false
+            sample_len: 0
+            sample_sha1: bab791e157462ccf081f4d7b85ca026b3a1940cd
+        - align: ctr
+          segments:
+          - sz: 72.0
+            color: null
+            font: null
+            bold: false
+            sample_len: 16
+            sample_sha1: bc3fdd3a3b41145feec917f640995d85f8378468
+        - align: ctr
+          segments: []
+        order: 1
+        mode: fill
+        single_segment: false
+        slot_map:
+        - null
+        - quote
+      2263:
+        id: 2263
+        name: TextBox 10
+        bbox:
+        - 593964
+        - 4779265
+        - 6550145
+        - 584775
+        bbox_frac:
+        - 0.0487
+        - 0.6969
+        - 0.5372
+        - 0.0853
+        in_group: false
+        bodyPr:
+          lIns: 60959
+          rIns: 60959
+          tIns: 45720
+          bIns: 45720
+          wrap: square
+          anchor: null
+          autofit: spAutoFit
+        paragraphs:
+        - align: null
+          segments:
+          - sz: 21.33
+            color: null
+            font: null
+            bold: false
+            sample_len: 3
+            sample_sha1: 8dad503e574bdbebdca944712f90b0d7eaa1b2cd
+          - sz: 14.0
+            color: null
+            font: null
+            bold: false
+            sample_len: 8
+            sample_sha1: 22230c3ebad67b49a2a4ea860c98210a9788b16a
+        line_emu: 328319
+        lines_measured: 1.5
+        max_lines: 2
+        order: 2
+        mode: fixed
+        single_segment: false
+      2264:
+        id: 2264
+        name: TextBox 7
+        bbox:
+        - 4269708
+        - 6433824
+        - 12070081
+        - 318100
+        bbox_frac:
+        - 0.3502
+        - 0.9381
+        - 0.99
+        - 0.0464
+        in_group: false
+        bodyPr:
+          lIns: 60959
+          rIns: 60959
+          tIns: 45720
+          bIns: 45720
+          wrap: square
+          anchor: null
+          autofit: spAutoFit
+        paragraphs:
+        - align: ctr
+          segments:
+          - sz: 14.67
+            color: null
+            font: null
+            bold: false
+            sample_len: 10
+            sample_sha1: d33d3bb0c946c2da80ff5cbdca4ba26e54ec84be
+          - sz: 14.67
+            color: null
+            font: NanumSquare Bold
+            bold: false
+            sample_len: 5
+            sample_sha1: d8a5802d6a4556ffe74f7021d01e66ed1d443956
+          - sz: 14.67
+            color: null
+            font: null
+            bold: false
+            sample_len: 3
+            sample_sha1: cb361226262f45e1c0e3bed26ee99569838e7467
+        line_emu: 225806
+        lines_measured: 1.0
+        max_lines: 1
+        order: 3
+        mode: fixed
+        single_segment: false
+    line_capacity: 1
+    color_set: null
+  17:
+    role: card_generic
+    family: card.generic
+    layout: 빈 화면
+    has_slide_bg: false
+    shapes:
+      3:
+        id: 3
+        name: TextBox 2
+        bbox:
+        - 4279637
+        - 5332166
+        - 3632726
+        - 923330
+        bbox_frac:
+        - 0.351
+        - 0.7775
+        - 0.298
+        - 0.1346
+        in_group: false
+        bodyPr:
+          lIns: 91440
+          rIns: 91440
+          tIns: 45720
+          bIns: 45720
+          wrap: none
+          anchor: null
+          autofit: spAutoFit
+        paragraphs:
+        - align: null
+          segments:
+          - sz: 54.0
+            color: FFFF00
+            font: 나눔고딕 ExtraBold
+            bold: false
+            sample_len: 6
+            sample_sha1: 98f59a4fd759f2e9d8494e2aa60fea9a770f7aae
+        line_emu: 831189
+        lines_measured: 1.0
+        max_lines: 1
+        order: 1
+        mode: fill
+        single_segment: false
+        slot_map:
+        - label
+      4:
+        id: 4
+        name: TextBox 3
+        bbox:
+        - 3842017
+        - 6135217
+        - 4507965
+        - 646331
+        bbox_frac:
+        - 0.3151
+        - 0.8946
+        - 0.3697
+        - 0.0942
+        in_group: false
+        bodyPr:
+          lIns: 91440
+          rIns: 91440
+          tIns: 45720
+          bIns: 45720
+          wrap: none
+          anchor: null
+          autofit: spAutoFit
+        paragraphs:
+        - align: null
+          segments:
+          - sz: 36.0
+            color: null
+            font: Script MT Bold
+            bold: false
+            sample_len: 22
+            sample_sha1: a426f25e485d4bf5008e7f8721016a86912dd318
+        line_emu: 554126
+        lines_measured: 1.0
+        max_lines: 1
+        order: 2
+        mode: optional
+        single_segment: false
+        slot_map:
+        - subtitle_en
+    line_capacity: 1
+    color_set: a
+  20:
+    role: card_announcement
+    family: card.announcement
+    layout: 빈 화면
+    has_slide_bg: false
+    shapes:
+      3:
+        id: 3
+        name: TextBox 2
+        bbox:
+        - 4605045
+        - 5332166
+        - 2981907
+        - 923330
+        bbox_frac:
+        - 0.3777
+        - 0.7775
+        - 0.2446
+        - 0.1346
+        in_group: false
+        bodyPr:
+          lIns: 91440
+          rIns: 91440
+          tIns: 45720
+          bIns: 45720
+          wrap: none
+          anchor: null
+          autofit: spAutoFit
+        paragraphs:
+        - align: null
+          segments:
+          - sz: 54.0
+            color: FFFF00
+            font: 나눔고딕 ExtraBold
+            bold: false
+            sample_len: 5
+            sample_sha1: 7d3f11d6b6f8e3c8f3ea24cd4b2cd9947baadcd9
+        line_emu: 831189
+        lines_measured: 1.0
+        max_lines: 1
+        order: 1
+        mode: optional
+        single_segment: false
+        slot_map:
+        - label
+      4:
+        id: 4
+        name: TextBox 3
+        bbox:
+        - 4700423
+        - 6135217
+        - 2791149
+        - 646331
+        bbox_frac:
+        - 0.3855
+        - 0.8946
+        - 0.2289
+        - 0.0942
+        in_group: false
+        bodyPr:
+          lIns: 91440
+          rIns: 91440
+          tIns: 45720
+          bIns: 45720
+          wrap: none
+          anchor: null
+          autofit: spAutoFit
+        paragraphs:
+        - align: null
+          segments:
+          - sz: 36.0
+            color: null
+            font: Script MT Bold
+            bold: false
+            sample_len: 12
+            sample_sha1: cf84a98d6cf7f156862a08ba8236467b6f471004
+        line_emu: 554126
+        lines_measured: 1.0
+        max_lines: 1
+        order: 2
+        mode: optional
+        single_segment: false
+        slot_map:
+        - subtitle_en
+    line_capacity: 1
+    color_set: a
+  21:
+    role: announcement_first
+    family: announcement.first
+    layout: 빈 화면
+    has_slide_bg: false
+    shapes:
+      4:
+        id: 4
+        name: TextBox 3
+        bbox:
+        - 470472
+        - 5540523
+        - 3009157
+        - 523220
+        bbox_frac:
+        - 0.0386
+        - 0.8079
+        - 0.2468
+        - 0.0763
+        in_group: false
+        bodyPr:
+          lIns: 91440
+          rIns: 91440
+          tIns: 45720
+          bIns: 45720
+          wrap: none
+          anchor: null
+          autofit: spAutoFit
+        paragraphs:
+        - align: null
+          segments:
+          - sz: 28.0
+            color: FFFF00
+            font: 나눔스퀘어 ExtraBold
+            bold: false
+            sample_len: 13
+            sample_sha1: 165b6316ba3ec37584079aca239c3320dbaa8610
+        line_emu: 430987
+        lines_measured: 1.0
+        max_lines: 1
+        order: 3
+        mode: fill
+        single_segment: false
+        slot_map:
+        - label
+      5:
+        id: 5
+        name: TextBox 4
+        bbox:
+        - 470469
+        - 6032966
+        - 10046340
+        - 584775
+        bbox_frac:
+        - 0.0386
+        - 0.8797
+        - 0.824
+        - 0.0853
+        in_group: false
+        bodyPr:
+          lIns: 91440
+          rIns: 91440
+          tIns: 45720
+          bIns: 45720
+          wrap: none
+          anchor: null
+          autofit: spAutoFit
+        paragraphs:
+        - align: null
+          segments:
+          - sz: 32.0
+            color: null
+            font: 나눔스퀘어 ExtraBold
+            bold: false
+            sample_len: 32
+            sample_sha1: 9573092fdece42ac4e26f051864e252eafc7b6ae
+        line_emu: 492556
+        lines_measured: 1.0
+        max_lines: 1
+        order: 4
+        mode: fill
+        single_segment: false
+        slot_map:
+        - body
+        backing:
+        - id: 6
+          order: 1
+          bbox:
+          - 222071
+          - 5540524
+          - 11747863
+          - 1107995
+          in_group: false
+        - id: 8
+          order: 2
+          bbox:
+          - 222069
+          - 5540524
+          - 248400
+          - 1107995
+          in_group: false
+        - id: 2
+          order: 5
+          bbox:
+          - 11721535
+          - 5540524
+          - 248400
+          - 1107995
+          in_group: false
+    line_capacity: 1
+    color_set: a
+  23:
+    role: announcement_item
+    family: announcement.item
+    layout: 빈 화면
+    has_slide_bg: false
+    shapes:
+      4:
+        id: 4
+        name: TextBox 3
+        bbox:
+        - 470469
+        - 6125298
+        - 11442556
+        - 523220
+        bbox_frac:
+        - 0.0386
+        - 0.8932
+        - 0.9385
+        - 0.0763
+        in_group: false
+        bodyPr:
+          lIns: 91440
+          rIns: 91440
+          tIns: 45720
+          bIns: 45720
+          wrap: none
+          anchor: null
+          autofit: spAutoFit
+        paragraphs:
+        - align: null
+          segments:
+          - sz: 28.0
+            color: FFFF00
+            font: 나눔스퀘어 ExtraBold
+            bold: false
+            sample_len: 20
+            sample_sha1: 397a9b82f3541fe681e2ccea83f979694abfb193
+          - sz: 28.0
+            color: null
+            font: 나눔스퀘어 ExtraBold
+            bold: false
+            sample_len: 27
+            sample_sha1: 8bc4387b2e4f5888c05500753782d44909a94255
+        line_emu: 430987
+        lines_measured: 1.0
+        max_lines: 1
+        order: 3
+        mode: fill
+        single_segment: false
+        slot_map:
+        - label
+        - body
+        backing:
+        - id: 6
+          order: 1
+          bbox:
+          - 222070
+          - 6125298
+          - 11747863
+          - 523220
+          in_group: false
+        - id: 8
+          order: 2
+          bbox:
+          - 222069
+          - 6125298
+          - 248400
+          - 523220
+          in_group: false
+        - id: 2
+          order: 4
+          bbox:
+          - 11721531
+          - 6125298
+          - 248400
+          - 523220
+          in_group: false
+    line_capacity: 1
+    color_set: a
+  31:
+    role: card_offertory
+    family: card.offertory
+    layout: 빈 화면
+    has_slide_bg: false
+    shapes:
+      4:
+        id: 4
+        name: TextBox 3
+        bbox:
+        - 3496786
+        - 5267136
+        - 5128327
+        - 923330
+        bbox_frac:
+        - 0.2868
+        - 0.768
+        - 0.4206
+        - 0.1346
+        in_group: false
+        bodyPr:
+          lIns: 91440
+          rIns: 91440
+          tIns: 45720
+          bIns: 45720
+          wrap: none
+          anchor: null
+          autofit: spAutoFit
+        paragraphs:
+        - align: null
+          segments:
+          - sz: 54.0
+            color: FFFF00
+            font: 나눔고딕 ExtraBold
+            bold: true
+            sample_len: 9
+            sample_sha1: bc97f897ef8b25a96ce1bfa2a4c2073edb68a1ef
+        line_emu: 831189
+        lines_measured: 1.0
+        max_lines: 1
+        order: 1
+        mode: optional
+        single_segment: false
+        slot_map:
+        - label
+      3:
+        id: 3
+        name: TextBox 2
+        bbox:
+        - 3737235
+        - 6221246
+        - 4646337
+        - 543675
+        bbox_frac:
+        - 0.3065
+        - 0.9072
+        - 0.3811
+        - 0.0793
+        in_group: false
+        bodyPr:
+          lIns: 91440
+          rIns: 91440
+          tIns: 45720
+          bIns: 45720
+          wrap: none
+          anchor: null
+          autofit: spAutoFit
+        paragraphs:
+        - align: null
+          segments:
+          - sz: 29.33
+            color: null
+            font: Script MT Bold
+            bold: false
+            sample_len: 29
+            sample_sha1: 4b9b0781639d29aa801fc1c0ea5e6a2115fa2afe
+        line_emu: 451459
+        lines_measured: 1.0
+        max_lines: 1
+        order: 2
+        mode: optional
+        single_segment: false
+        slot_map:
+        - subtitle_en
+    line_capacity: 1
+    color_set: a
+  55:
+    role: caption_1
+    family: caption
+    layout: 빈 화면
+    has_slide_bg: false
+    shapes:
+      4:
+        id: 4
+        name: TextBox 12
+        bbox:
+        - 582087
+        - 6032691
+        - 11027825
+        - 615551
+        bbox_frac:
+        - 0.0477
+        - 0.8797
+        - 0.9045
+        - 0.0898
+        in_group: false
+        bodyPr:
+          lIns: 60959
+          rIns: 60959
+          tIns: 60959
+          bIns: 60959
+          wrap: square
+          anchor: null
+          autofit: spAutoFit
+        paragraphs:
+        - align: null
+          segments:
+          - sz: 32.0
+            color: null
+            font: null
+            bold: false
+            sample_len: 9
+            sample_sha1: 14f0747d3ff19e869ccc0909c9e3081e487ec314
+        line_emu: 492556
+        lines_measured: 1.0
+        max_lines: 1
+        order: 2
+        mode: fill
+        single_segment: false
+        slot_map:
+        - body
+        backing:
+        - id: 3
+          order: 1
+          bbox:
+          - 2122906
+          - 5905499
+          - 7946191
+          - 869937
+          in_group: false
+    line_capacity: 1
+    color_set: null
+  58:
+    role: scripture_2
+    family: scripture
+    layout: 빈 화면
+    has_slide_bg: false
+    shapes:
+      4:
+        id: 4
+        name: TextBox 12
+        bbox:
+        - 531521
+        - 5699998
+        - 11128957
+        - 892552
+        bbox_frac:
+        - 0.0436
+        - 0.8311
+        - 0.9128
+        - 0.1301
+        in_group: false
+        bodyPr:
+          lIns: 60959
+          rIns: 60959
+          tIns: 45720
+          bIns: 45720
+          wrap: square
+          anchor: null
+          autofit: spAutoFit
+        paragraphs:
+        - align: just
+          segments:
+          - sz: 26.0
+            color: null
+            font: 나눔스퀘어OTF Bold
+            bold: false
+            sample_len: 2
+            sample_sha1: 3d2d01a661aa7d23989b113fad1835f983d857ea
+          - sz: 26.0
+            color: FF9300
+            font: 나눔스퀘어OTF Bold
+            bold: false
+            sample_len: 5
+            sample_sha1: 8e38f954599b91bd7ce078b3f02d6126b58e4ce8
+          - sz: 26.0
+            color: null
+            font: 나눔스퀘어OTF Bold
+            bold: false
+            sample_len: 10
+            sample_sha1: 08cb8e3c1db76821544627943cc46ca6f69fd99b
+          - sz: 26.0
+            color: FFD479
+            font: 나눔스퀘어OTF Bold
+            bold: false
+            sample_len: 6
+            sample_sha1: d8ce180b64afa98b96611ce127b580c073668f30
+          - sz: 26.0
+            color: null
+            font: 나눔스퀘어OTF Bold
+            bold: false
+            sample_len: 13
+            sample_sha1: 7211c7b16abd2739148047d32740f0b5ac90350e
+          - sz: 26.0
+            color: FF9300
+            font: 나눔스퀘어OTF Bold
+            bold: false
+            sample_len: 6
+            sample_sha1: f96bd4c4f51c118a6410010671d19cd222f3c73e
+        - align: just
+          segments:
+          - sz: 26.0
+            color: null
+            font: 나눔스퀘어OTF Bold
+            bold: false
+            sample_len: 11
+            sample_sha1: 244492da776dd736c79f3b6fa9437b82bec1ccdd
+          - sz: 26.0
+            color: FFD479
+            font: 나눔스퀘어OTF Bold
+            bold: false
+            sample_len: 5
+            sample_sha1: beca50e0e21d8b3ce217e118c9e129961f258993
+          - sz: 26.0
+            color: null
+            font: 나눔스퀘어OTF Bold
+            bold: false
+            sample_len: 13
+            sample_sha1: 9be56d45ff39ff2b1858229ab0c02b162133dcd9
+        line_emu: 400202
+        lines_measured: 2.0
+        max_lines: 2
+        order: 2
+        mode: fill
+        single_segment: true
+        slot_map:
+        - body
+        backing:
+        - id: 2
+          order: 1
+          bbox:
+          - 373199
+          - 5562599
+          - 11445604
+          - 1167351
+          in_group: false
+    line_capacity: 2
+    color_set: null
+  59:
+    role: scripture_3
+    family: scripture
+    layout: 빈 화면
+    has_slide_bg: false
+    shapes:
+      3:
+        id: 3
+        name: TextBox 12
+        bbox:
+        - 511461
+        - 5341193
+        - 11169077
+        - 1292662
+        bbox_frac:
+        - 0.042
+        - 0.7788
+        - 0.9161
+        - 0.1885
+        in_group: false
+        bodyPr:
+          lIns: 60959
+          rIns: 60959
+          tIns: 45720
+          bIns: 45720
+          wrap: square
+          anchor: null
+          autofit: spAutoFit
+        paragraphs:
+        - align: just
+          segments:
+          - sz: 26.0
+            color: null
+            font: 나눔스퀘어OTF Bold
+            bold: false
+            sample_len: 17
+            sample_sha1: 85282980496380b12e10cd3ba5ca84312a41f243
+          - sz: 26.0
+            color: FFD479
+            font: 나눔스퀘어OTF Bold
+            bold: false
+            sample_len: 14
+            sample_sha1: 2c73e4354c5779aaee130511c198e0d7dc5a4d39
+          - sz: 26.0
+            color: null
+            font: 나눔스퀘어OTF Bold
+            bold: false
+            sample_len: 27
+            sample_sha1: 9c6cedb5cf711fe7bf1b8662c0086f7a3d48b336
+          - sz: 26.0
+            color: FFD479
+            font: 나눔스퀘어OTF Bold
+            bold: false
+            sample_len: 24
+            sample_sha1: 532ca692da465303fd80e7b84218311a02d70dc8
+          - sz: 26.0
+            color: null
+            font: 나눔스퀘어OTF Bold
+            bold: false
+            sample_len: 35
+            sample_sha1: 47f80484f32088e19d7208b87f9baebe1150fcef
+        line_emu: 400202
+        lines_measured: 3.0
+        max_lines: 3
+        order: 2
+        mode: fill
+        single_segment: true
+        slot_map:
+        - body
+        backing:
+        - id: 2
+          order: 1
+          bbox:
+          - 373199
+          - 5245099
+          - 11445604
+          - 1484851
+          in_group: false
+    line_capacity: 3
+    color_set: null
+  60:
+    role: scripture_ref_1
+    family: scripture_ref
+    layout: 빈 화면
+    has_slide_bg: false
+    shapes:
+      11:
+        id: 11
+        name: '사각형: 잘린 한쪽 모서리 10'
+        bbox:
+        - 373200
+        - 5501809
+        - 1892754
+        - 457202
+        bbox_frac:
+        - 0.0306
+        - 0.8022
+        - 0.1552
+        - 0.0667
+        in_group: true
+        bodyPr:
+          lIns: 91440
+          rIns: 91440
+          tIns: 45720
+          bIns: 45720
+          wrap: square
+          anchor: ctr
+          autofit: null
+        paragraphs:
+        - align: ctr
+          segments:
+          - sz: 17.0
+            color: null
+            font: 나눔스퀘어라운드 ExtraBold
+            bold: false
+            sample_len: 7
+            sample_sha1: da09291482f0e93a5fb474b963c5a3463ef475fb
+        order: 3
+        mode: fill
+        single_segment: false
+        slot_map:
+        - ref
+      12:
+        id: 12
+        name: TextBox 12
+        bbox:
+        - 523725
+        - 6057256
+        - 11144549
+        - 574451
+        bbox_frac:
+        - 0.043
+        - 0.8832
+        - 0.9141
+        - 0.0838
+        in_group: false
+        bodyPr:
+          lIns: 60959
+          rIns: 60959
+          tIns: 60959
+          bIns: 60959
+          wrap: square
+          anchor: null
+          autofit: spAutoFit
+        paragraphs:
+        - align: just
+          segments:
+          - sz: 28.0
+            color: null
+            font: 나눔스퀘어OTF Bold
+            bold: false
+            sample_len: 9
+            sample_sha1: aba2c00d8df87346e8e29e62b9155a1e60cbeb8a
+          - sz: 28.0
+            color: FF9300
+            font: 나눔스퀘어OTF Bold
+            bold: false
+            sample_len: 17
+            sample_sha1: dec243d9aaf77f2eea153575a6eef43e46766735
+        line_emu: 430987
+        lines_measured: 1.05
+        max_lines: 1
+        order: 4
+        mode: fill
+        single_segment: true
+        slot_map:
+        - body
+    line_capacity: 1
+    color_set: null
+  61:
+    role: scripture_ref_2
+    family: scripture_ref
+    layout: 빈 화면
+    has_slide_bg: false
+    shapes:
+      7:
+        id: 7
+        name: '사각형: 잘린 한쪽 모서리 6'
+        bbox:
+        - 373198
+        - 5104542
+        - 1892754
+        - 457202
+        bbox_frac:
+        - 0.0306
+        - 0.7443
+        - 0.1552
+        - 0.0667
+        in_group: true
+        bodyPr:
+          lIns: 91440
+          rIns: 91440
+          tIns: 45720
+          bIns: 45720
+          wrap: square
+          anchor: ctr
+          autofit: null
+        paragraphs:
+        - align: ctr
+          segments:
+          - sz: 18.67
+            color: null
+            font: 나눔스퀘어라운드 ExtraBold
+            bold: false
+            sample_len: 0
+            sample_sha1: b858cb282617fb0956d960215c8e84d1ccf909c6
+          - sz: 17.0
+            color: null
+            font: 나눔스퀘어라운드 ExtraBold
+            bold: false
+            sample_len: 8
+            sample_sha1: c453a20ea80d8e64b89496f2c11de38f4888e717
+        order: 2
+        mode: fill
+        single_segment: false
+        slot_map:
+        - ref
+        - null
+      3:
+        id: 3
+        name: TextBox 12
+        bbox:
+        - 622863
+        - 5653410
+        - 11439437
+        - 984883
+        bbox_frac:
+        - 0.0511
+        - 0.8244
+        - 0.9383
+        - 0.1436
+        in_group: false
+        bodyPr:
+          lIns: 60959
+          rIns: 60959
+          tIns: 60959
+          bIns: 60959
+          wrap: square
+          anchor: null
+          autofit: spAutoFit
+        paragraphs:
+        - align: just
+          segments:
+          - sz: 28.0
+            color: null
+            font: 나눔스퀘어OTF Bold
+            bold: false
+            sample_len: 2
+            sample_sha1: 76529d3d996deaf4a16c12b80df14f4f59654798
+          - sz: 28.0
+            color: FF9300
+            font: 나눔스퀘어OTF Bold
+            bold: false
+            sample_len: 5
+            sample_sha1: 15cbdaa6697761557483cf1dc59e8b98a6679f59
+          - sz: 28.0
+            color: null
+            font: 나눔스퀘어OTF Bold
+            bold: false
+            sample_len: 21
+            sample_sha1: 547d3e159a4f4e3271e959b73f5e655db6e1b0ce
+        - align: just
+          segments:
+          - sz: 28.0
+            color: null
+            font: 나눔스퀘어OTF Bold
+            bold: false
+            sample_len: 2
+            sample_sha1: fb66954f5ee85263df84cf61554f20f565e64aa5
+          - sz: 28.0
+            color: FFD479
+            font: 나눔스퀘어OTF Bold
+            bold: false
+            sample_len: 19
+            sample_sha1: ce9e03a7d49741c811c05a7fb8004e47ec5b5593
+          - sz: 28.0
+            color: null
+            font: 나눔스퀘어OTF Bold
+            bold: false
+            sample_len: 17
+            sample_sha1: a3de82af3d207b87a2bc70cd8ef835448174f319
+        line_emu: 430987
+        lines_measured: 2.0
+        max_lines: 2
+        order: 4
+        mode: fill
+        single_segment: true
+        slot_map:
+        - body
+    line_capacity: 2
+    color_set: null
+  62:
+    role: scripture_ref_3
+    family: scripture_ref
+    layout: 빈 화면
+    has_slide_bg: false
+    shapes:
+      13:
+        id: 13
+        name: '사각형: 잘린 한쪽 모서리 12'
+        bbox:
+        - 373199
+        - 4807742
+        - 2159505
+        - 457202
+        bbox_frac:
+        - 0.0306
+        - 0.701
+        - 0.1771
+        - 0.0667
+        in_group: true
+        bodyPr:
+          lIns: 91440
+          rIns: 91440
+          tIns: 45720
+          bIns: 45720
+          wrap: square
+          anchor: ctr
+          autofit: null
+        paragraphs:
+        - align: ctr
+          segments:
+          - sz: 17.0
+            color: null
+            font: 나눔스퀘어라운드 ExtraBold
+            bold: false
+            sample_len: 11
+            sample_sha1: 2f758783c8d5a80eb3e0f6d72b17f7656526402d
+        order: 3
+        mode: fill
+        single_segment: false
+        slot_map:
+        - ref
+      4:
+        id: 4
+        name: TextBox 12
+        bbox:
+        - 493268
+        - 5335729
+        - 11003280
+        - 1323437
+        bbox_frac:
+        - 0.0405
+        - 0.778
+        - 0.9025
+        - 0.193
+        in_group: false
+        bodyPr:
+          lIns: 60959
+          rIns: 60959
+          tIns: 60959
+          bIns: 60959
+          wrap: square
+          anchor: null
+          autofit: spAutoFit
+        paragraphs:
+        - align: just
+          segments:
+          - sz: 26.0
+            color: null
+            font: 나눔스퀘어OTF Bold
+            bold: false
+            sample_len: 2
+            sample_sha1: b1a1ee1729ad9d97390999a54c85296634d4b098
+          - sz: 26.0
+            color: FF9300
+            font: 나눔스퀘어OTF Bold
+            bold: false
+            sample_len: 20
+            sample_sha1: 73560fabdde69bf7eb6e48a0b33f4787f0ee4195
+          - sz: 26.0
+            color: null
+            font: 나눔스퀘어OTF Bold
+            bold: false
+            sample_len: 47
+            sample_sha1: dbcbb45e4315a2b28df268de226c9afec95be028
+          - sz: 26.0
+            color: FFD479
+            font: 나눔스퀘어OTF Bold
+            bold: false
+            sample_len: 20
+            sample_sha1: 7658fa62eae12e7ae8d76f3f1339cff555cdc3ad
+          - sz: 26.0
+            color: null
+            font: 나눔스퀘어OTF Bold
+            bold: false
+            sample_len: 27
+            sample_sha1: 5b72841d2beb01f046bfbf7fb010c926d368e25e
+        line_emu: 400202
+        lines_measured: 3.0
+        max_lines: 3
+        order: 4
+        mode: fill
+        single_segment: true
+        slot_map:
+        - body
+    line_capacity: 3
+    color_set: null
+  67:
+    role: caption_3
+    family: caption
+    layout: 빈 화면
+    has_slide_bg: false
+    shapes:
+      5:
+        id: 5
+        name: TextBox 12
+        bbox:
+        - 583095
+        - 5113623
+        - 11025808
+        - 1569660
+        bbox_frac:
+        - 0.0478
+        - 0.7456
+        - 0.9043
+        - 0.2289
+        in_group: false
+        bodyPr:
+          lIns: 60959
+          rIns: 60959
+          tIns: 45720
+          bIns: 45720
+          wrap: square
+          anchor: null
+          autofit: spAutoFit
+        paragraphs:
+        - align: just
+          segments:
+          - sz: 32.0
+            color: null
+            font: null
+            bold: false
+            sample_len: 61
+            sample_sha1: 210d89a3ad80db725f0a8d7452fffebf49cb749a
+          - sz: 32.0
+            color: FF9300
+            font: null
+            bold: false
+            sample_len: 18
+            sample_sha1: 933df9705bbceee0a971b56c3a16206b7116139f
+          - sz: 32.0
+            color: null
+            font: null
+            bold: false
+            sample_len: 14
+            sample_sha1: 79a8087c480db4591f5f3636839787fa082e8ce6
+        line_emu: 492556
+        lines_measured: 3.0
+        max_lines: 3
+        order: 2
+        mode: fill
+        single_segment: true
+        slot_map:
+        - body
+    line_capacity: 3
+    color_set: null
