@@ -39,7 +39,8 @@ def _flat(shapes):
 @dataclass
 class DeckContext:
     boilerplate: set[str] = field(default_factory=set)
-    last_ref: object = None
+    last_ref: object = None     # most recent reference (scripture title, body or bracketed quote)
+    title_ref: object = None    # the service's 성경봉독 reference
     last_kind: str | None = None
     rules_version: str = RULES_VERSION
 
@@ -101,6 +102,7 @@ def classify_slide(slide: dict, ctx: DeckContext) -> Decision:
     ctx.last_kind = d.kind
     if d.kind == K.SCRIPTURE_TITLE and d.fields.get("ref"):
         ctx.last_ref = d.fields["ref"]
+        ctx.title_ref = d.fields["ref"]
     if d.kind == K.SCRIPTURE_BODY and d.fields.get("ref") is not None:
         ctx.last_ref = d.fields["ref"]
     return d
@@ -180,16 +182,25 @@ def _classify(v: SlideView, c: str, pics: int, groups: int, media: int, ctx: Dec
         return Decision(K.SCRIPTURE_BODY, "R200" if not BRACKET_REF_RE.match(main) else "R205",
                         "reference at start" + (" (bracketed quote)" if BRACKET_REF_RE.match(main) else ""),
                         {"ref": ref, "body": body, "quote": bool(BRACKET_REF_RE.match(main))})
-    if v.clen >= 30 and VERSE_START_RE.match(norm(main)) and ctx.last_ref is not None:
-        return Decision(K.SCRIPTURE_BODY, "R210", "verse-numbered text continuing the last reference",
-                        {"ref": ctx.last_ref, "body": norm(main).strip(), "quote": False, "inherited_ref": True},
-                        ["review:inherited_reference"], confidence=0.8)
+    if v.clen >= 30 and VERSE_START_RE.match(norm(main)) and (ctx.last_ref is not None or ctx.title_ref is not None):
+        first = int(re.match(r"\s*(\d{1,3})", norm(main)).group(1))
+        # inherit only a reference whose verse range contains the first verse number:
+        # a blank tag is a visible gap, a wrong tag goes on air
+        for cand, which in ((ctx.last_ref, "last"), (ctx.title_ref, "title")):
+            if cand is not None and cand.contains(first):
+                return Decision(K.SCRIPTURE_BODY, "R210", f"verse number continues the {which} reference",
+                                {"ref": cand, "body": norm(main).strip(), "quote": False, "inherited_ref": True},
+                                ["review:inherited_reference"], confidence=0.8)
+        return Decision(K.SCRIPTURE_BODY, "R211", "verse-numbered text outside every known reference",
+                        {"ref": None, "body": norm(main).strip(), "quote": False},
+                        ["review:reference_unknown"], confidence=0.6)
 
+    # hymn before graphic: score pages also carry several drawn shapes
+    if groups >= 2 and pics >= 1 and v.clen <= 120:
+        return Decision(K.HYMN_IMAGE, "R400", "picture + grouped lyric boxes", flags=["passthrough", "deferred:hymn"])
     drawn = v.kinds.get("AUTO_SHAPE", 0) + v.kinds.get("FREEFORM", 0) + v.kinds.get("CHART", 0) + v.kinds.get("LINE", 0)
     if drawn >= 3 and len(v.boxes) >= 3:
         return Decision(K.GRAPHIC, "R420", "diagram or question sheet built from many shapes", flags=["passthrough", "review:graphic"])
-    if groups >= 2 and pics >= 1 and v.clen <= 120:
-        return Decision(K.HYMN_IMAGE, "R400", "picture + grouped lyric boxes", flags=["passthrough", "deferred:hymn"])
 
     if len(v.boxes) <= 2 and 6 <= v.clen <= 60 and not v.full_bleed_picture:
         return Decision(K.CAPTION_SENTENCE, "R550", "one short sentence", {"body": re.sub(r"\s*\n\s*", " ", v.text).strip()})

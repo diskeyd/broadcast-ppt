@@ -137,8 +137,8 @@ def announcement_items(text: str) -> list[dict]:
 def verse_chunks(text: str, ref: ScriptureRef | None) -> list[tuple[int | None, str]]:
     """Split scripture text on leading verse numbers that fall inside the reference range."""
     t = norm(text)
-    lo, hi = (ref.verse_start, ref.verse_end) if ref else (1, 176)
-    cuts = [m for m in _VERSE_NO_RE.finditer(t) if lo <= int(m.group("no")) <= hi]
+    inside = ref.contains if ref else (lambda n: 1 <= n <= 176)
+    cuts = [m for m in _VERSE_NO_RE.finditer(t) if inside(int(m.group("no")))]
     if not cuts:
         return [(None, t.strip())]
     out: list[tuple[int | None, str]] = []

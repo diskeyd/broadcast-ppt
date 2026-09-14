@@ -78,20 +78,21 @@ class Mapper:
         return {"op": "template", "src": src, "template_slide": tpl, "fill": {k: v for k, v in fill.items() if v is not None}, "note": note}
 
     def scripture_captions(self, src: int, ref: ScriptureRef | None, body: str) -> list[dict]:
-        units = [t for _, t in verse_chunks(body, ref)] if ref else [body]
+        units = [t for _, t in verse_chunks(body, ref)]
         big = self.fam["scripture_ref"][-1][0]
         chunks = pack(units, lambda t: self.fits(big, t))
         ops = []
         for i, chunk in enumerate(chunks, 1):
             tpl = self.smallest_variant("scripture_ref", chunk) or big
             verses = [int(n) for n in re.findall(r"(?:^|\s)(\d{1,3})\s(?=\S)", chunk)]
-            if ref is not None:
-                in_range = [v for v in verses if ref.verse_start <= v <= ref.verse_end] or [ref.verse_start]
-                v1, v2 = min(in_range), max(in_range)
+            in_range = [v for v in verses if ref is not None and ref.contains(v)]
+            if ref is not None and (in_range or not verses):
+                v1, v2 = (min(in_range), max(in_range)) if in_range else (ref.verse_start, ref.verse_end)
                 tag = f"{ref.book}{ref.chapter}:{v1}" + (f"-{v2}" if v2 != v1 else "")
             else:
                 tag = None
-            op = self.card(src, tpl, {"ref": tag, "body": chunk}, "scripture caption")
+            # never leave the template's sample reference in place: blank + review flag instead
+            op = self.card(src, tpl, {"ref": tag if tag is not None else "", "body": chunk}, "scripture caption")
             op["chunk"] = {"i": i, "n": len(chunks)}
             op["fit"] = {"chars": len(chunk), "est_lines": self.lines(tpl, chunk), "max_lines": self._body_spec(tpl)["max_lines"]}
             if tag is None:

@@ -43,6 +43,12 @@ def test_classifier_core_rules():
     assert d.kind == K.SCRIPTURE_BODY and d.fields["ref"].verse_start == 21
     d = classify_slide(_slide(6, "23 여호와께서 각 사람에게 그의 공의와 신실을 따라 갚으시리니 오늘 여호와께서"), ctx)
     assert d.kind == K.SCRIPTURE_BODY and d.fields.get("inherited_ref")
+    d = classify_slide(_slide(61, "[롬3:23-24,27-28] 23 모든 사람이 죄를 범하였으매 하나님의 영광에 이르지 못하더니"), ctx)
+    assert d.kind == K.SCRIPTURE_BODY and d.fields["ref"].contains(27) and not d.fields["ref"].contains(25)
+    d = classify_slide(_slide(62, "21 사울이 이르되 내가 범죄하였도다 내 아들 다윗아 돌아오라 내가 다시는 너를 해하지 아니하리니"), ctx)
+    assert d.rule_id == "R210" and d.fields["ref"].chapter == 26  # outside 롬3 -> the 성경봉독 reference
+    d = classify_slide(_slide(63, "99 전혀 다른 본문이 절 번호로 시작하는 경우에는 참조를 비워 두어야 합니다 그렇지 않으면"), ctx)
+    assert d.rule_id == "R211" and d.fields["ref"] is None and "review:reference_unknown" in d.flags
     d = classify_slide(_slide(7, "환영 : 방문해주신 모든 분들을 환영합니다\n[표어] : 교회는 그의 몸이니\n[모임] : 오늘 오후"), ctx)
     assert d.kind == K.ANNOUNCEMENT_BLOCK and len(d.fields["items"]) == 3
     d = classify_slide(_slide(8, "동행의 기도||하나님께서 갚아주시는 삶의 길을 걷게 하소서!"), ctx)
