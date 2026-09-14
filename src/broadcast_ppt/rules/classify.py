@@ -149,7 +149,15 @@ def _classify(v: SlideView, c: str, pics: int, groups: int, media: int, ctx: Dec
                 return Decision(K.PRAYER_TITLE, "R100", "keyword 기도 + name/role", {"label": "기도", "name": p["name"], "role": p["role"]})
         if "묵상" in c:
             quote = quoted_title(v.text)
-            return Decision(K.MEDITATION, "R160", "keyword 묵상", {"quote": quote}, [] if quote else ["review:no_quote"])
+            if not quote:  # quote written without quotation marks: the longest line that is not the label
+                lines = [ln.strip() for ln in norm(v.text).splitlines()
+                         if ln.strip() and "묵상" not in compact(ln) and not english_line(ln) and "meditat" not in ln.lower()]
+                quote = max(lines, key=lambda s: len(compact(s)), default=None)
+                if quote and len(compact(quote)) < 4:
+                    quote = None
+            if not quote:
+                return Decision(K.GRAPHIC, "R161", "keyword 묵상 without a quote line", flags=["passthrough", "review:no_quote"])
+            return Decision(K.MEDITATION, "R160", "keyword 묵상", {"quote": quote})
 
     main = v.main_box["text"] if v.main_box else v.text
     if NAME_LIST_HEADER_RE.search(v.text):

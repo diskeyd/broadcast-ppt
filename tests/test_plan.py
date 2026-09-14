@@ -48,3 +48,5 @@ def test_classifier_core_rules():
     d = classify_slide(_slide(8, "동행의 기도||하나님께서 갚아주시는 삶의 길을 걷게 하소서!"), ctx)
     assert d.kind == K.CARD_TITLE and d.fields["label"] == "동행의 기도" and d.fields["prayer_text"]
     assert classify_slide(_slide(9, "", {"PICTURE": 1}), ctx).kind == K.PICTURE_ONLY
+    d = classify_slide(_slide(10, "묵 상   Meditate||여호와께서 여기까지 우리를 도우셨다"), ctx)
+    assert d.kind == K.MEDITATION and d.fields["quote"] == "여호와께서 여기까지 우리를 도우셨다"

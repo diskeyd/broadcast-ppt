@@ -157,7 +157,8 @@ class Mapper:
             ref = f.get("ref")
             return [self.card(src, TEMPLATE["sermon"], {"label": "설교 ", "title": title, "ref": ref.long if ref else None}, "sermon card")]
         if d.kind == K.MEDITATION:
-            return [self.card(src, TEMPLATE["meditation"], {"quote": f"“{f['quote']}”" if f.get("quote") else None}, "meditation")]
+            quote = f["quote"].strip().strip("“”\"")
+            return [self.card(src, TEMPLATE["meditation"], {"quote": f"“{quote}”"}, "meditation")]
         if d.kind == K.ANNOUNCEMENT_TITLE:
             return [self.card(src, TEMPLATE["announcement_title"], {}, "announcement card")]
         if d.kind == K.ANNOUNCEMENT_BLOCK:
