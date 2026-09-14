@@ -117,12 +117,30 @@ def evaluate_lines(model: WidthModel, wrapping: list[dict]) -> dict:
     return {"wrapping_samples": len(wrapping), "lines_exact": round(exact / len(wrapping), 4), "lines_within_1": round(within1 / len(wrapping), 4)}
 
 
+def best_width_scale(em: dict, wrapping: list[dict], margin: float = 0.02) -> tuple[float, dict]:
+    """Largest line-width factor with zero under-estimated line counts, minus a safety margin."""
+    best, table = 1.0, {}
+    for step in range(0, 26):
+        scale = round(1.0 + step * 0.01, 2)
+        model = WidthModel(em=em, width_scale=scale)
+        under = sum(1 for w in wrapping
+                    if model.estimate_lines(w["text"], w["width"], w["sz"], w["lIns"], w["rIns"]) < w["lines"])
+        table[scale] = under
+        if under == 0:
+            best = scale
+        else:
+            break
+    return max(1.0, round(best - margin, 2)), table
+
+
 def calibrate(paths: list[Path], out: Path) -> dict:
     single, wrapping = collect_samples(paths)
     em, stats = fit(single)
-    model = WidthModel(em=em)
+    scale, table = best_width_scale(em, wrapping)
+    model = WidthModel(em=em, width_scale=scale)
     stats.update(evaluate_lines(model, wrapping))
-    data = {"version": 1, "line_height": LINE_HEIGHT, "em": em, "stats": stats, "sources": len(paths)}
+    stats["zero_under_scale_max"] = max([s for s, u in table.items() if u == 0] or [1.0])
+    data = {"version": 1, "line_height": LINE_HEIGHT, "width_scale": scale, "em": em, "stats": stats, "sources": len(paths)}
     Path(out).write_text(yaml.safe_dump(data, sort_keys=False, allow_unicode=True), encoding="utf-8")
     return data
 

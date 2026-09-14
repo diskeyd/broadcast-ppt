@@ -17,7 +17,10 @@ _REF_RE = re.compile(
     r"(?P<v1>\d{1,3})\s*절?"
     r"(?:\s*(?:[-~–—]|부터)\s*(?:(?P<ch2>\d{1,3})\s*(?:[:：]|장\s*))?\s*(?P<v2>\d{1,3})\s*절?)?"
 )
-_PAGE_RE = re.compile(r"(?:(?P<test>구약|신약)\s*성경?\s*)?[pP]\s*\.?\s*(?P<page>\d{1,4})")
+_PAGE_RE = re.compile(
+    r"(?:(?P<test>구약|신약|구|신)\s*(?:성경)?\s*)?"
+    r"(?:[pP]\s*\.?\s*(?P<page>\d{1,4})|(?P<page2>\d{1,4})\s*(?:쪽|페이지))"
+)
 _QUOTE_RE = re.compile(r"[“\"「『](?P<t>[^”\"」』]{1,60})[”\"」』]")
 _ITEM_START_RE = re.compile(r"(?:^|(?<=\s))(?P<no>\d{1,2})\s*[.)]\s*(?=\S)")
 _BRACKET_TITLE_RE = re.compile(r"^\s*[\[［](?P<t>[^\]］]{1,30})[\]］]\s*[:：]?\s*")
@@ -71,7 +74,8 @@ def page_ref(text: str) -> dict | None:
     m = _PAGE_RE.search(norm(text))
     if not m:
         return None
-    return {"testament": {"구약": "old", "신약": "new"}.get(m.group("test") or ""), "page": int(m.group("page")), "raw": m.group(0)}
+    test = {"구약": "old", "구": "old", "신약": "new", "신": "new"}.get(m.group("test") or "")
+    return {"testament": test, "page": int(m.group("page") or m.group("page2")), "raw": m.group(0).strip()}
 
 
 def name_role(text: str) -> list[dict]:

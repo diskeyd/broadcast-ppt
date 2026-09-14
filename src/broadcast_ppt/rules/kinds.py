@@ -13,7 +13,8 @@ CAPTION_SENTENCE = "caption_sentence"
 HYMN_IMAGE = "hymn_image"
 NAME_LIST = "name_list"
 PICTURE_ONLY = "picture_only"
+GRAPHIC = "graphic"                  # sermon outline diagrams, discussion questions: many shapes
 UNKNOWN = "unknown"
 
 # kinds that are copied through unchanged (scaled) with a review flag
-PASSTHROUGH = {HYMN_IMAGE, NAME_LIST, PICTURE_ONLY, UNKNOWN, INTRO_MEDIA}
+PASSTHROUGH = {HYMN_IMAGE, NAME_LIST, PICTURE_ONLY, GRAPHIC, UNKNOWN, INTRO_MEDIA}

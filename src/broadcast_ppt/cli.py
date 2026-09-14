@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+from collections import Counter
 import json
 import os
 import sys
@@ -80,6 +81,95 @@ def cmd_summarize(args) -> int:
     return 0
 
 
+def _stem(path: Path) -> str:
+    return unicodedata.normalize("NFC", Path(path).stem)
+
+
+def _default_template() -> Path:
+    import yaml
+    scope = Path("config/scope.yaml")
+    if scope.exists():
+        data = yaml.safe_load(scope.read_text(encoding="utf-8")) or {}
+        for t in data.get("templates") or []:
+            if str(t).endswith(".pptx"):
+                return Path(t)
+    return Path("local/templates/24.상반기.pptx")
+
+
+def _print_plan(plan: dict) -> None:
+    by_src = {}
+    for op in plan["ops"]:
+        by_src.setdefault(op["src"], []).append(op)
+    print(f"{'src':>3} {'kind':<20} {'rule':<5} ops")
+    for row in plan["slides"]:
+        ops = by_src.get(row["src"], [])
+        desc = " ".join(("copy" if o["op"] == "copy" else f"T{o['template_slide']}") + (f"({o['fit']['chars']}자/{o['fit']['est_lines']}줄)" if o.get("fit") else "") for o in ops)
+        flags = sorted({f for o in ops for f in o.get("flags", [])})
+        print(f"{row['src']:>3} {row['kind']:<20} {row['rule']:<5} {desc or 'skip'}" + (f"  [{', '.join(flags)}]" if flags else ""))
+    print("stats:", plan["stats"])
+
+
+def cmd_plan(args) -> int:
+    import yaml
+    from .mapping.plan import PlanOptions, build_plan, save_plan
+    src = Path(args.source)
+    overrides = yaml.safe_load(Path(args.overrides).read_text(encoding="utf-8")) if args.overrides else None
+    opts = PlanOptions(slide_size=args.slide_size, scripture_both=not args.no_scripture_both, sermon_material=args.sermon_material)
+    plan = build_plan(src, Path(args.catalog), Path(args.widths), opts, overrides)
+    out = Path(args.out) if args.out else Path(args.work) / _stem(src) / "plan.json"
+    save_plan(plan, out)
+    _print_plan(plan)
+    print(out)
+    return 0
+
+
+def cmd_build(args) -> int:
+    from .builder.build import build_deck
+    from .mapping.plan import load_plan
+    plan = load_plan(Path(args.plan))
+    out = Path(args.out) if args.out else Path(args.plan).with_name("broadcast.pptx")
+    res = build_deck(plan, Path(args.template) if args.template else _default_template(), Path(args.catalog), out, force=args.force)
+    flagged = [r for r in res["ops"] if r["flags"]]
+    print(f"built {res['slides']} slides -> {res['out']} ({len(flagged)} with flags)")
+    if getattr(args, "validate", True):
+        from .validator.check import validate_deck
+        rep = validate_deck(out, plan, Path(args.catalog), Path(getattr(args, "widths", "config/widths.yaml")))
+        out.with_name("validation.json").write_text(json.dumps(rep, ensure_ascii=False, indent=1), encoding="utf-8")
+        _report_validation(rep)
+        return 0 if rep["ok"] else 1
+    return 0
+
+
+def _report_validation(rep: dict) -> None:
+    print(f"validation: critical {rep['counts']['critical']} · warning {rep['counts']['warning']} · info {rep['counts']['info']}")
+    for f in rep["findings"]:
+        if f["level"] != "info":
+            print(f"  {f['level']:<8} slide {f['out_slide']}: {f['check']} — {f['message']}")
+    reviews = Counter(f["message"] for f in rep["findings"] if f["level"] == "info")
+    if reviews:
+        print("  review flags:", dict(reviews))
+
+
+def cmd_validate(args) -> int:
+    from .mapping.plan import load_plan
+    from .validator.check import validate_deck
+    plan = load_plan(Path(args.plan))
+    rep = validate_deck(Path(args.deck), plan, Path(args.catalog), Path(args.widths))
+    out = Path(args.report) if args.report else Path(args.deck).with_name("validation.json")
+    out.write_text(json.dumps(rep, ensure_ascii=False, indent=1), encoding="utf-8")
+    _report_validation(rep)
+    if args.render:
+        print("  render: skipped (no renderer on this machine; Windows PowerPoint check is a later phase)")
+    return 0 if rep["ok"] else 1
+
+
+def cmd_run(args) -> int:
+    args.out = None
+    cmd_plan(args)
+    args.plan = str(Path(args.work) / _stem(Path(args.source)) / "plan.json")
+    return cmd_build(args)
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(prog="broadcast-ppt")
     sub = ap.add_subparsers(dest="cmd", required=True)
@@ -94,6 +184,41 @@ def main(argv: list[str] | None = None) -> int:
     s.add_argument("--out", default="local/analysis")
     s.add_argument("--scope", default="config/scope.yaml")
     s.set_defaults(func=cmd_summarize)
+    def plan_args(p):
+        p.add_argument("source")
+        p.add_argument("--work", default="local/work")
+        p.add_argument("--catalog", default="config/templates.yaml")
+        p.add_argument("--widths", default="config/widths.yaml")
+        p.add_argument("--slide-size", choices=["template", "source"], default="template")
+        p.add_argument("--no-scripture-both", action="store_true")
+        p.add_argument("--sermon-material", choices=["lower-third", "passthrough"], default="lower-third")
+        p.add_argument("--overrides")
+        p.add_argument("--out")
+    pl = sub.add_parser("plan", help="classify an original deck and write plan.json")
+    plan_args(pl)
+    pl.set_defaults(func=cmd_plan)
+    b = sub.add_parser("build", help="build the broadcast deck from plan.json")
+    b.add_argument("plan")
+    b.add_argument("--out")
+    b.add_argument("--template")
+    b.add_argument("--catalog", default="config/templates.yaml")
+    b.add_argument("--force", action="store_true")
+    b.add_argument("--widths", default="config/widths.yaml")
+    b.add_argument("--no-validate", dest="validate", action="store_false")
+    b.set_defaults(func=cmd_build)
+    v = sub.add_parser("validate", help="check a built deck against its plan")
+    v.add_argument("deck")
+    v.add_argument("--plan", required=True)
+    v.add_argument("--catalog", default="config/templates.yaml")
+    v.add_argument("--widths", default="config/widths.yaml")
+    v.add_argument("--report")
+    v.add_argument("--render", action="store_true")
+    v.set_defaults(func=cmd_validate)
+    r = sub.add_parser("run", help="plan + build")
+    plan_args(r)
+    r.add_argument("--template")
+    r.add_argument("--force", action="store_true")
+    r.set_defaults(func=cmd_run)
     args = ap.parse_args(argv)
     return args.func(args)
 

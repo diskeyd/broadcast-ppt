@@ -1,5 +1,6 @@
 version: 1
 line_height: 1.212
+width_scale: 1.12
 em:
   hangul: 0.9318
   latin_upper: 0.642
@@ -14,6 +15,7 @@ stats:
   width_error_median: 0.013
   width_error_p90: 0.0399
   wrapping_samples: 929
-  lines_exact: 0.7998
+  lines_exact: 0.9946
   lines_within_1: 1.0
+  zero_under_scale_max: 1.14
 sources: 71

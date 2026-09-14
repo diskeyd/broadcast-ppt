@@ -23,6 +23,9 @@ def test_scripture_ref_forms():
 def test_page_and_title():
     assert page_ref("구약성경 p.417") == {"testament": "old", "page": 417, "raw": "구약성경 p.417"}
     assert page_ref("p 1050")["page"] == 1050
+    assert page_ref("-  구 455쪽  -") == {"testament": "old", "page": 455, "raw": "구 455쪽"}
+    assert page_ref("- 신 172쪽 -")["testament"] == "new"
+    assert page_ref("사무엘상26:21-25") is None
     assert quoted_title("설 교 “갚으시리니” 삼상26") == "갚으시리니"
     assert english_line("기 도\nPrayer of worship\n") == "Prayer of worship"
     assert korean_title_line("기 도\nPrayer") == "기도"
