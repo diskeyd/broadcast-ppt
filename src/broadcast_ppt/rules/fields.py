@@ -16,6 +16,7 @@ _REF_RE = re.compile(
     r"(?P<ch>\d{1,3})\s*(?:[:：]|장\s*)\s*"
     r"(?P<v1>\d{1,3})\s*절?"
     r"(?:\s*(?:[-~–—]|부터)\s*(?:(?P<ch2>\d{1,3})\s*(?:[:：]|장\s*))?\s*(?P<v2>\d{1,3})\s*절?)?"
+    r"(?P<more>(?:\s*,\s*\d{1,3}(?:\s*[-~–—]\s*\d{1,3})?)*)"
 )
 _PAGE_RE = re.compile(
     r"(?:(?P<test>구약|신약|구|신)\s*(?:성경)?\s*)?"
@@ -44,6 +45,10 @@ class ScriptureRef:
     verse_start: int
     verse_end: int
     raw: str
+    extra: tuple = ()   # further verse ranges after commas: "롬3:23-24,27-28" -> ((27, 28),)
+
+    def contains(self, verse: int) -> bool:
+        return self.verse_start <= verse <= self.verse_end or any(a <= verse <= b for a, b in self.extra)
 
     @property
     def short(self) -> str:
@@ -66,7 +71,11 @@ def scripture_ref(text: str) -> ScriptureRef | None:
         full, test, _ = BOOKS[book]
         v1 = int(m.group("v1"))
         v2 = int(m.group("v2")) if m.group("v2") else v1
-        return ScriptureRef(full, ABBREV[full], test, int(m.group("ch")), v1, max(v1, v2), m.group(0).strip())
+        extra = []
+        for part in re.findall(r"\d{1,3}(?:\s*[-~–—]\s*\d{1,3})?", m.group("more") or ""):
+            nums = [int(n) for n in re.findall(r"\d{1,3}", part)]
+            extra.append((nums[0], nums[-1]))
+        return ScriptureRef(full, ABBREV[full], test, int(m.group("ch")), v1, max(v1, v2), m.group(0).strip(), tuple(extra))
     return None
 
 
