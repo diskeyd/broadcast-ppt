@@ -469,6 +469,10 @@ slides:
         slot_map:
         - null
         - quote
+        fit_one_line:
+          font_scale: 0.74
+          margin: 0.96
+          min_pt: 36
       2263:
         id: 2263
         name: TextBox 10
@@ -1056,6 +1060,7 @@ slides:
         single_segment: false
         slot_map:
         - body
+        nudge_y: 38100
         backing:
         - id: 3
           order: 1
@@ -1373,36 +1378,29 @@ slides:
         paragraphs:
         - align: ctr
           segments:
-          - sz: 18.67
-            color: null
-            font: 나눔스퀘어라운드 ExtraBold
-            bold: false
-            sample_len: 0
-            sample_sha1: b858cb282617fb0956d960215c8e84d1ccf909c6
           - sz: 17.0
             color: null
             font: 나눔스퀘어라운드 ExtraBold
             bold: false
             sample_len: 8
-            sample_sha1: c453a20ea80d8e64b89496f2c11de38f4888e717
+            sample_sha1: abf4f857e73ef3f3e3bb44ca10577fa71ad635fd
         order: 2
         mode: fill
         single_segment: false
         slot_map:
         - ref
-        - null
       3:
         id: 3
         name: TextBox 12
         bbox:
         - 622863
         - 5653410
-        - 11439437
+        - 10946276
         - 984883
         bbox_frac:
         - 0.0511
         - 0.8244
-        - 0.9383
+        - 0.8978
         - 0.1436
         in_group: false
         bodyPr:
@@ -1462,6 +1460,13 @@ slides:
         single_segment: true
         slot_map:
         - body
+        set_cx: 10946276
+    shrink:
+      group: 1
+      bar: 3
+      tag: 2
+      body: 4
+      line_emu: 430987
     line_capacity: 2
     color_set: null
   62:
@@ -1569,6 +1574,12 @@ slides:
         single_segment: true
         slot_map:
         - body
+    shrink:
+      group: 1
+      bar: 2
+      tag: 3
+      body: 4
+      line_emu: 400202
     line_capacity: 3
     color_set: null
   67:
@@ -1628,5 +1639,6 @@ slides:
         single_segment: true
         slot_map:
         - body
+        nudge_y: 38100
     line_capacity: 3
     color_set: null

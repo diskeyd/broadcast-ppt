@@ -92,8 +92,13 @@ def validate_deck(deck: Path, plan: dict, catalog_path: Path, widths_path: Path 
                 if mode == "fill" and slot not in fill:
                     findings.append(Finding("critical", "empty_fill", n, f"slot '{slot}' not filled; template sample text remains"))
             else:
+                if mode == "fill" and len(segs) > len(slot_map):
+                    findings.append(Finding("critical", "extra_template_text", n,
+                                            f"{len(segs)} text segments for {len(slot_map)} slots; template text may remain"))
                 for seg, cseg, slot in zip(segs, _catalog_segments(spec), slot_map):
                     if slot is None:
+                        if mode == "fill" and cseg["sample_len"] and segment_sha1(seg["text"]) == cseg["sample_sha1"]:
+                            findings.append(Finding("critical", "leftover_sample_text", n, "an unmapped segment still holds template text"))
                         continue
                     if segment_sha1(seg["text"]) == cseg["sample_sha1"] and (mode == "fill" or slot in fill):
                         value = fill.get(slot)

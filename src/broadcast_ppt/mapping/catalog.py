@@ -46,12 +46,20 @@ def segments_of_paragraph(p) -> list[dict]:
     for r in p.findall("a:r", NS):
         t = r.findtext("a:t", default="", namespaces=NS)
         key = _run_key(r)
-        # whitespace-only runs never start a segment: they belong to the segment before them
-        if segs and (segs[-1]["_key"] == key or not t.strip()):
-            segs[-1]["_text"] += t
-            segs[-1]["_runs"] += 1
+        blank = not t.strip()
+        last = segs[-1] if segs else None
+        # whitespace-only runs never start a segment: they join the segment before them, or at the start
+        # of a paragraph the first real text after them (must match builder.fill.paragraph_segments)
+        if last is not None and last["_lead"]:
+            last["_text"] += t
+            last["_runs"] += 1
+            if not blank:
+                last["_key"], last["_lead"] = key, False
+        elif last is not None and (blank or last["_key"] == key):
+            last["_text"] += t
+            last["_runs"] += 1
         else:
-            segs.append({"_key": key, "_text": t, "_runs": 1})
+            segs.append({"_key": key, "_text": t, "_runs": 1, "_lead": blank})
     return segs
 
 
@@ -149,6 +157,22 @@ def build_catalog(template: Path, roles_path: Path) -> dict:
             for seg in flat:
                 if seg["color"] in COLOR_SETS:
                     colors.add(COLOR_SETS[seg["color"]])
+            clamp = sspec.get("clamp_to")
+            if clamp is not None:
+                # keep the text box inside its bar with the same margin on both sides
+                bar = shapes.get(int(clamp))
+                if bar is None:
+                    raise ValueError(f"template slide {idx}: clamp shape {clamp} not found")
+                margin = desc["bbox"][0] - int(bar.left)
+                limit = int(bar.left) + int(bar.width) - margin
+                if desc["bbox"][0] + desc["bbox"][2] > limit:
+                    desc["bbox"][2] = limit - desc["bbox"][0]
+                    desc["bbox_frac"][2] = round(desc["bbox"][2] / W, 4)
+                    desc["set_cx"] = desc["bbox"][2]
+            if sspec.get("nudge_y_pt"):
+                desc["nudge_y"] = int(float(sspec["nudge_y_pt"]) * EMU_PER_PT)
+            if sspec.get("fit_one_line"):
+                desc["fit_one_line"] = dict(sspec["fit_one_line"])
             backing = (spec.get("backing") or {}).get(sid) or (spec.get("backing") or {}).get(int(sid))
             if backing:
                 desc["backing"] = []
@@ -159,6 +183,11 @@ def build_catalog(template: Path, roles_path: Path) -> dict:
                     bd = describe_shape(b, W, H)
                     desc["backing"].append({"id": bd["id"], "order": order.index(int(bid)), "bbox": bd["bbox"], "in_group": bd["in_group"]})
             entry["shapes"][int(sid)] = desc
+        if spec.get("shrink"):
+            sh = spec["shrink"]
+            body = entry["shapes"][int(sh["body"])]
+            entry["shrink"] = {k: order.index(int(sh[k])) for k in ("group", "bar", "tag", "body")}
+            entry["shrink"]["line_emu"] = body["line_emu"]
         caps = [s.get("max_lines") for s in entry["shapes"].values() if s.get("slot_map") and "body" in s["slot_map"]]
         entry["line_capacity"] = max([c for c in caps if c] or [1])
         entry["color_set"] = sorted(colors)[0] if colors else None

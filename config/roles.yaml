@@ -5,6 +5,9 @@
 #   optional  filled when a value exists, otherwise the template text stays (e.g. English subtitles)
 #   fixed     never written
 # `backing` lists shapes drawn behind a growable text box. Sample text is never stored.
+# Geometry: `clamp_to` keeps a body box inside that bar (same margin both sides); `nudge_y_pt` moves the
+# box down; `shrink` (slide level) lets bar, tag and body lose unused lines from the top;
+# `fit_one_line` lowers the font size so the value stays on one line.
 version: 1
 slides:
   3:  {role: card_call_to_worship, family: card.call_to_worship,
@@ -16,7 +19,9 @@ slides:
   7:  {role: card_sermon, family: card.sermon,
        shapes: {3: {slots: [label, title]}, 4: {slots: [subtitle_en], mode: optional}, 6: {slots: [ref]}}}
   8:  {role: meditation, family: meditation,
-       shapes: {2262: {slots: [null, quote]}, 2263: {mode: fixed}, 2264: {mode: fixed}}}
+       # font_scale: 나눔손글씨 붓 is narrower than the fitted gothic widths (measured 0.59–0.72 on 18 quotes)
+       shapes: {2262: {slots: [null, quote], fit_one_line: {font_scale: 0.74, margin: 0.96, min_pt: 36}},
+                2263: {mode: fixed}, 2264: {mode: fixed}}}
   17: {role: card_generic, family: card.generic,
        shapes: {3: {slots: [label]}, 4: {slots: [subtitle_en], mode: optional}}}
   20: {role: card_announcement, family: card.announcement,
@@ -28,16 +33,18 @@ slides:
   31: {role: card_offertory, family: card.offertory,
        shapes: {4: {slots: [label], mode: optional}, 3: {slots: [subtitle_en], mode: optional}}}
   55: {role: caption_1, family: caption,
-       shapes: {4: {slots: [body]}}, backing: {4: [3]}}
+       shapes: {4: {slots: [body], nudge_y_pt: 3}}, backing: {4: [3]}}
   67: {role: caption_3, family: caption,
-       shapes: {5: {slots: [body], single_segment: true}}}
+       shapes: {5: {slots: [body], single_segment: true, nudge_y_pt: 3}}}
   58: {role: scripture_2, family: scripture,
        shapes: {4: {slots: [body], single_segment: true}}, backing: {4: [2]}}
   59: {role: scripture_3, family: scripture,
        shapes: {3: {slots: [body], single_segment: true}}, backing: {3: [2]}}
   60: {role: scripture_ref_1, family: scripture_ref,
-       shapes: {11: {slots: [ref]}, 12: {slots: [body], single_segment: true}}}
+       shapes: {11: {slots: [ref]}, 12: {slots: [body], single_segment: true, clamp_to: 2}}}
   61: {role: scripture_ref_2, family: scripture_ref,
-       shapes: {7: {slots: [ref]}, 3: {slots: [body], single_segment: true}}}
+       shapes: {7: {slots: [ref]}, 3: {slots: [body], single_segment: true, clamp_to: 2}},
+       shrink: {group: 4, bar: 2, tag: 7, body: 3}}
   62: {role: scripture_ref_3, family: scripture_ref,
-       shapes: {13: {slots: [ref]}, 4: {slots: [body], single_segment: true}}}
+       shapes: {13: {slots: [ref]}, 4: {slots: [body], single_segment: true, clamp_to: 2}},
+       shrink: {group: 3, bar: 2, tag: 13, body: 4}}

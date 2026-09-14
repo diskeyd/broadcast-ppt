@@ -38,15 +38,24 @@ def _run_key(r) -> tuple:
 
 
 def paragraph_segments(p) -> list[list]:
+    """Whitespace-only runs never start a segment: they join the segment before them, or — at the start
+    of a paragraph — the first real text after them (a padding space in another size is not a slot)."""
     segs: list[dict] = []
     for r in p.findall("a:r", NS):
         t = r.findtext("a:t", default="", namespaces=NS)
         key = _run_key(r)
-        if segs and (segs[-1]["key"] == key or not t.strip()):
-            segs[-1]["runs"].append(r)
-            segs[-1]["text"] += t
+        blank = not t.strip()
+        last = segs[-1] if segs else None
+        if last is not None and last["lead"]:
+            last["runs"].append(r)
+            last["text"] += t
+            if not blank:
+                last["key"], last["lead"] = key, False
+        elif last is not None and (blank or last["key"] == key):
+            last["runs"].append(r)
+            last["text"] += t
         else:
-            segs.append({"key": key, "runs": [r], "text": t})
+            segs.append({"key": key, "runs": [r], "text": t, "lead": blank})
     return segs
 
 
@@ -130,10 +139,12 @@ def fill_shape(sp_el, spec: dict, values: dict[str, str]) -> FillResult:
             if mode == "fill":
                 result.missing.append(slot)
             continue
-        first, rest = seg["runs"][0], seg["runs"][1:]
-        _set_run_text(first, value.replace("\n", " "))
-        for r in rest:
-            r.getparent().remove(r)
+        # write into the first run that carries text (its rPr is the segment's formatting)
+        target = next((r for r in seg["runs"] if r.findtext("a:t", "", NS).strip()), seg["runs"][0])
+        _set_run_text(target, value.replace("\n", " "))
+        for r in seg["runs"]:
+            if r is not target:
+                r.getparent().remove(r)
         result.filled[slot] = value
     return result
 

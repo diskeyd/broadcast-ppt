@@ -28,6 +28,30 @@ def test_fill_two_segments_keeps_first_run_formatting():
     assert res.filled == {"label": "기도 ", "person": "– 새이름 집사"} and not res.flags
 
 
+def test_leading_space_run_joins_the_next_segment():
+    pad = '<a:rPr sz="1867"><a:latin typeface="R"/></a:rPr>'
+    tag = '<a:rPr sz="1700"><a:latin typeface="R"/></a:rPr>'
+    sp = _sp(f'<a:p><a:r>{pad}<a:t> </a:t></a:r><a:r>{tag}<a:t>샘플 </a:t></a:r><a:r>{tag}<a:t>18:21</a:t></a:r></a:p>')
+    assert len(flat_segments(sp.find(f".//{{{P}}}txBody"))) == 1
+    fill_shape(sp, {"slot_map": ["ref"]}, {"ref": "사무엘상26:24"})
+    runs = sp.findall(f".//{{{A}}}r")
+    assert [r.findtext(f"{{{A}}}t") for r in runs] == ["사무엘상26:24"]
+    assert runs[0].find(f"{{{A}}}rPr").get("sz") == "1700"
+
+
+def test_group_shift_keeps_child_frame_and_width_keeps_center():
+    from broadcast_ppt.builder.geometry import set_width, shift
+    grp = etree.fromstring(
+        f'<p:grpSp xmlns:p="{P}" xmlns:a="{A}"><p:grpSpPr><a:xfrm><a:off x="10" y="100"/><a:ext cx="50" cy="40"/>'
+        f'<a:chOff x="10" y="100"/><a:chExt cx="50" cy="40"/></a:xfrm></p:grpSpPr></p:grpSp>')
+    shift(grp, dy=5, dcy=-5)
+    xf = grp.find(f"{{{P}}}grpSpPr/{{{A}}}xfrm")
+    assert [xf.find(f"{{{A}}}{t}").get(k) for t, k in (("off", "y"), ("ext", "cy"), ("chOff", "y"), ("chExt", "cy"))] == ["105", "35", "105", "35"]
+    sp = etree.fromstring(f'<p:sp xmlns:p="{P}" xmlns:a="{A}"><p:spPr><a:xfrm><a:off x="100" y="0"/><a:ext cx="200" cy="10"/></a:xfrm></p:spPr></p:sp>')
+    set_width(sp, 300, keep_center=True)
+    assert sp.find(f".//{{{A}}}off").get("x") == "50" and sp.find(f".//{{{A}}}ext").get("cx") == "300"
+
+
 def test_optional_slot_keeps_template_text_and_fill_reports_missing():
     sp = _sp(f'<a:p><a:r>{WHITE}<a:t>Prayer of worship</a:t></a:r></a:p>')
     res = fill_shape(sp, {"slot_map": ["subtitle_en"], "mode": "optional"}, {})

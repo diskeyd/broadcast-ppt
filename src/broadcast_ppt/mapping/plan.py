@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import math
 import re
 from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
@@ -95,6 +96,9 @@ class Mapper:
             op = self.card(src, tpl, {"ref": tag if tag is not None else "", "body": chunk}, "scripture caption")
             op["chunk"] = {"i": i, "n": len(chunks)}
             op["fit"] = {"chars": len(chunk), "est_lines": self.lines(tpl, chunk), "max_lines": self._body_spec(tpl)["max_lines"]}
+            spare = op["fit"]["max_lines"] - op["fit"]["est_lines"]
+            if spare > 0 and self.cat["slides"][tpl].get("shrink"):
+                op["shrink_lines"] = spare  # no empty lines at the bottom of the bar
             if tag is None:
                 op.setdefault("flags", []).append("review:no_reference_tag")
             ops.append(op)
@@ -109,6 +113,26 @@ class Mapper:
             op["fit"] = {"chars": len(chunk), "est_lines": self.lines(tpl, chunk), "max_lines": self._body_spec(tpl)["max_lines"]}
             ops.append(op)
         return ops
+
+    def meditation(self, src: int, text: str) -> dict:
+        """The quote stays on one line: when it is wider than the box, its font size goes down."""
+        tpl = TEMPLATE["meditation"]
+        op = self.card(src, tpl, {"quote": text}, "meditation")
+        spec = self._body_spec(tpl, "quote")
+        fit = spec.get("fit_one_line")
+        base = self._sz(spec, "quote")
+        size = base
+        if fit:
+            bp = spec["bodyPr"]
+            inner = (spec["bbox"][2] - bp["lIns"] - bp["rIns"]) * float(fit.get("margin", 0.96))
+            width = self.model.width_emu(text, base) * float(fit.get("font_scale", 1.0))
+            if width > inner:
+                size = max(float(fit.get("min_pt", 36)), math.floor(base * inner / width * 2) / 2)
+                op["font_size"] = {"quote": size}
+                if size == float(fit.get("min_pt", 36)):
+                    op["flags"] = ["review:quote_too_long"]
+        op["fit"] = {"chars": len(text), "sz": size, "base_sz": base}
+        return op
 
     def announcements(self, src: int, items: list[dict]) -> list[dict]:
         ops = []
@@ -159,7 +183,7 @@ class Mapper:
             return [self.card(src, TEMPLATE["sermon"], {"label": "설교 ", "title": title, "ref": ref.long if ref else None}, "sermon card")]
         if d.kind == K.MEDITATION:
             quote = f["quote"].strip().strip("“”\"")
-            return [self.card(src, TEMPLATE["meditation"], {"quote": f"“{quote}”"}, "meditation")]
+            return [self.meditation(src, f"“{quote}”")]
         if d.kind == K.ANNOUNCEMENT_TITLE:
             return [self.card(src, TEMPLATE["announcement_title"], {}, "announcement card")]
         if d.kind == K.ANNOUNCEMENT_BLOCK:
