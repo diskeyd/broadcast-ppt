@@ -16,10 +16,35 @@ from pathlib import Path
 UNEDITED_MARK = "미편집"
 
 
-def load_all(out_dir: Path) -> list[dict]:
+def load_scope(path: Path | None) -> dict | None:
+    if not path or not Path(path).exists():
+        return None
+    import yaml
+    return yaml.safe_load(Path(path).read_text(encoding="utf-8")) or {}
+
+
+def in_scope(doc: dict, scope: dict | None) -> bool:
+    if scope is None:
+        return True
+    name = re.sub(r"\s", "", doc.get("name", ""))
+    exc = scope.get("exclude") or {}
+    if doc.get("folder", "") in (exc.get("folders") or []):
+        return False
+    if doc.get("family") in (exc.get("families") or []):
+        return False
+    if any(name.startswith(x) for x in exc.get("name_startswith") or []):
+        return False
+    if doc.get("family") in (scope.get("families") or []):
+        return True
+    return any(x in name for x in scope.get("name_contains") or [])
+
+
+def load_all(out_dir: Path, scope: dict | None = None) -> list[dict]:
     docs = []
     for p in sorted((out_dir / "files").glob("*.json")):
-        docs.append(json.loads(p.read_text(encoding="utf-8")))
+        doc = json.loads(p.read_text(encoding="utf-8"))
+        if in_scope(doc, scope):
+            docs.append(doc)
     return docs
 
 
@@ -247,6 +272,6 @@ def _key_of(label: str) -> str:
     return (classify_rgb(m.group(1)) or "") if m else ""
 
 
-def summarize(out_dir: Path) -> tuple[Path, Path]:
-    docs = load_all(out_dir)
+def summarize(out_dir: Path, scope_path: Path | None = None) -> tuple[Path, Path]:
+    docs = load_all(out_dir, load_scope(scope_path))
     return write_csv(docs, out_dir), write_markdown(docs, out_dir)

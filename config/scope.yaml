@@ -1,0 +1,23 @@
+# Which decks the project converts. Decided in the 2026-09-14 interview.
+# A deck is in scope when its family matches `families` or its name matches `name_contains`,
+# and nothing in `exclude` matches. Names are compared with whitespace removed (NFC).
+families:
+  - 주일오전예배
+  - 주일오후예배
+  - 성탄감사예배
+  - 성탄예배
+  - 송구영신예배
+  - 송구예배
+  - 담임목사위임식및이전감사예배
+  - 부활주일
+  - 주일오후기도회
+name_contains:
+  - 부활주일
+  - 주일오후기도회
+exclude:
+  folders:
+    - 새 폴더
+  families:
+    - 합본
+  name_startswith:
+    - 24.상반기

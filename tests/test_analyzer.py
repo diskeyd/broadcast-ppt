@@ -85,7 +85,7 @@ def test_cli_and_summary(tmp_path):
     build_deck(src / "미편집" / "주일오전예배ppt(240101).pptx")
     (src / "broken.pptx").write_bytes(b"not a zip")
     out = tmp_path / "out"
-    assert main(["analyze", str(src), "--out", str(out), "--workers", "1"]) == 0
+    assert main(["analyze", str(src), "--out", str(out), "--workers", "1", "--scope", ""]) == 0
     md = (out / "clusters.md").read_text(encoding="utf-8")
     assert "paired: 1" in md
     assert "broken.pptx" in md
@@ -111,3 +111,16 @@ def test_deck_with_corrupt_media_is_still_analyzed(tmp_path):
     assert "error" not in doc, doc.get("error")
     assert doc["damaged_parts"] == ["ppt/media/broken.jpeg"]
     assert doc["slide_count"] == 3
+
+
+def test_scope_filter():
+    from broadcast_ppt.analyzer.summary import in_scope
+    scope = {"families": ["주일오전예배"], "name_contains": ["부활주일"],
+             "exclude": {"folders": ["새 폴더"], "families": ["합본"], "name_startswith": ["24.상반기"]}}
+    assert in_scope({"name": "주일오전예배ppt(240101).pptx", "family": "주일오전예배", "folder": ""}, scope)
+    assert in_scope({"name": "부활주일 ppt(220417).pptx", "family": "기타", "folder": ""}, scope)
+    assert not in_scope({"name": "합본 20260517.pptx", "family": "합본", "folder": "미편집"}, scope)
+    assert not in_scope({"name": "21.상반기.pptx", "family": "기타", "folder": "새 폴더"}, scope)
+    assert not in_scope({"name": "24.상반기.pptx", "family": "기타", "folder": ""}, scope)
+    assert not in_scope({"name": "수요오후예배ppt(230125).pptx", "family": "수요오후예배", "folder": ""}, scope)
+    assert in_scope({"name": "x.pptx", "family": "기타", "folder": ""}, None)

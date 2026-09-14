@@ -69,13 +69,13 @@ def cmd_analyze(args) -> int:
             if err:
                 failed += 1
             print(f"[{i}/{len(todo)}] {'FAIL' if err else 'ok  '} {n:>3} slides  {rel}" + (f"  ({err[:80]})" if err else ""))
-    csv_path, md_path = summarize(out)
+    csv_path, md_path = summarize(out, args.scope)
     print(f"done in {time.time() - t0:.0f}s, failed {failed}\n{csv_path}\n{md_path}")
     return 0
 
 
 def cmd_summarize(args) -> int:
-    for p in summarize(Path(args.out).expanduser().resolve()):
+    for p in summarize(Path(args.out).expanduser().resolve(), args.scope):
         print(p)
     return 0
 
@@ -88,9 +88,11 @@ def main(argv: list[str] | None = None) -> int:
     a.add_argument("--out", default="local/analysis")
     a.add_argument("--workers", type=int, default=max((os.cpu_count() or 2) - 2, 1))
     a.add_argument("--force", action="store_true", help="re-analyze files whose JSON is up to date")
+    a.add_argument("--scope", default="config/scope.yaml", help="scope file for the summary (missing file = all decks)")
     a.set_defaults(func=cmd_analyze)
     s = sub.add_parser("summarize", help="rebuild summary.csv and clusters.md from existing JSON")
     s.add_argument("--out", default="local/analysis")
+    s.add_argument("--scope", default="config/scope.yaml")
     s.set_defaults(func=cmd_summarize)
     args = ap.parse_args(argv)
     return args.func(args)
