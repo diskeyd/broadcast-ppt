@@ -14,6 +14,10 @@ families:
 name_contains:
   - 부활주일
   - 주일오후기도회
+# Broadcast template example decks (not conversion inputs). Canonical copy still to be confirmed:
+# root 24.상반기.pptx (91 slides) vs 새 폴더/24.상반기.pptx (66 slides).
+templates:
+  - 24.상반기
 exclude:
   folders:
     - 새 폴더
