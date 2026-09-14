@@ -430,6 +430,33 @@ def zip_facts(path: Path) -> dict:
     return facts
 
 
+def _open_skipping_bad_members(path: Path):
+    """Re-pack a deck whose zip has unreadable members (e.g. one corrupt image).
+
+    Broken media parts are replaced by empty bytes so the rest of the deck can be
+    inventoried. Returns (Presentation, [damaged part names]) or None.
+    """
+    bad: list[str] = []
+    buf = io.BytesIO()
+    try:
+        with zipfile.ZipFile(path) as src, zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as dst:
+            for item in src.infolist():
+                try:
+                    data = src.read(item.filename)
+                except Exception:
+                    if not item.filename.startswith("ppt/media/"):
+                        return None
+                    bad.append(item.filename)
+                    data = b""
+                dst.writestr(item, data)
+        if not bad:
+            return None
+        buf.seek(0)
+        return Presentation(buf), bad
+    except Exception:
+        return None
+
+
 def analyze_file(path: Path, root: Path | None = None) -> dict:
     path = Path(path)
     rel = path.relative_to(root) if root else Path(path.name)
@@ -453,8 +480,12 @@ def analyze_file(path: Path, root: Path | None = None) -> dict:
     try:
         prs = Presentation(str(path))
     except Exception as exc:
-        info["error"] = f"open: {type(exc).__name__}: {exc}"
-        return info
+        repaired = _open_skipping_bad_members(path)
+        if repaired is None:
+            info["error"] = f"open: {type(exc).__name__}: {exc}"
+            return info
+        prs, bad = repaired
+        info["damaged_parts"] = bad
 
     ctx = Context(prs)
     info["slide_size_emu"] = [ctx.slide_w, ctx.slide_h]

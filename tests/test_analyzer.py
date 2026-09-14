@@ -92,3 +92,22 @@ def test_cli_and_summary(tmp_path):
     assert "시편" not in md  # no slide text leaks into the shareable report
     rows = (out / "summary.csv").read_text(encoding="utf-8-sig").splitlines()
     assert len(rows) == 4
+
+
+def test_deck_with_corrupt_media_is_still_analyzed(tmp_path):
+    import zipfile
+    good = build_deck(tmp_path / "good.pptx")
+    bad = tmp_path / "bad.pptx"
+    with zipfile.ZipFile(good) as src, zipfile.ZipFile(bad, "w", zipfile.ZIP_DEFLATED) as dst:
+        for item in src.infolist():
+            dst.writestr(item, src.read(item.filename))
+        dst.writestr("ppt/media/broken.jpeg", b"x" * 4096)
+    raw = bytearray(bad.read_bytes())
+    info = next(i for i in zipfile.ZipFile(bad).infolist() if i.filename == "ppt/media/broken.jpeg")
+    start = info.header_offset + 30 + len(info.filename.encode()) + len(info.extra)
+    raw[start:start + 8] = b"\xff" * 8  # corrupt the deflate stream of that member only
+    bad.write_bytes(bytes(raw))
+    doc = analyze_file(bad, tmp_path)
+    assert "error" not in doc, doc.get("error")
+    assert doc["damaged_parts"] == ["ppt/media/broken.jpeg"]
+    assert doc["slide_count"] == 3

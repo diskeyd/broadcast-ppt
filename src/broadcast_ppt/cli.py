@@ -49,7 +49,7 @@ def cmd_analyze(args) -> int:
         if target.exists() and not args.force:
             try:
                 old = json.loads(target.read_text(encoding="utf-8"))
-                if old.get("bytes") == p.stat().st_size and old.get("mtime") == int(p.stat().st_mtime):
+                if "error" not in old and old.get("bytes") == p.stat().st_size and old.get("mtime") == int(p.stat().st_mtime):
                     continue
             except Exception:
                 pass
