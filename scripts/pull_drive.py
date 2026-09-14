@@ -90,7 +90,8 @@ def main() -> int:
     ap.add_argument("folder_id")
     ap.add_argument("--dest", default="local/input")
     ap.add_argument("--list-only", action="store_true")
-    ap.add_argument("--workers", type=int, default=3)
+    ap.add_argument("--workers", type=int, default=8)
+    ap.add_argument("--first", action="append", default=[], help="download paths containing this text first (repeatable)")
     args = ap.parse_args()
     dest = Path(args.dest).expanduser().resolve()
     dest.mkdir(parents=True, exist_ok=True)
@@ -111,9 +112,15 @@ def main() -> int:
     for i in wanted:
         local = dest / i["rel"]
         known = manifest.get(i["id"])
-        if local.exists() and known and known.get("md5") == i.get("md5Checksum") and local.stat().st_size == int(i.get("size", -1)):
-            continue
+        if local.exists() and local.stat().st_size == int(i.get("size", -1)):
+            if known and known.get("md5") == i.get("md5Checksum"):
+                continue
+            if i.get("md5Checksum") and md5_file(local) == i["md5Checksum"]:
+                manifest[i["id"]] = {"rel": i["rel"], "md5": i["md5Checksum"], "size": i.get("size"), "modified": i.get("modifiedTime")}
+                continue
         todo.append(i)
+    # priority folders first (e.g. 미편집), then small files first so analysis can start early
+    todo.sort(key=lambda i: (not any(k in i["rel"] for k in args.first), int(i.get("size", 0))))
     print(f"to download: {len(todo)} ({sum(int(i.get('size', 0)) for i in todo) / 1e9:.2f} GB)")
 
     errors = 0
@@ -124,10 +131,10 @@ def main() -> int:
             try:
                 f.result()
                 manifest[i["id"]] = {"rel": i["rel"], "md5": i.get("md5Checksum"), "size": i.get("size"), "modified": i.get("modifiedTime")}
-                print(f"[{n}/{len(todo)}] ok   {i['rel']}")
+                print(f"[{n}/{len(todo)}] ok   {i['rel']}", flush=True)
             except Exception as exc:
                 errors += 1
-                print(f"[{n}/{len(todo)}] FAIL {i['rel']}: {exc}", file=sys.stderr)
+                print(f"[{n}/{len(todo)}] FAIL {i['rel']}: {exc}", file=sys.stderr, flush=True)
             if n % 10 == 0:
                 manifest_path.write_text(json.dumps(manifest, ensure_ascii=False, indent=1), encoding="utf-8")
     manifest_path.write_text(json.dumps(manifest, ensure_ascii=False, indent=1), encoding="utf-8")
