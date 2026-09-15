@@ -53,7 +53,8 @@ def ask(payload: dict) -> dict:
     """The one network call; tests replace it."""
     from google import genai  # key read from GEMINI_API_KEY
     lines = "\n".join(f"{i}: {t}" for i, t in enumerate(payload["lines"], 1))
-    r = genai.Client().models.generate_content(
+    client = genai.Client()  # keep a reference: a temporary Client closes its connection before the request
+    r = client.models.generate_content(
         model=MODEL, contents=PROMPT.format(kinds=payload["kinds"], boxes=payload["boxes"], picture=payload["picture"], lines=lines),
         config={"response_mime_type": "application/json", "response_json_schema": SCHEMA})
     return r.parsed if isinstance(r.parsed, dict) else json.loads(r.text or "")
