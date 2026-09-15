@@ -195,6 +195,9 @@ def build_catalog(template: Path, roles_path: Path) -> dict:
                 rows.append({"order": order.index(int(sid)), "paragraph": int(para) if para else None,
                              "glyph": [float(glyph[0]), float(glyph[1])]})
             entry["stack"] = {"rows": rows, "gap_pt": float(spec["stack"].get("gap_pt", roles.get("card_gap_pt", 4)))}
+            bottom = spec["stack"].get("max_bottom_pt", roles.get("card_max_bottom_pt"))
+            if bottom is not None:
+                entry["stack"]["max_bottom_pt"] = float(bottom)
         if spec.get("shrink"):
             sh = spec["shrink"]
             body = entry["shapes"][int(sh["body"])]

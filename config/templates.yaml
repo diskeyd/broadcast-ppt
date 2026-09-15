@@ -97,14 +97,15 @@ slides:
       - order: 1
         paragraph: null
         glyph:
-        - 8.0
-        - 60.7
+        - 9.6
+        - 64.6
       - order: 2
         paragraph: null
         glyph:
-        - 10.8
-        - 39.5
-      gap_pt: 3.0
+        - 20.7
+        - 59.7
+      gap_pt: 0.5
+      max_bottom_pt: 527.0
     line_capacity: 1
     color_set: a
   4:
@@ -203,14 +204,15 @@ slides:
       - order: 1
         paragraph: null
         glyph:
-        - 8.2
-        - 60.8
+        - 9.5
+        - 64.5
       - order: 2
         paragraph: null
         glyph:
-        - 11.2
-        - 47.7
-      gap_pt: 3.0
+        - 19.9
+        - 70.9
+      gap_pt: 0.5
+      max_bottom_pt: 527.0
     line_capacity: 1
     color_set: a
   6:
@@ -311,19 +313,20 @@ slides:
       - order: 1
         paragraph: null
         glyph:
-        - 8.7
-        - 61.4
+        - 10.0
+        - 65.0
       - order: 2
         paragraph: 0
         glyph:
-        - 5.8
-        - 40.9
+        - 6.4
+        - 45.4
       - order: 2
         paragraph: 1
         glyph:
-        - 4.8
-        - 34.1
-      gap_pt: 3.0
+        - 7.3
+        - 40.3
+      gap_pt: 0.5
+      max_bottom_pt: 527.0
     line_capacity: 1
     color_set: a
   7:
@@ -461,19 +464,20 @@ slides:
       - order: 1
         paragraph: null
         glyph:
-        - 8.5
-        - 61.2
+        - 9.9
+        - 64.9
       - order: 3
         paragraph: null
         glyph:
-        - 2.5
-        - 34.2
+        - 6.2
+        - 40.2
       - order: 2
         paragraph: null
         glyph:
-        - 5.7
-        - 29.0
-      gap_pt: 3.0
+        - 15.7
+        - 47.7
+      gap_pt: 0.5
+      max_bottom_pt: 527.0
     line_capacity: 1
     color_set: a
   8:
@@ -719,14 +723,15 @@ slides:
       - order: 1
         paragraph: null
         glyph:
-        - 8.1
-        - 60.8
+        - 9.1
+        - 65.1
       - order: 2
         paragraph: null
         glyph:
-        - 9.6
-        - 42.5
-      gap_pt: 3.0
+        - 18.9
+        - 63.9
+      gap_pt: 0.5
+      max_bottom_pt: 527.0
     line_capacity: 1
     color_set: a
   20:
@@ -818,14 +823,15 @@ slides:
       - order: 1
         paragraph: null
         glyph:
-        - 8.1
-        - 60.8
+        - 9.5
+        - 64.5
       - order: 2
         paragraph: null
         glyph:
-        - 13.2
-        - 35.3
-      gap_pt: 3.0
+        - 19.9
+        - 53.9
+      gap_pt: 0.5
+      max_bottom_pt: 527.0
     line_capacity: 1
     color_set: a
   21:
@@ -1107,14 +1113,15 @@ slides:
       - order: 1
         paragraph: null
         glyph:
-        - 7.4
-        - 61.2
+        - 8.7
+        - 65.7
       - order: 2
         paragraph: null
         glyph:
-        - 7.6
-        - 34.5
-      gap_pt: 3.0
+        - 14.1
+        - 52.1
+      gap_pt: 0.5
+      max_bottom_pt: 527.0
     line_capacity: 1
     color_set: a
   55:

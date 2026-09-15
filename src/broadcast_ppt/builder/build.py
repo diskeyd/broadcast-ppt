@@ -11,7 +11,8 @@ from ..mapping.catalog import load_catalog
 from ..mapping.textfit import WidthModel, load_model
 from .clone import copy_foreign_slide, duplicate_template_slide
 from .fill import fill_shape, shape_by_order
-from .geometry import (EMU_PER_PT, cy_of, drop_blank_paragraphs, in_group, insets, runs_with_size, set_font_size,
+from .geometry import (EMU_PER_PT, cy_of, drop_blank_paragraphs, in_group, insets, one_line_height, plain_line_spacing,
+                       runs_with_size, set_font_size,
                        set_width, set_y, shift, split_paragraph_boxes, text_align, y_of)
 from .package import current_slide_ids, drop_section_list, open_base, remove_slides
 
@@ -72,12 +73,24 @@ def layout_stack(slide, entry: dict, model: WidthModel) -> None:
             if row["paragraph"] >= len(boxes):
                 continue
             el = boxes[row["paragraph"]]
+        else:
+            # same treatment as split rows: no percent line spacing, one-line height, bottom edge kept
+            bottom = y_of(el) + cy_of(el)
+            plain_line_spacing(el)
+            one_line_height(el)
+            set_y(el, bottom - cy_of(el))
         rows.append((el, row))
     if not rows:
         return
     last_el, last_row = rows[-1]
     if last_row.get("paragraph") is not None:
         set_y(last_el, split[last_row["order"]][1] - cy_of(last_el))
+    max_bottom = st.get("max_bottom_pt")
+    if max_bottom is not None and len(last_row["glyph"]) > 1:
+        # the lowest drawn text must not run lower than the approved card bottom (or off the slide)
+        over = y_of(last_el) + int(last_row["glyph"][1] * EMU_PER_PT) - int(float(max_bottom) * EMU_PER_PT)
+        if over > 0:
+            set_y(last_el, y_of(last_el) - over)
     gap = int(float(st.get("gap_pt", 4)) * EMU_PER_PT)
     for i in range(len(rows) - 2, -1, -1):
         el, row = rows[i]

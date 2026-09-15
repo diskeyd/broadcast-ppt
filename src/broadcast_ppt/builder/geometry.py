@@ -114,6 +114,21 @@ def max_run_size(sp_el, default: float) -> float:
     return max(sizes) if sizes else default
 
 
+def plain_line_spacing(sp_el) -> None:
+    """Drop percent line spacing and space before/after. Renderers disagree on them (Keynote draws a
+    reduced line height very differently from PowerPoint), so stacked card rows are placed by geometry."""
+    for ppr in sp_el.iter(f"{{{A}}}pPr"):
+        for tag in ("lnSpc", "spcBef", "spcAft"):
+            el = ppr.find(f"{{{A}}}{tag}")
+            if el is not None:
+                ppr.remove(el)
+
+
+def one_line_height(sp_el) -> None:
+    ins = insets(sp_el)
+    xfrm(sp_el).find(f"{{{A}}}ext").set("cy", str(int(AUTOFIT_LINE * max_run_size(sp_el, 18) * EMU_PER_PT + ins["tIns"] + ins["bIns"])))
+
+
 def split_paragraph_boxes(sp_el, next_id: int) -> list:
     """Give every paragraph of a text box its own box. The first paragraph stays in the original element;
     copies for the others are appended to the end of the slide tree, so the document order of existing
@@ -122,13 +137,7 @@ def split_paragraph_boxes(sp_el, next_id: int) -> list:
     import copy
     body = sp_el.find(f"{{{P}}}txBody")
     paras = body.findall(f"{{{A}}}p")
-    for p in paras:
-        ppr = p.find(f"{{{A}}}pPr")
-        if ppr is not None:
-            for tag in ("lnSpc", "spcBef", "spcAft"):
-                el = ppr.find(f"{{{A}}}{tag}")
-                if el is not None:
-                    ppr.remove(el)
+    plain_line_spacing(sp_el)
     tree = sp_el.getparent()
     boxes = [sp_el]
     for i in range(1, len(paras)):
@@ -145,6 +154,5 @@ def split_paragraph_boxes(sp_el, next_id: int) -> list:
     for p in paras[1:]:
         body.remove(p)
     for b in boxes:
-        ins = insets(b)
-        xfrm(b).find(f"{{{A}}}ext").set("cy", str(int(AUTOFIT_LINE * max_run_size(b, 18) * EMU_PER_PT + ins["tIns"] + ins["bIns"])))
+        one_line_height(b)
     return boxes

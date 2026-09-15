@@ -10,39 +10,42 @@
 # `fit_one_line` lowers the font size so the value stays on one line.
 version: 1
 # Visual gap (pt) between the drawn text of stacked card rows. Glyph offsets below are [top, bottom] of the
-# drawn text measured from the box top in a Quick Look render of the template; rows are listed top to
+# drawn text (shadow included) measured from the box top in a Keynote render with rows 30pt apart
+# (local calibration script; 0.5pt reproduces the scripture card approved on 2026-09-15); rows are listed top to
 # bottom and laid out bottom-up (the lowest row keeps its place). "6.1" = paragraph 1 of shape 6 in its own box.
-card_gap_pt: 3
+card_gap_pt: 0.5
+# Lowest drawn text of a card ends no lower than this (pt): the approved scripture card's bottom line.
+card_max_bottom_pt: 527
 slides:
   3:  {role: card_call_to_worship, family: card.call_to_worship,
        shapes: {3: {slots: [label], mode: optional}, 4: {slots: [subtitle_en], mode: optional}},
-       stack: {rows: [3, 4], glyph: {"3": [8.0, 60.7], "4": [10.8, 39.5]}}}
+       stack: {rows: [3, 4], glyph: {"3": [9.6, 64.6], "4": [20.7, 59.7]}}}
   4:  {role: card_prayer, family: card.prayer,
        shapes: {3: {slots: [label, person]}, 4: {slots: [subtitle_en], mode: optional}},
-       stack: {rows: [3, 4], glyph: {"3": [8.2, 60.8], "4": [11.2, 47.7]}}}
+       stack: {rows: [3, 4], glyph: {"3": [9.5, 64.5], "4": [19.9, 70.9]}}}
   6:  {role: card_scripture, family: card.scripture,
        shapes: {3: {slots: [label], mode: optional}, 6: {slots: [ref, page]}},
-       stack: {rows: ["3", "6.0", "6.1"], glyph: {"3": [8.7, 61.4], "6.0": [5.8, 40.9], "6.1": [4.8, 34.1]}}}
+       stack: {rows: ["3", "6.0", "6.1"], glyph: {"3": [10.0, 65.0], "6.0": [6.4, 45.4], "6.1": [7.3, 40.3]}}}
   7:  {role: card_sermon, family: card.sermon,
        shapes: {3: {slots: [label, title]}, 4: {slots: [subtitle_en], mode: optional}, 6: {slots: [ref]}},
-       stack: {rows: [3, 6, 4], glyph: {"3": [8.5, 61.2], "6": [2.5, 34.2], "4": [5.7, 29.0]}}}
+       stack: {rows: [3, 6, 4], glyph: {"3": [9.9, 64.9], "6": [6.2, 40.2], "4": [15.7, 47.7]}}}
   8:  {role: meditation, family: meditation,
        # font_scale: 나눔손글씨 붓 is narrower than the fitted gothic widths (measured 0.59–0.72 on 18 quotes)
        shapes: {2262: {slots: [null, quote], fit_one_line: {font_scale: 0.74, margin: 0.96, min_pt: 36}, drop_empty_paragraphs: true},
                 2263: {mode: fixed}, 2264: {mode: fixed}}}
   17: {role: card_generic, family: card.generic,
        shapes: {3: {slots: [label]}, 4: {slots: [subtitle_en], mode: optional}},
-       stack: {rows: [3, 4], glyph: {"3": [8.1, 60.8], "4": [9.6, 42.5]}}}
+       stack: {rows: [3, 4], glyph: {"3": [9.1, 65.1], "4": [18.9, 63.9]}}}
   20: {role: card_announcement, family: card.announcement,
        shapes: {3: {slots: [label], mode: optional}, 4: {slots: [subtitle_en], mode: optional}},
-       stack: {rows: [3, 4], glyph: {"3": [8.1, 60.8], "4": [13.2, 35.3]}}}
+       stack: {rows: [3, 4], glyph: {"3": [9.5, 64.5], "4": [19.9, 53.9]}}}
   21: {role: announcement_first, family: announcement.first,
        shapes: {4: {slots: [label]}, 5: {slots: [body]}}, backing: {5: [6, 8, 2]}}
   23: {role: announcement_item, family: announcement.item,
        shapes: {4: {slots: [label, body]}}, backing: {4: [6, 8, 2]}}
   31: {role: card_offertory, family: card.offertory,
        shapes: {4: {slots: [label], mode: optional}, 3: {slots: [subtitle_en], mode: optional}},
-       stack: {rows: [4, 3], glyph: {"4": [7.4, 61.2], "3": [7.6, 34.5]}}}
+       stack: {rows: [4, 3], glyph: {"4": [8.7, 65.7], "3": [14.1, 52.1]}}}
   55: {role: caption_1, family: caption,
        shapes: {4: {slots: [body], nudge_y_pt: 3}}, backing: {4: [3]}}
   67: {role: caption_3, family: caption,
