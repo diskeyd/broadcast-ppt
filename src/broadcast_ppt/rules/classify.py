@@ -45,7 +45,7 @@ class DeckContext:
     rules_version: str = RULES_VERSION
 
     @classmethod
-    def from_deck(cls, doc: dict) -> "DeckContext":
+    def from_deck(cls, doc: dict) -> DeckContext:
         """Lines repeated on many slides (church slogan footer etc.) are decoration, not content."""
         slides = [s for s in doc.get("slides", []) if "error" not in s]
         counter: Counter = Counter()
@@ -100,7 +100,7 @@ def _bracket_quote(text: str) -> dict | None:
     return {"ref": ref, "body": body} if compact(body) else None
 
 
-def _other_quotes(v: "SlideView", main: str) -> list[dict]:
+def _other_quotes(v: SlideView, main: str) -> list[dict]:
     """Further quoted passages in their own boxes (a sermon slide often shows two)."""
     out = []
     for b in v.boxes:
@@ -236,6 +236,15 @@ def _classify(v: SlideView, c: str, pics: int, groups: int, media: int, ctx: Dec
     return Decision(K.UNKNOWN, "R900", "no rule matched", flags=["passthrough", "review:unclassified"], confidence=0.0)
 
 
-def classify_deck(doc: dict) -> list[Decision]:
+def classify_deck(doc: dict, fallback=None) -> list[Decision]:
+    """`fallback(view, decision)` is asked about slides no rule matched; None keeps the rule decision."""
     ctx = DeckContext.from_deck(doc)
-    return [classify_slide(s, ctx) for s in doc.get("slides", []) if "error" not in s]
+    out = []
+    for s in doc.get("slides", []):
+        if "error" in s:
+            continue
+        d = classify_slide(s, ctx)
+        if d.kind == K.UNKNOWN and fallback:
+            d = fallback(view_of(s, ctx), d) or d
+        out.append(d)
+    return out

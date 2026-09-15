@@ -7,10 +7,11 @@ import json
 import math
 import re
 from dataclasses import asdict, dataclass
-from datetime import datetime, timezone
+from datetime import datetime, UTC
 from pathlib import Path
 
 from ..analyzer.core import analyze_file
+from ..rules import ai
 from ..rules import kinds as K
 from ..rules.classify import classify_deck
 from ..rules.fields import ScriptureRef, verse_chunks
@@ -28,6 +29,7 @@ class PlanOptions:
     slide_size: str = "template"         # template | source
     scripture_both: bool = True          # full-screen copy + lower-third captions
     sermon_material: str = "lower-third"  # lower-third | passthrough
+    ai_model: str | None = None          # Gemini model asked about unclassified slides; None = rules only
 
 
 def sha256(path: Path) -> str:
@@ -214,7 +216,7 @@ def build_plan(src: Path, catalog_path: Path, widths_path: Path, opts: PlanOptio
     src = Path(src)
     catalog = load_catalog(catalog_path)
     doc = analyze_file(src, src.parent)
-    decisions = classify_deck(doc)
+    decisions = classify_deck(doc, fallback=ai.classify_view if opts.ai_model else None)
     mapper = Mapper(catalog, load_model(widths_path), opts)
     tw, th = catalog["source"]["slide_size"]
     sw, sh = doc["slide_size_emu"]
@@ -237,10 +239,11 @@ def build_plan(src: Path, catalog_path: Path, widths_path: Path, opts: PlanOptio
             m["flags"] = sorted(set(m.get("flags", []) + [x for x in d.flags if x]))
             ops.append(m)
         rows.append({"src": s["index"], "kind": d.kind, "rule": d.rule_id, "reason": d.reason, "confidence": d.confidence,
-                     "flags": d.flags, "out": [m["out_index"] for m in mapped], "override": bool(o)})
+                     "flags": d.flags, "out": [m["out_index"] for m in mapped], "override": bool(o),
+                     **({"ai": d.fields["ai"]} if "ai" in d.fields else {})})
     return {
         "version": 1,
-        "created": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+        "created": datetime.now(UTC).isoformat(timespec="seconds"),
         "rules_version": RULES_VERSION,
         "source": {"name": src.name, "path": str(src), "sha256": sha256(src), "slides": len(slides), "slide_size": [sw, sh]},
         "template": {"file": catalog["source"]["file"], "sha256": catalog["source"]["sha256"], "slide_size": [tw, th]},

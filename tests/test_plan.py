@@ -73,3 +73,41 @@ def test_print_plan_handles_every_fit_shape(capsys):
     _print_plan(plan)
     out = capsys.readouterr().out
     assert "T8(25자/62pt)" in out and "T61(76자/2줄)" in out
+
+
+def _ai_deck(text):
+    return {"slides": [_slide(1, text)]}
+
+
+def test_ai_fallback_applies_confident_answer(monkeypatch):
+    from broadcast_ppt.rules import ai
+    from broadcast_ppt.rules.classify import classify_deck
+    seen = {}
+
+    def fake(payload):
+        seen.update(payload)
+        return {"kind": "caption_sentence", "confidence": 0.9, "lines": [2, 3], "reason": "short sermon sentences"}
+
+    monkeypatch.setattr(ai, "ask", fake)
+    text = "가나다라마바사아자차카타파하 홍길동 집사||하나님은 우리와 함께하시며 우리를 붙드십니다 그러므로||우리는 두려워하지 않고 오늘도 걸어갑니다 믿음으로||" + "라" * 70
+    assert classify_deck(_ai_deck(text))[0].kind == K.UNKNOWN  # no fallback: rules only
+    d = classify_deck(_ai_deck(text), fallback=ai.classify_view)[0]
+    assert (d.kind, d.rule_id, d.flags) == (K.CAPTION_SENTENCE, "AI", ["review:ai_classified"])
+    assert d.fields["body"] == "하나님은 우리와 함께하시며 우리를 붙드십니다 그러므로 우리는 두려워하지 않고 오늘도 걸어갑니다 믿음으로"
+    assert "[이름] 집사" in seen["lines"][0] and "홍길동" not in " ".join(seen["lines"])
+
+
+def test_ai_fallback_keeps_unknown_on_low_confidence_or_bad_answer(monkeypatch):
+    from broadcast_ppt.rules import ai
+    from broadcast_ppt.rules.classify import classify_deck
+    text = "가" * 40 + "||" + "나" * 40 + "||" + "다" * 40
+    monkeypatch.setattr(ai, "ask", lambda p: {"kind": "meditation", "confidence": 0.5, "lines": [1], "reason": "unsure"})
+    d = classify_deck(_ai_deck(text), fallback=ai.classify_view)[0]
+    assert (d.kind, d.rule_id) == (K.UNKNOWN, "R900") and d.fields["ai"]["kind"] == "meditation"
+    for bad in ({"kind": "prayer_title", "confidence": 0.99, "lines": [1], "reason": ""},
+                {"kind": "caption_sentence", "confidence": 0.99, "lines": [99], "reason": ""}):
+        monkeypatch.setattr(ai, "ask", lambda p, bad=bad: bad)
+        d = classify_deck(_ai_deck(text), fallback=ai.classify_view)[0]
+        assert (d.kind, d.rule_id) == (K.UNKNOWN, "R900")
+    monkeypatch.setattr(ai, "ask", lambda p: (_ for _ in ()).throw(RuntimeError("model not found")))
+    assert classify_deck(_ai_deck(text), fallback=ai.classify_view)[0].rule_id == "R900"

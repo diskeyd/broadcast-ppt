@@ -87,14 +87,23 @@ def page_ref(text: str) -> dict | None:
     return {"testament": test, "page": int(m.group("page") or m.group("page2")), "raw": m.group(0).strip()}
 
 
+_ROLE_PREFIXES = ("담임", "부", "안수")  # "담임목사" alone matches as name=담임 role=목사
+
+
 def name_role(text: str) -> list[dict]:
     out = []
     for m in _ROLE_RE.finditer(norm(text)):
         name = m.group(1)
-        if name in ("담임", "부", "안수"):
+        if name in _ROLE_PREFIXES:
             continue
         out.append({"name": name, "role": m.group(2)})
     return out
+
+
+def mask_names(text: str) -> str:
+    """Replace names that stand next to a role word with [이름] before text leaves the machine.
+    Ceiling: bare names and 명단 rosters are not caught."""
+    return _ROLE_RE.sub(lambda m: m.group(0) if m.group(1) in _ROLE_PREFIXES else f"[이름] {m.group(2)}", norm(text))
 
 
 def quoted_title(text: str) -> str | None:

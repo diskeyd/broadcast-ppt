@@ -1,5 +1,5 @@
 from broadcast_ppt.rules.fields import (
-    announcement_items, english_line, korean_title_line, name_role, page_ref, quoted_title, scripture_ref, verse_chunks,
+    announcement_items, english_line, korean_title_line, mask_names, name_role, page_ref, quoted_title, scripture_ref, verse_chunks,
 )
 
 
@@ -34,6 +34,12 @@ def test_page_and_title():
 
 def test_name_role():
     assert name_role("기 도 Prayer 홍길동 장로") == [{"name": "홍길동", "role": "장로"}]
+
+
+def test_mask_names():
+    assert mask_names("기 도 홍길동 장로") == "기 도 [이름] 장로"
+    assert mask_names("담임목사 말씀") == "담임목사 말씀"
+    assert mask_names("하나님은 우리와 함께하십니다") == "하나님은 우리와 함께하십니다"
     assert name_role("담임목사 위임식") == []
 
 

@@ -119,16 +119,21 @@ def _print_plan(plan: dict) -> None:
         ops = by_src.get(row["src"], [])
         desc = " ".join(("copy" if o["op"] == "copy" else f"T{o['template_slide']}") + _fit_text(o.get("fit")) for o in ops)
         flags = sorted({f for o in ops for f in o.get("flags", [])})
-        print(f"{row['src']:>3} {row['kind']:<20} {row['rule']:<5} {desc or 'skip'}" + (f"  [{', '.join(flags)}]" if flags else ""))
+        ai = f"  ai:{row['ai']['kind']}@{row['ai']['confidence']:.2f}" if row.get("ai") else ""
+        print(f"{row['src']:>3} {row['kind']:<20} {row['rule']:<5} {desc or 'skip'}" + (f"  [{', '.join(flags)}]" if flags else "") + ai)
     print("stats:", plan["stats"])
 
 
 def cmd_plan(args) -> int:
     import yaml
     from .mapping.plan import PlanOptions, build_plan, save_plan
+    from .rules import ai
     src = Path(args.source)
     overrides = yaml.safe_load(Path(args.overrides).read_text(encoding="utf-8")) if args.overrides else None
-    opts = PlanOptions(slide_size=args.slide_size, scripture_both=not args.no_scripture_both, sermon_material=args.sermon_material)
+    opts = PlanOptions(slide_size=args.slide_size, scripture_both=not args.no_scripture_both, sermon_material=args.sermon_material,
+                       ai_model=ai.enabled())
+    if opts.ai_model:
+        print(f"ai fallback: unclassified slides go to {opts.ai_model} (names masked)", file=sys.stderr)
     plan = build_plan(src, Path(args.catalog), Path(args.widths), opts, overrides)
     out = Path(args.out) if args.out else Path(args.work) / _stem(src) / "plan.json"
     save_plan(plan, out)
