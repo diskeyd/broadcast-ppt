@@ -8,6 +8,7 @@ from pathlib import Path
 from pptx import Presentation
 
 from ..mapping.catalog import load_catalog
+from ..ooxml import REPO_ROOT
 from ..mapping.textfit import WidthModel, load_model
 from .clone import copy_foreign_slide, duplicate_template_slide
 from .fill import fill_shape, shape_by_order
@@ -110,16 +111,16 @@ def shrink_variant(slide, entry: dict, lines: int) -> None:
 
 
 def build_deck(plan: dict, template: Path, catalog_path: Path, out: Path, force: bool = False,
-               widths_path: Path | None = Path("config/widths.yaml")) -> dict:
+               widths_path: Path | None = REPO_ROOT / "config/widths.yaml") -> dict:
     template, out = Path(template), Path(out)
     catalog = load_catalog(catalog_path)
     model = load_model(widths_path)
     tsha = hashlib.sha256(template.read_bytes()).hexdigest()
     if tsha != plan["template"]["sha256"] and not force:
-        raise SystemExit(f"template changed since planning: {template}")
+        raise ValueError(f"template changed since planning: {template}")
     src_path = Path(plan["source"]["path"])
     if hashlib.sha256(src_path.read_bytes()).hexdigest() != plan["source"]["sha256"] and not force:
-        raise SystemExit(f"source deck changed since planning: {src_path}")
+        raise ValueError(f"source deck changed since planning: {src_path}")
     prs = open_base(template)
     base_ids = current_slide_ids(prs)
     tpl_slides = list(prs.slides)

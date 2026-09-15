@@ -15,7 +15,8 @@ from dataclasses import dataclass, field
 
 from lxml import etree
 
-A = "http://schemas.openxmlformats.org/drawingml/2006/main"
+from ..ooxml import A, run_segments
+
 NS = {"a": A}
 
 
@@ -26,37 +27,7 @@ class FillResult:
     flags: list[str] = field(default_factory=list)
 
 
-def _run_key(r) -> tuple:
-    rpr = r.find("a:rPr", NS)
-    if rpr is None:
-        return (None, None, None, None, None)
-    color = rpr.find("a:solidFill/a:srgbClr", NS)
-    latin = rpr.find("a:latin", NS)
-    ea = rpr.find("a:ea", NS)
-    font = (ea.get("typeface") if ea is not None else None) or (latin.get("typeface") if latin is not None else None)
-    return (rpr.get("sz"), color.get("val") if color is not None else None, font, rpr.get("b"), rpr.get("i"))
-
-
-def paragraph_segments(p) -> list[list]:
-    """Whitespace-only runs never start a segment: they join the segment before them, or — at the start
-    of a paragraph — the first real text after them (a padding space in another size is not a slot)."""
-    segs: list[dict] = []
-    for r in p.findall("a:r", NS):
-        t = r.findtext("a:t", default="", namespaces=NS)
-        key = _run_key(r)
-        blank = not t.strip()
-        last = segs[-1] if segs else None
-        if last is not None and last["lead"]:
-            last["runs"].append(r)
-            last["text"] += t
-            if not blank:
-                last["key"], last["lead"] = key, False
-        elif last is not None and (blank or last["key"] == key):
-            last["runs"].append(r)
-            last["text"] += t
-        else:
-            segs.append({"key": key, "runs": [r], "text": t, "lead": blank})
-    return segs
+paragraph_segments = run_segments
 
 
 def flat_segments(txBody) -> list[dict]:

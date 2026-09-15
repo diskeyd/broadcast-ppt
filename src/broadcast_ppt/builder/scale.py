@@ -9,8 +9,7 @@ from __future__ import annotations
 
 from lxml import etree
 
-A = "http://schemas.openxmlformats.org/drawingml/2006/main"
-DEFAULT_INSETS = {"lIns": 91440, "rIns": 91440, "tIns": 45720, "bIns": 45720}
+from ..ooxml import A, DEFAULT_INSETS
 
 # local element name -> attributes scaled by k
 SCALED_ATTRS: dict[str, tuple[str, ...]] = {

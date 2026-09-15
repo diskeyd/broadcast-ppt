@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
-P = "http://schemas.openxmlformats.org/presentationml/2006/main"
-A = "http://schemas.openxmlformats.org/drawingml/2006/main"
+import copy
+
+from ..ooxml import A, AUTOFIT_LINE_HEIGHT as AUTOFIT_LINE, DEFAULT_INSETS, EMU_PER_PT, P
 
 
 def xfrm(el):
@@ -85,9 +86,6 @@ def in_group(el) -> bool:
     return el.getparent() is not None and el.getparent().tag == f"{{{P}}}grpSp"
 
 
-EMU_PER_PT = 12700
-AUTOFIT_LINE = 1.212  # PowerPoint spAutoFit height per line, in font sizes
-
 
 def y_of(el) -> int:
     return int(xfrm(el).find(f"{{{A}}}off").get("y"))
@@ -103,7 +101,7 @@ def set_y(el, y: int) -> None:
 
 def insets(sp_el) -> dict:
     bp = sp_el.find(f".//{{{A}}}bodyPr")
-    d = {"lIns": 91440, "rIns": 91440, "tIns": 45720, "bIns": 45720}
+    d = dict(DEFAULT_INSETS)
     if bp is not None:
         d.update({k: int(bp.get(k)) for k in d if bp.get(k)})
     return d
@@ -134,7 +132,6 @@ def split_paragraph_boxes(sp_el, next_id: int) -> list:
     copies for the others are appended to the end of the slide tree, so the document order of existing
     shapes does not change. Percent line spacing and space-before only made sense for stacked paragraphs
     and are removed; each box gets a one-line auto-fit height."""
-    import copy
     body = sp_el.find(f"{{{P}}}txBody")
     paras = body.findall(f"{{{A}}}p")
     plain_line_spacing(sp_el)

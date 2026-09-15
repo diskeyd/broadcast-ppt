@@ -61,3 +61,15 @@ def test_classifier_core_rules():
     assert classify_slide(_slide(9, "", {"PICTURE": 1}), ctx).kind == K.PICTURE_ONLY
     d = classify_slide(_slide(10, "묵 상   Meditate||여호와께서 여기까지 우리를 도우셨다"), ctx)
     assert d.kind == K.MEDITATION and d.fields["quote"] == "여호와께서 여기까지 우리를 도우셨다"
+
+
+def test_print_plan_handles_every_fit_shape(capsys):
+    from broadcast_ppt.cli import _print_plan
+    plan = {"slides": [{"src": 1, "kind": "meditation", "rule": "R160"}, {"src": 2, "kind": "scripture_body", "rule": "R200"}],
+            "ops": [{"op": "template", "src": 1, "template_slide": 8, "fit": {"chars": 25, "sz": 62.0, "base_sz": 72.0}},
+                    {"op": "copy", "src": 2},
+                    {"op": "template", "src": 2, "template_slide": 61, "fit": {"chars": 76, "est_lines": 2, "max_lines": 2}, "flags": ["review:x"]}],
+            "stats": {}}
+    _print_plan(plan)
+    out = capsys.readouterr().out
+    assert "T8(25자/62pt)" in out and "T61(76자/2줄)" in out

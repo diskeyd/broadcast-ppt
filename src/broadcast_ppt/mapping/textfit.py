@@ -14,8 +14,9 @@ from pathlib import Path
 
 import yaml
 
-EMU_PER_PT = 12700
-LINE_HEIGHT = 1.212
+from ..ooxml import AUTOFIT_LINE_HEIGHT as LINE_HEIGHT
+from ..ooxml import EMU_PER_PT
+
 CLASSES = ("hangul", "latin_upper", "latin_lower", "digit", "space", "punct", "wide")
 DEFAULT_EM = {"hangul": 0.95, "latin_upper": 0.65, "latin_lower": 0.52, "digit": 0.55, "space": 0.28, "punct": 0.35, "wide": 0.9}
 
@@ -89,9 +90,6 @@ class WidthModel:
                        safety: float = 1.0) -> int:
         inner = (box_width_emu - lIns - rIns) * safety * self.width_scale
         return len(self.wrap_lines(text, inner, sz_pt))
-
-    def height_emu(self, lines: int, sz_pt: float, tIns: int = 45720, bIns: int = 45720) -> int:
-        return int(lines * self.line_height * sz_pt * EMU_PER_PT + tIns + bIns)
 
 
 def load_model(path: Path | None) -> WidthModel:

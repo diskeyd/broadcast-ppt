@@ -15,13 +15,9 @@ from lxml import etree
 from pptx import Presentation
 from pptx.enum.shapes import MSO_SHAPE_TYPE
 
-NS = {
-    "a": "http://schemas.openxmlformats.org/drawingml/2006/main",
-    "p": "http://schemas.openxmlformats.org/presentationml/2006/main",
-}
-DEFAULT_INSETS = {"lIns": 91440, "rIns": 91440, "tIns": 45720, "bIns": 45720}
-LINE_HEIGHT = 1.212  # measured: spAutoFit box height = lines * 1.212 * font size + insets
-EMU_PER_PT = 12700
+from ..ooxml import AUTOFIT_LINE_HEIGHT as LINE_HEIGHT
+from ..ooxml import DEFAULT_INSETS, EMU_PER_PT, NS, run_segments
+
 COLOR_SETS = {"FFFF00": "a", "FFFF99": "b", "FFCCFF": "c"}
 
 
@@ -29,38 +25,9 @@ def sha1(text: str) -> str:
     return hashlib.sha1(unicodedata.normalize("NFC", text).encode()).hexdigest()
 
 
-def _run_key(r) -> tuple:
-    rpr = r.find("a:rPr", NS)
-    if rpr is None:
-        return (None, None, None, None, None)
-    color = rpr.find("a:solidFill/a:srgbClr", NS)
-    latin = rpr.find("a:latin", NS)
-    ea = rpr.find("a:ea", NS)
-    font = (ea.get("typeface") if ea is not None else None) or (latin.get("typeface") if latin is not None else None)
-    return (rpr.get("sz"), color.get("val") if color is not None else None, font, rpr.get("b"), rpr.get("i"))
-
-
 def segments_of_paragraph(p) -> list[dict]:
-    """Collapse consecutive runs with the same size/colour/font/bold/italic into segments."""
-    segs: list[dict] = []
-    for r in p.findall("a:r", NS):
-        t = r.findtext("a:t", default="", namespaces=NS)
-        key = _run_key(r)
-        blank = not t.strip()
-        last = segs[-1] if segs else None
-        # whitespace-only runs never start a segment: they join the segment before them, or at the start
-        # of a paragraph the first real text after them (must match builder.fill.paragraph_segments)
-        if last is not None and last["_lead"]:
-            last["_text"] += t
-            last["_runs"] += 1
-            if not blank:
-                last["_key"], last["_lead"] = key, False
-        elif last is not None and (blank or last["_key"] == key):
-            last["_text"] += t
-            last["_runs"] += 1
-        else:
-            segs.append({"_key": key, "_text": t, "_runs": 1, "_lead": blank})
-    return segs
+    """Formatting segments of a paragraph (shared grouping in ooxml.run_segments), summarised for the catalog."""
+    return [{"_key": s["key"], "_text": s["text"], "_runs": len(s["runs"])} for s in run_segments(p)]
 
 
 def body_pr(txBody) -> dict:

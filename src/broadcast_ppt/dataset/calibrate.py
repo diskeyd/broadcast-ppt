@@ -11,8 +11,7 @@ from pptx.enum.shapes import MSO_SHAPE_TYPE
 
 from ..mapping.textfit import CLASSES, DEFAULT_EM, EMU_PER_PT, LINE_HEIGHT, WidthModel, class_counts
 
-A = "http://schemas.openxmlformats.org/drawingml/2006/main"
-DEF_INS = {"lIns": 91440, "rIns": 91440, "tIns": 45720, "bIns": 45720}
+from ..ooxml import A, DEFAULT_INSETS as DEF_INS
 
 
 def _walk(shapes):

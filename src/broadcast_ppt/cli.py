@@ -14,8 +14,11 @@ from pathlib import Path
 
 from .analyzer.core import analyze_file
 from .analyzer.summary import summarize
+from .ooxml import REPO_ROOT
 
 PPT_SUFFIXES = {".pptx", ".ppt"}
+CATALOG = str(REPO_ROOT / "config/templates.yaml")
+WIDTHS = str(REPO_ROOT / "config/widths.yaml")
 
 
 def _json_name(rel: Path) -> str:
@@ -87,13 +90,24 @@ def _stem(path: Path) -> str:
 
 def _default_template() -> Path:
     import yaml
-    scope = Path("config/scope.yaml")
+    scope = REPO_ROOT / "config/scope.yaml"
     if scope.exists():
         data = yaml.safe_load(scope.read_text(encoding="utf-8")) or {}
         for t in data.get("templates") or []:
             if str(t).endswith(".pptx"):
-                return Path(t)
-    return Path("local/templates/24.상반기.pptx")
+                return Path(t) if Path(t).is_absolute() else REPO_ROOT / t
+    return REPO_ROOT / "local/templates/24.상반기.pptx"
+
+
+def _fit_text(fit: dict | None) -> str:
+    """Short fit note for the plan table: characters and estimated lines, or the font size a quote was set to."""
+    if not fit:
+        return ""
+    if "est_lines" in fit:
+        return f"({fit.get('chars', '?')}자/{fit['est_lines']}줄)"
+    if "sz" in fit:
+        return f"({fit.get('chars', '?')}자/{fit['sz']:g}pt)"
+    return f"({fit.get('chars', '?')}자)"
 
 
 def _print_plan(plan: dict) -> None:
@@ -103,7 +117,7 @@ def _print_plan(plan: dict) -> None:
     print(f"{'src':>3} {'kind':<20} {'rule':<5} ops")
     for row in plan["slides"]:
         ops = by_src.get(row["src"], [])
-        desc = " ".join(("copy" if o["op"] == "copy" else f"T{o['template_slide']}") + (f"({o['fit']['chars']}자/{o['fit']['est_lines']}줄)" if o.get("fit") else "") for o in ops)
+        desc = " ".join(("copy" if o["op"] == "copy" else f"T{o['template_slide']}") + _fit_text(o.get("fit")) for o in ops)
         flags = sorted({f for o in ops for f in o.get("flags", [])})
         print(f"{row['src']:>3} {row['kind']:<20} {row['rule']:<5} {desc or 'skip'}" + (f"  [{', '.join(flags)}]" if flags else ""))
     print("stats:", plan["stats"])
@@ -128,12 +142,17 @@ def cmd_build(args) -> int:
     from .mapping.plan import load_plan
     plan = load_plan(Path(args.plan))
     out = Path(args.out) if args.out else Path(args.plan).with_name("broadcast.pptx")
-    res = build_deck(plan, Path(args.template) if args.template else _default_template(), Path(args.catalog), out, force=args.force)
+    try:
+        res = build_deck(plan, Path(args.template) if args.template else _default_template(), Path(args.catalog), out,
+                         force=args.force, widths_path=Path(args.widths))
+    except ValueError as exc:
+        print(f"build refused: {exc} (re-run plan, or pass --force)", file=sys.stderr)
+        return 1
     flagged = [r for r in res["ops"] if r["flags"]]
     print(f"built {res['slides']} slides -> {res['out']} ({len(flagged)} with flags)")
     if getattr(args, "validate", True):
         from .validator.check import validate_deck
-        rep = validate_deck(out, plan, Path(args.catalog), Path(getattr(args, "widths", "config/widths.yaml")))
+        rep = validate_deck(out, plan, Path(args.catalog), Path(args.widths))
         out.with_name("validation.json").write_text(json.dumps(rep, ensure_ascii=False, indent=1), encoding="utf-8")
         _report_validation(rep)
         return 0 if rep["ok"] else 1
@@ -158,9 +177,24 @@ def cmd_validate(args) -> int:
     out = Path(args.report) if args.report else Path(args.deck).with_name("validation.json")
     out.write_text(json.dumps(rep, ensure_ascii=False, indent=1), encoding="utf-8")
     _report_validation(rep)
-    if args.render:
-        print("  render: skipped (no renderer on this machine; Windows PowerPoint check is a later phase)")
     return 0 if rep["ok"] else 1
+
+
+def cmd_catalog(args) -> int:
+    from .mapping.catalog import build_catalog, dump_catalog
+    cat = build_catalog(Path(args.template), Path(args.roles))
+    print(f"{len(cat['slides'])} template slides catalogued -> {dump_catalog(cat, Path(args.out))}")
+    return 0
+
+
+def cmd_calibrate(args) -> int:
+    from .dataset.calibrate import calibrate
+    paths = []
+    for p in map(Path, args.paths):
+        paths += sorted(x for x in p.rglob("*.pptx") if not x.name.startswith(("~$", "."))) if p.is_dir() else [p]
+    data = calibrate(paths, Path(args.out))
+    print(f"{len(paths)} decks -> {args.out}: width_scale {data['width_scale']}, lines exact {data['stats'].get('lines_exact')}")
+    return 0
 
 
 def cmd_run(args) -> int:
@@ -175,20 +209,20 @@ def main(argv: list[str] | None = None) -> int:
     sub = ap.add_subparsers(dest="cmd", required=True)
     a = sub.add_parser("analyze", help="inventory the structure of .pptx files")
     a.add_argument("input", help="a .pptx file or a folder (searched recursively)")
-    a.add_argument("--out", default="local/analysis")
+    a.add_argument("--out", default=str(REPO_ROOT / "local/analysis"))
     a.add_argument("--workers", type=int, default=max((os.cpu_count() or 2) - 2, 1))
     a.add_argument("--force", action="store_true", help="re-analyze files whose JSON is up to date")
-    a.add_argument("--scope", default="config/scope.yaml", help="scope file for the summary (missing file = all decks)")
+    a.add_argument("--scope", default=str(REPO_ROOT / "config/scope.yaml"), help="scope file for the summary (missing file = all decks)")
     a.set_defaults(func=cmd_analyze)
     s = sub.add_parser("summarize", help="rebuild summary.csv and clusters.md from existing JSON")
-    s.add_argument("--out", default="local/analysis")
-    s.add_argument("--scope", default="config/scope.yaml")
+    s.add_argument("--out", default=str(REPO_ROOT / "local/analysis"))
+    s.add_argument("--scope", default=str(REPO_ROOT / "config/scope.yaml"))
     s.set_defaults(func=cmd_summarize)
     def plan_args(p):
         p.add_argument("source")
-        p.add_argument("--work", default="local/work")
-        p.add_argument("--catalog", default="config/templates.yaml")
-        p.add_argument("--widths", default="config/widths.yaml")
+        p.add_argument("--work", default=str(REPO_ROOT / "local/work"))
+        p.add_argument("--catalog", default=CATALOG)
+        p.add_argument("--widths", default=WIDTHS)
         p.add_argument("--slide-size", choices=["template", "source"], default="template")
         p.add_argument("--no-scripture-both", action="store_true")
         p.add_argument("--sermon-material", choices=["lower-third", "passthrough"], default="lower-third")
@@ -201,24 +235,32 @@ def main(argv: list[str] | None = None) -> int:
     b.add_argument("plan")
     b.add_argument("--out")
     b.add_argument("--template")
-    b.add_argument("--catalog", default="config/templates.yaml")
+    b.add_argument("--catalog", default=CATALOG)
     b.add_argument("--force", action="store_true")
-    b.add_argument("--widths", default="config/widths.yaml")
+    b.add_argument("--widths", default=WIDTHS)
     b.add_argument("--no-validate", dest="validate", action="store_false")
     b.set_defaults(func=cmd_build)
     v = sub.add_parser("validate", help="check a built deck against its plan")
     v.add_argument("deck")
     v.add_argument("--plan", required=True)
-    v.add_argument("--catalog", default="config/templates.yaml")
-    v.add_argument("--widths", default="config/widths.yaml")
+    v.add_argument("--catalog", default=CATALOG)
+    v.add_argument("--widths", default=WIDTHS)
     v.add_argument("--report")
-    v.add_argument("--render", action="store_true")
     v.set_defaults(func=cmd_validate)
     r = sub.add_parser("run", help="plan + build")
     plan_args(r)
     r.add_argument("--template")
     r.add_argument("--force", action="store_true")
     r.set_defaults(func=cmd_run)
+    c = sub.add_parser("catalog", help="rebuild config/templates.yaml from the template and config/roles.yaml")
+    c.add_argument("template", nargs="?", default=str(REPO_ROOT / "local/templates/24.상반기.pptx"))
+    c.add_argument("--roles", default=str(REPO_ROOT / "config/roles.yaml"))
+    c.add_argument("--out", default=CATALOG)
+    c.set_defaults(func=cmd_catalog)
+    cal = sub.add_parser("calibrate", help="refit character widths (config/widths.yaml) from broadcast decks")
+    cal.add_argument("paths", nargs="+", help=".pptx files or folders")
+    cal.add_argument("--out", default=WIDTHS)
+    cal.set_defaults(func=cmd_calibrate)
     args = ap.parse_args(argv)
     return args.func(args)
 
