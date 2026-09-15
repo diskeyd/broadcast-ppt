@@ -58,5 +58,93 @@ def runs_with_size(sp_el, default_sz: float) -> list[tuple[str, float]]:
     return out
 
 
+def text_align(sp_el) -> str | None:
+    p = sp_el.find(f".//{{{A}}}p")
+    ppr = p.find(f"{{{A}}}pPr") if p is not None else None
+    return ppr.get("algn") if ppr is not None else None
+
+
+def drop_blank_paragraphs(sp_el) -> int:
+    """Remove paragraphs that hold no visible text (template spacers), so a centred box centres the text."""
+    body = sp_el.find(f".//{{{A}}}p/..")
+    if body is None:
+        return 0
+    paras = body.findall(f"{{{A}}}p")
+    if len(paras) < 2:
+        return 0
+    n = 0
+    for p in paras:
+        if any(r.findtext(f"{{{A}}}t", default="").strip() for r in p.findall(f"{{{A}}}r")):
+            continue
+        body.remove(p)
+        n += 1
+    return n
+
+
 def in_group(el) -> bool:
     return el.getparent() is not None and el.getparent().tag == f"{{{P}}}grpSp"
+
+
+EMU_PER_PT = 12700
+AUTOFIT_LINE = 1.212  # PowerPoint spAutoFit height per line, in font sizes
+
+
+def y_of(el) -> int:
+    return int(xfrm(el).find(f"{{{A}}}off").get("y"))
+
+
+def cy_of(el) -> int:
+    return int(xfrm(el).find(f"{{{A}}}ext").get("cy"))
+
+
+def set_y(el, y: int) -> None:
+    xfrm(el).find(f"{{{A}}}off").set("y", str(int(y)))
+
+
+def insets(sp_el) -> dict:
+    bp = sp_el.find(f".//{{{A}}}bodyPr")
+    d = {"lIns": 91440, "rIns": 91440, "tIns": 45720, "bIns": 45720}
+    if bp is not None:
+        d.update({k: int(bp.get(k)) for k in d if bp.get(k)})
+    return d
+
+
+def max_run_size(sp_el, default: float) -> float:
+    sizes = [int(r.get("sz")) / 100 for r in sp_el.iter(f"{{{A}}}rPr") if r.get("sz")]
+    return max(sizes) if sizes else default
+
+
+def split_paragraph_boxes(sp_el, next_id: int) -> list:
+    """Give every paragraph of a text box its own box. The first paragraph stays in the original element;
+    copies for the others are appended to the end of the slide tree, so the document order of existing
+    shapes does not change. Percent line spacing and space-before only made sense for stacked paragraphs
+    and are removed; each box gets a one-line auto-fit height."""
+    import copy
+    body = sp_el.find(f"{{{P}}}txBody")
+    paras = body.findall(f"{{{A}}}p")
+    for p in paras:
+        ppr = p.find(f"{{{A}}}pPr")
+        if ppr is not None:
+            for tag in ("lnSpc", "spcBef", "spcAft"):
+                el = ppr.find(f"{{{A}}}{tag}")
+                if el is not None:
+                    ppr.remove(el)
+    tree = sp_el.getparent()
+    boxes = [sp_el]
+    for i in range(1, len(paras)):
+        c = copy.deepcopy(sp_el)
+        cbody = c.find(f"{{{P}}}txBody")
+        for j, cp in enumerate(cbody.findall(f"{{{A}}}p")):
+            if j != i:
+                cbody.remove(cp)
+        cnv = c.find(f".//{{{P}}}cNvPr")
+        cnv.set("id", str(next_id + i - 1))
+        cnv.set("name", f"{cnv.get('name')} ({i + 1})")
+        tree.append(c)
+        boxes.append(c)
+    for p in paras[1:]:
+        body.remove(p)
+    for b in boxes:
+        ins = insets(b)
+        xfrm(b).find(f"{{{A}}}ext").set("cy", str(int(AUTOFIT_LINE * max_run_size(b, 18) * EMU_PER_PT + ins["tIns"] + ins["bIns"])))
+    return boxes

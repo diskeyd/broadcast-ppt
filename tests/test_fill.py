@@ -70,3 +70,17 @@ def test_single_segment_body_drops_emphasis_and_extra_paragraphs():
     assert [p.findtext(f"{{{A}}}r/{{{A}}}t") for p in paras] == ["1 새 본문", "2 다음 절"]
     assert all(p.find(f"{{{A}}}r/{{{A}}}rPr/{{{A}}}solidFill") is None for p in paras)
     assert len(flat_segments(sp.find(f".//{{{P}}}txBody"))) == 2
+
+
+def test_split_paragraph_boxes_appends_one_box_per_paragraph():
+    from broadcast_ppt.builder.geometry import split_paragraph_boxes
+    tree = etree.fromstring(
+        f'<p:spTree xmlns:p="{P}" xmlns:a="{A}"><p:sp><p:nvSpPr><p:cNvPr id="5" name="Box"/></p:nvSpPr>'
+        f'<p:spPr><a:xfrm><a:off x="0" y="100"/><a:ext cx="10" cy="10"/></a:xfrm></p:spPr><p:txBody><a:bodyPr/>'
+        f'<a:p><a:pPr><a:lnSpc><a:spcPct val="50000"/></a:lnSpc></a:pPr><a:r><a:rPr sz="3600"/><a:t>참조</a:t></a:r></a:p>'
+        f'<a:p><a:r><a:rPr sz="3000"/><a:t>쪽</a:t></a:r></a:p></p:txBody></p:sp><p:sp/></p:spTree>')
+    boxes = split_paragraph_boxes(tree[0], next_id=9)
+    assert [b.findtext(f".//{{{A}}}t") for b in boxes] == ["참조", "쪽"]
+    assert tree[0] is boxes[0] and tree[-1] is boxes[1]          # existing shape order unchanged
+    assert boxes[1].find(f".//{{{P}}}cNvPr").get("id") == "9"
+    assert tree[0].find(f".//{{{A}}}lnSpc") is None

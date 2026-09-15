@@ -49,6 +49,11 @@ def test_classifier_core_rules():
     assert d.rule_id == "R210" and d.fields["ref"].chapter == 26  # outside 롬3 -> the 성경봉독 reference
     d = classify_slide(_slide(63, "99 전혀 다른 본문이 절 번호로 시작하는 경우에는 참조를 비워 두어야 합니다 그렇지 않으면"), ctx)
     assert d.rule_id == "R211" and d.fields["ref"] is None and "review:reference_unknown" in d.flags
+    two = _slide(64, "[롬3:23-24] 23 모든 사람이 죄를 범하였으매 하나님의 영광에 이르지 못하더니 24 그리스도 예수 안에 있는 속량으로")
+    two["shapes"].append({"kind": "TEXT_BOX", "text": "[고전4:20] 하나님의 나라는 말에 있지 아니하고 오직 능력에 있음이라", "bbox": [0, 0, 1, 1]})
+    two["text"] += "\n[고전4:20] 하나님의 나라는 말에 있지 아니하고 오직 능력에 있음이라"
+    d = classify_slide(two, ctx)
+    assert d.kind == K.SCRIPTURE_BODY and [e["ref"].book for e in d.fields["extra"]] == ["고린도전서"]
     d = classify_slide(_slide(7, "환영 : 방문해주신 모든 분들을 환영합니다\n[표어] : 교회는 그의 몸이니\n[모임] : 오늘 오후"), ctx)
     assert d.kind == K.ANNOUNCEMENT_BLOCK and len(d.fields["items"]) == 3
     d = classify_slide(_slide(8, "동행의 기도||하나님께서 갚아주시는 삶의 길을 걷게 하소서!"), ctx)

@@ -171,6 +171,8 @@ def build_catalog(template: Path, roles_path: Path) -> dict:
                     desc["set_cx"] = desc["bbox"][2]
             if sspec.get("nudge_y_pt"):
                 desc["nudge_y"] = int(float(sspec["nudge_y_pt"]) * EMU_PER_PT)
+            if sspec.get("drop_empty_paragraphs"):
+                desc["drop_empty_paragraphs"] = True
             if sspec.get("fit_one_line"):
                 desc["fit_one_line"] = dict(sspec["fit_one_line"])
             backing = (spec.get("backing") or {}).get(sid) or (spec.get("backing") or {}).get(int(sid))
@@ -183,6 +185,16 @@ def build_catalog(template: Path, roles_path: Path) -> dict:
                     bd = describe_shape(b, W, H)
                     desc["backing"].append({"id": bd["id"], "order": order.index(int(bid)), "bbox": bd["bbox"], "in_group": bd["in_group"]})
             entry["shapes"][int(sid)] = desc
+        if spec.get("stack"):
+            rows = []
+            for key in spec["stack"]["rows"]:
+                sid, _, para = str(key).partition(".")
+                glyph = (spec["stack"].get("glyph") or {}).get(str(key))
+                if glyph is None:
+                    raise ValueError(f"template slide {idx}: stack row {key} has no glyph offsets")
+                rows.append({"order": order.index(int(sid)), "paragraph": int(para) if para else None,
+                             "glyph": [float(glyph[0]), float(glyph[1])]})
+            entry["stack"] = {"rows": rows, "gap_pt": float(spec["stack"].get("gap_pt", roles.get("card_gap_pt", 4)))}
         if spec.get("shrink"):
             sh = spec["shrink"]
             body = entry["shapes"][int(sh["body"])]

@@ -190,7 +190,10 @@ class Mapper:
             return self.announcements(src, f["items"])
         if d.kind == K.SCRIPTURE_BODY:
             ops = [self.copy(src, "scripture full screen")] if self.opts.scripture_both else []
-            return ops + self.scripture_captions(src, f.get("ref"), f.get("body", ""))
+            ops += self.scripture_captions(src, f.get("ref"), f.get("body", ""))
+            for extra in f.get("extra") or []:  # a second quoted passage in its own box
+                ops += self.scripture_captions(src, extra["ref"], extra["body"])
+            return ops
         if d.kind == K.CAPTION_SENTENCE:
             if self.opts.sermon_material == "passthrough":
                 return [self.copy(src, "sermon material")]

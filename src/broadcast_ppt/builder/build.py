@@ -11,7 +11,8 @@ from ..mapping.catalog import load_catalog
 from ..mapping.textfit import WidthModel, load_model
 from .clone import copy_foreign_slide, duplicate_template_slide
 from .fill import fill_shape, shape_by_order
-from .geometry import in_group, runs_with_size, set_font_size, set_width, shift
+from .geometry import (EMU_PER_PT, cy_of, drop_blank_paragraphs, in_group, insets, runs_with_size, set_font_size,
+                       set_width, set_y, shift, split_paragraph_boxes, text_align, y_of)
 from .package import current_slide_ids, drop_section_list, open_base, remove_slides
 
 SINGLE_LINE_SLACK = 1.06  # room for renderers whose glyphs run a little wider than PowerPoint's
@@ -30,15 +31,60 @@ def adjust_filled_shape(sp, spec: dict, op: dict, filled: dict, model: WidthMode
             base = segs[min(idx, len(segs) - 1)]["sz"]
             if base and set_font_size(sp, int(round(base * 100)), int(round(pt * 100))):
                 flags.append(f"font_size:{slot}")
+    if spec.get("drop_empty_paragraphs"):
+        drop_blank_paragraphs(sp)
     bp = spec.get("bodyPr", {})
     if filled and bp.get("wrap") == "none" and not spec.get("backing") and not in_group(sp):
-        # a single-line box keeps the width PowerPoint measured for the sample text; renderers that honour
-        # the stored width (Keynote, Quick Look) wrap longer text, so size the box to the new text
         default = max((s["sz"] or 0) for s in segs) if segs else 18
-        width = sum(model.width_emu(t, sz) for t, sz in runs_with_size(sp, default))
-        new_cx = int(width * SINGLE_LINE_SLACK + bp.get("lIns", 91440) + bp.get("rIns", 91440))
-        set_width(sp, new_cx, keep_center=True)
+        fit_single_line_width(sp, default, model)
     return flags
+
+
+def fit_single_line_width(sp, default_sz: float, model: WidthModel) -> None:
+    """A single-line box keeps the width PowerPoint measured for the sample text; renderers that honour the
+    stored width (Keynote, Quick Look) wrap longer text, so the box is sized to the new text. A centred box
+    keeps its centre; a left-aligned label keeps its left edge so it stays in line with the text under it."""
+    ins = insets(sp)
+    width = sum(model.width_emu(t, sz) for t, sz in runs_with_size(sp, default_sz))
+    set_width(sp, int(width * SINGLE_LINE_SLACK + ins["lIns"] + ins["rIns"]), keep_center=text_align(sp) == "ctr")
+
+
+def layout_stack(slide, entry: dict, model: WidthModel) -> None:
+    """Card rows (yellow label, white lines under it) are placed bottom-up with a fixed visual gap between
+    the glyphs of neighbouring rows. The lowest row keeps the template's bottom edge. Glyph offsets per row
+    (top and bottom of the drawn text, measured from the box top) are measured renders stored in roles.yaml."""
+    st = entry["stack"]
+    P = "http://schemas.openxmlformats.org/presentationml/2006/main"
+    next_id = max(int(c.get("id")) for c in slide.shapes._spTree.iter(f"{{{P}}}cNvPr")) + 1
+    split: dict[int, tuple[list, int]] = {}
+    rows = []
+    for row in st["rows"]:
+        el = shape_by_order(slide, row["order"])
+        if row.get("paragraph") is not None:
+            if row["order"] not in split:
+                bottom = y_of(el) + cy_of(el)
+                boxes = split_paragraph_boxes(el, next_id)
+                next_id += len(boxes)
+                for bx in boxes:
+                    fit_single_line_width(bx, 18, model)
+                split[row["order"]] = (boxes, bottom)
+            boxes, bottom = split[row["order"]]
+            if row["paragraph"] >= len(boxes):
+                continue
+            el = boxes[row["paragraph"]]
+        rows.append((el, row))
+    if not rows:
+        return
+    last_el, last_row = rows[-1]
+    if last_row.get("paragraph") is not None:
+        set_y(last_el, split[last_row["order"]][1] - cy_of(last_el))
+    gap = int(float(st.get("gap_pt", 4)) * EMU_PER_PT)
+    for i in range(len(rows) - 2, -1, -1):
+        el, row = rows[i]
+        below, below_row = rows[i + 1]
+        glyph_top_below = int(below_row["glyph"][0] * EMU_PER_PT)
+        glyph_bottom = int(row["glyph"][1] * EMU_PER_PT)
+        set_y(el, y_of(below) + glyph_top_below - gap - glyph_bottom)
 
 
 def shrink_variant(slide, entry: dict, lines: int) -> None:
@@ -80,6 +126,8 @@ def build_deck(plan: dict, template: Path, catalog_path: Path, out: Path, force:
                 res = fill_shape(sp, spec, op.get("fill", {}))
                 rec["flags"] += res.flags + [f"missing:{m}" for m in res.missing]
                 rec["flags"] += adjust_filled_shape(sp, spec, op, res.filled, model)
+            if entry.get("stack"):
+                layout_stack(slide, entry, model)
             if entry.get("shrink") and op.get("shrink_lines"):
                 shrink_variant(slide, entry, int(op["shrink_lines"]))
         elif op["op"] == "copy":

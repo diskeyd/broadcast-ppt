@@ -87,6 +87,31 @@ def view_of(slide: dict, ctx: DeckContext) -> SlideView:
     return SlideView(slide["index"], text, boxes, Counter(slide.get("kinds", {})), slide.get("full_bleed_picture", False), slide)
 
 
+def _bracket_quote(text: str) -> dict | None:
+    """A box that starts with a bracketed reference: its own reference and body."""
+    t = norm(text).lstrip()
+    if not t.startswith(("[", "［")):
+        return None
+    ref = scripture_ref(t[:40])
+    if ref is None:
+        return None
+    close = min([i for i in (t.find("]"), t.find("］")) if i >= 0] or [len(ref.raw)])
+    body = t[close + 1:].lstrip()
+    return {"ref": ref, "body": body} if compact(body) else None
+
+
+def _other_quotes(v: "SlideView", main: str) -> list[dict]:
+    """Further quoted passages in their own boxes (a sermon slide often shows two)."""
+    out = []
+    for b in v.boxes:
+        if b["text"] is main or norm(b["text"]) == norm(main):
+            continue
+        q = _bracket_quote(b["text"])
+        if q is not None:
+            out.append(q)
+    return out
+
+
 def _card_label(text: str, word: str) -> str:
     for line in norm(text).splitlines():
         if word in compact(line):
@@ -181,7 +206,8 @@ def _classify(v: SlideView, c: str, pics: int, groups: int, media: int, ctx: Dec
             body = body[body.find(ref.raw) + len(ref.raw):].lstrip(" \n")
         return Decision(K.SCRIPTURE_BODY, "R200" if not BRACKET_REF_RE.match(main) else "R205",
                         "reference at start" + (" (bracketed quote)" if BRACKET_REF_RE.match(main) else ""),
-                        {"ref": ref, "body": body, "quote": bool(BRACKET_REF_RE.match(main))})
+                        {"ref": ref, "body": body, "quote": bool(BRACKET_REF_RE.match(main)),
+                         "extra": _other_quotes(v, main)})
     if v.clen >= 30 and VERSE_START_RE.match(norm(main)) and (ctx.last_ref is not None or ctx.title_ref is not None):
         first = int(re.match(r"\s*(\d{1,3})", norm(main)).group(1))
         # inherit only a reference whose verse range contains the first verse number:
