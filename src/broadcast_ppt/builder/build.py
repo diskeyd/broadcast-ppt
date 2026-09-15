@@ -12,9 +12,8 @@ from ..ooxml import REPO_ROOT
 from ..mapping.textfit import WidthModel, load_model
 from .clone import copy_foreign_slide, duplicate_template_slide
 from .fill import fill_shape, shape_by_order
-from .geometry import (EMU_PER_PT, cy_of, drop_blank_paragraphs, in_group, insets, one_line_height, plain_line_spacing,
-                       runs_with_size, set_font_size,
-                       set_width, set_y, shift, split_paragraph_boxes, text_align, y_of)
+from .geometry import (EMU_PER_PT, cy_of, drop_blank_paragraphs, hide_shape, in_group, insets, one_line_height, plain_line_spacing,
+                       runs_with_size, set_font_size, style_paragraphs, set_width, set_y, shift, split_paragraph_boxes, text_align, y_of)
 from .package import current_slide_ids, drop_section_list, open_base, remove_slides
 
 SINGLE_LINE_SLACK = 1.06  # room for renderers whose glyphs run a little wider than PowerPoint's
@@ -33,6 +32,10 @@ def adjust_filled_shape(sp, spec: dict, op: dict, filled: dict, model: WidthMode
             base = segs[min(idx, len(segs) - 1)]["sz"]
             if base and set_font_size(sp, int(round(base * 100)), int(round(pt * 100))):
                 flags.append(f"font_size:{slot}")
+    if op.get("para_style") and "body" in (spec.get("slot_map") or []):
+        style_paragraphs(sp, op["para_style"])
+    if spec.get("hide_when_empty") and not any((op.get("fill") or {}).get(s) for s in spec.get("slot_map") or [] if s):
+        hide_shape(sp)  # unknown reference: no empty tag box on air
     if spec.get("drop_empty_paragraphs"):
         drop_blank_paragraphs(sp)
     bp = spec.get("bodyPr", {})
@@ -106,8 +109,10 @@ def shrink_variant(slide, entry: dict, lines: int) -> None:
     s = entry["shrink"]
     d = int(lines * s["line_emu"])
     for role in ("group", "bar", "body"):
-        shift(shape_by_order(slide, s[role]), dy=d, dcy=-d)
-    shift(shape_by_order(slide, s["tag"]), dy=d)
+        if role in s:
+            shift(shape_by_order(slide, s[role]), dy=d, dcy=-d)
+    if "tag" in s:
+        shift(shape_by_order(slide, s["tag"]), dy=d)
 
 
 def build_deck(plan: dict, template: Path, catalog_path: Path, out: Path, force: bool = False,

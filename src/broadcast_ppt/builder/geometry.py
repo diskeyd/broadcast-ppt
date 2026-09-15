@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import copy
 
+from lxml import etree
+
 from ..ooxml import A, AUTOFIT_LINE_HEIGHT as AUTOFIT_LINE, DEFAULT_INSETS, EMU_PER_PT, P
 
 
@@ -48,6 +50,48 @@ def set_font_size(sp_el, from_sz: int, to_sz: int) -> int:
                 rpr.set("sz", str(to_sz))
                 n += 1
     return n
+
+
+FILLS = ("noFill", "solidFill", "gradFill", "blipFill", "pattFill", "grpFill")
+
+
+def style_paragraphs(sp_el, styles: list[dict]) -> None:
+    """Per-paragraph {"sz": pt, "color": "RRGGBB"} on every run of that paragraph (catechism: orange question, smaller answer)."""
+    for p, st in zip(sp_el.iter(f"{{{A}}}p"), styles, strict=False):
+        for r in p.findall(f"{{{A}}}r"):
+            rpr = r.find(f"{{{A}}}rPr")
+            if rpr is None:
+                rpr = etree.Element(f"{{{A}}}rPr")
+                r.insert(0, rpr)
+            if "sz" in st:
+                rpr.set("sz", str(int(round(st["sz"] * 100))))
+            if "color" in st:
+                for old in [c for c in rpr if c.tag in {f"{{{A}}}{t}" for t in FILLS}]:  # a run holds one fill
+                    rpr.remove(old)
+                fill = etree.Element(f"{{{A}}}solidFill")
+                etree.SubElement(fill, f"{{{A}}}srgbClr", val=st["color"])
+                ln = rpr.find(f"{{{A}}}ln")  # schema order: ln, then the fill
+                rpr.insert(list(rpr).index(ln) + 1 if ln is not None else 0, fill)
+
+
+def hide_shape(sp_el) -> None:
+    """Draw nothing (no fill, no line, no theme effect) but keep the element: slots are found by shape order."""
+    sppr = sp_el.find(f"{{{P}}}spPr")
+    if sppr is None:
+        return
+    for el in [c for c in sppr if c.tag in {f"{{{A}}}{t}" for t in FILLS + ("effectLst", "effectDag")}]:
+        sppr.remove(el)
+    geom = next((c for c in sppr if c.tag in (f"{{{A}}}prstGeom", f"{{{A}}}custGeom")), None)
+    anchor = geom if geom is not None else sppr.find(f"{{{A}}}xfrm")  # schema order: xfrm, geometry, fill, ln
+    sppr.insert(list(sppr).index(anchor) + 1 if anchor is not None else 0, etree.Element(f"{{{A}}}noFill"))
+    ln = sppr.find(f"{{{A}}}ln")
+    if ln is None:
+        ln = etree.Element(f"{{{A}}}ln")
+        sppr.insert(list(sppr).index(sppr.find(f"{{{A}}}noFill")) + 1, ln)
+    for el in [c for c in ln if c.tag in {f"{{{A}}}{t}" for t in FILLS}]:
+        ln.remove(el)
+    ln.insert(0, etree.Element(f"{{{A}}}noFill"))
+    sppr.insert(list(sppr).index(ln) + 1, etree.Element(f"{{{A}}}effectLst"))  # overrides the style's effectRef
 
 
 def runs_with_size(sp_el, default_sz: float) -> list[tuple[str, float]]:

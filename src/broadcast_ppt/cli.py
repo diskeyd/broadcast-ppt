@@ -129,12 +129,19 @@ def cmd_plan(args) -> int:
     from .mapping.plan import PlanOptions, build_plan, save_plan
     from .rules import ai
     src = Path(args.source)
+    if args.overrides and not Path(args.overrides).is_file():
+        print(f"overrides file not found: {args.overrides} (create it first, see README)", file=sys.stderr)
+        return 2
     overrides = yaml.safe_load(Path(args.overrides).read_text(encoding="utf-8")) if args.overrides else None
     opts = PlanOptions(slide_size=args.slide_size, scripture_both=not args.no_scripture_both, sermon_material=args.sermon_material,
                        ai_model=ai.enabled())
     if opts.ai_model:
         print(f"ai fallback: unclassified slides go to {opts.ai_model} (names masked)", file=sys.stderr)
-    plan = build_plan(src, Path(args.catalog), Path(args.widths), opts, overrides)
+    try:
+        plan = build_plan(src, Path(args.catalog), Path(args.widths), opts, overrides)
+    except ValueError as exc:  # a mistake in the overrides file
+        print(f"plan refused: {exc}", file=sys.stderr)
+        return 2
     out = Path(args.out) if args.out else Path(args.work) / _stem(src) / "plan.json"
     save_plan(plan, out)
     _print_plan(plan)
@@ -203,9 +210,11 @@ def cmd_calibrate(args) -> int:
 
 
 def cmd_run(args) -> int:
-    args.out = None
-    cmd_plan(args)
+    build_out, args.out = args.out, None  # --out names the broadcast deck; the plan stays in the work folder
+    if cmd_plan(args):
+        return 2
     args.plan = str(Path(args.work) / _stem(Path(args.source)) / "plan.json")
+    args.out = build_out
     return cmd_build(args)
 
 

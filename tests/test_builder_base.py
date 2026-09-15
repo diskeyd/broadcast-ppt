@@ -66,3 +66,39 @@ def test_scale_tree_positions_fonts_insets():
     assert el.find(f".//{a}ln").get("w") == "16933"
     assert el.find(f".//{a}spcPts").get("val") == "4267"
     assert el.find(f".//{a}extLst/{a}ext").get("cx") is None  # extension entries untouched
+
+
+def test_style_paragraphs_sets_size_and_colour():
+    from pptx.dml.color import RGBColor
+
+    from broadcast_ppt.builder.geometry import style_paragraphs
+    from broadcast_ppt.ooxml import A
+
+    tb = Presentation().slides.add_slide(Presentation().slide_layouts[6]).shapes.add_textbox(Inches(1), Inches(1), Inches(6), Inches(2))
+    tf = tb.text_frame
+    tf.text = "제1문 질문?"
+    tf.paragraphs[0].runs[0].font.color.rgb = RGBColor(0xFF, 0xFF, 0xFF)
+    tf.add_paragraph().add_run().text = "답: 대답"
+    style_paragraphs(tb._element, [{"color": "FF9300"}, {"sz": 28}])
+    q, a = tf.paragraphs
+    assert str(q.runs[0].font.color.rgb) == "FF9300" and len(q.runs[0]._r.find(f"{{{A}}}rPr").findall(f"{{{A}}}solidFill")) == 1
+    assert a.runs[0].font.size.pt == 28 and q.runs[0].font.size is None
+
+
+def test_hide_shape_keeps_the_element_but_draws_nothing():
+    from pptx.dml.color import RGBColor
+    from pptx.enum.shapes import MSO_SHAPE
+
+    from broadcast_ppt.builder.geometry import hide_shape
+
+    prs = Presentation()
+    slide = prs.slides.add_slide(prs.slide_layouts[6])
+    tag = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, Inches(1), Inches(1), Inches(2), Inches(0.5))
+    tag.fill.solid()
+    tag.fill.fore_color.rgb = RGBColor(0xFF, 0xD4, 0x79)
+    n = len(slide.shapes)
+    hide_shape(tag._element)
+    tags = [c.tag.split("}")[1] for c in tag._element.spPr]
+    assert "solidFill" not in tags and tags.index("prstGeom") < tags.index("noFill") < tags.index("ln") < tags.index("effectLst")
+    assert tag._element.spPr.find("{http://schemas.openxmlformats.org/drawingml/2006/main}ln")[0].tag.endswith("noFill")
+    assert len(slide.shapes) == n

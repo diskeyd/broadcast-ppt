@@ -6,15 +6,15 @@ import hashlib
 import json
 import math
 import re
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, replace
 from datetime import datetime, UTC
 from pathlib import Path
 
 from ..analyzer.core import analyze_file
 from ..rules import ai
 from ..rules import kinds as K
-from ..rules.classify import classify_deck
-from ..rules.fields import ScriptureRef, verse_chunks
+from ..rules.classify import DeckContext, classify_deck, view_of
+from ..rules.fields import ScriptureRef, compact, norm, scripture_ref, verse_chunks
 from ..rules.version import RULES_VERSION
 from .catalog import families, load_catalog
 from .split import pack
@@ -22,6 +22,9 @@ from .textfit import WidthModel, load_model
 
 TEMPLATE = {"call_to_worship": 3, "prayer": 4, "scripture": 6, "sermon": 7, "meditation": 8, "generic": 17,
             "announcement_title": 20, "announcement_first": 21, "announcement_item": 23, "offertory": 31}
+REF_FLAGS = {"review:reference_unknown", "review:inherited_reference", "review:no_reference"}
+QUESTION_COLOR, ANSWER_PT = "FF9300", 28.0  # catechism caption: template emphasis orange; answer at the scripture caption size
+OVERRIDE_OPS = (None, "copy", "quote", "caption", "scripture")
 
 
 @dataclass
@@ -113,13 +116,47 @@ class Mapper:
             tpl = self.smallest_variant("caption", chunk) or big
             op = self.card(src, tpl, {"body": chunk}, "caption")
             op["fit"] = {"chars": len(chunk), "est_lines": self.lines(tpl, chunk), "max_lines": self._body_spec(tpl)["max_lines"]}
+            spare = op["fit"]["max_lines"] - op["fit"]["est_lines"]
+            if spare > 0 and self.cat["slides"][tpl].get("shrink"):
+                op["shrink_lines"] = spare  # same as scripture captions: no empty lines at the bottom of the bar
             ops.append(op)
         return ops
 
-    def meditation(self, src: int, text: str) -> dict:
-        """The quote stays on one line: when it is wider than the box, its font size goes down."""
+    def catechism_captions(self, src: int, question: str, answer: str) -> list[dict]:
+        """Question (template size, orange) and the start of the answer (ANSWER_PT) on the 3-line caption; the rest of
+        the answer on further pages. pack() would join the paragraphs with spaces, so the first page is filled here."""
+        tpl = self.fam["caption"][-1][0]
+        spec = self._body_spec(tpl)
+        bp, cap = spec["bodyPr"], spec["max_lines"]
+
+        def est(paras: list[str], first: bool) -> int:
+            return sum(self.model.estimate_lines(p, spec["bbox"][2], self._sz(spec, "body") if first and i == 0 else ANSWER_PT, bp["lIns"], bp["rIns"])
+                       for i, p in enumerate(paras))
+
+        words = answer.split()
+        k = len(words)
+        while k and est([question, " ".join(words[:k])], True) > cap:
+            k -= 1
+        pages = [[question] + ([" ".join(words[:k])] if k else [])]
+        if words[k:]:
+            pages += [[t] for t in pack([" ".join(words[k:])], lambda t: est([t], False) <= cap)]
+        ops = []
+        for i, paras in enumerate(pages):
+            op = self.card(src, tpl, {"body": "\n".join(paras)}, "caption")
+            n = est(paras, i == 0)
+            op["fit"] = {"chars": sum(map(len, paras)), "est_lines": n, "max_lines": cap}
+            # positional styles: _fill_single writes one paragraph per line of the value
+            op["para_style"] = ([{"color": QUESTION_COLOR}] if i == 0 else []) + [{"sz": ANSWER_PT}] * (len(paras) - (i == 0))
+            if cap > n and self.cat["slides"][tpl].get("shrink"):
+                op["shrink_lines"] = cap - n
+            ops.append(op)
+        return ops
+
+    def meditation(self, src: int, text: str, label: str | None = None) -> dict:
+        """The quote stays on one line: when it is wider than the box, its font size goes down.
+        label="" blanks the 묵상 label (override quote card); None keeps the template's."""
         tpl = TEMPLATE["meditation"]
-        op = self.card(src, tpl, {"quote": text}, "meditation")
+        op = self.card(src, tpl, {"quote": text, "label": label}, "meditation")
         spec = self._body_spec(tpl, "quote")
         fit = spec.get("fit_one_line")
         base = self._sz(spec, "quote")
@@ -196,6 +233,14 @@ class Mapper:
             for extra in f.get("extra") or []:  # a second quoted passage in its own box
                 ops += self.scripture_captions(src, extra["ref"], extra["body"])
             return ops
+        if d.kind == K.CATECHISM:
+            ops = [self.copy(src, "catechism full screen")] if self.opts.scripture_both else []
+            q, _, a = f["qa"].partition("\n")
+            if q:
+                ops += self.catechism_captions(src, q, a)
+            for verse in f.get("verses") or []:
+                ops += self.scripture_captions(src, verse["ref"], verse["body"])
+            return ops
         if d.kind == K.CAPTION_SENTENCE:
             if self.opts.sermon_material == "passthrough":
                 return [self.copy(src, "sermon material")]
@@ -216,20 +261,48 @@ def build_plan(src: Path, catalog_path: Path, widths_path: Path, opts: PlanOptio
     src = Path(src)
     catalog = load_catalog(catalog_path)
     doc = analyze_file(src, src.parent)
-    decisions = classify_deck(doc, fallback=ai.classify_view if opts.ai_model else None)
+    slide_over = ((overrides or {}).get("slides") or {})
+    # a slide the overrides file decides is never sent to the model
+    decisions = classify_deck(doc, fallback=(lambda v, d: None if v.index in slide_over else ai.classify_view(v, d, opts.ai_model))
+                              if opts.ai_model else None)
     mapper = Mapper(catalog, load_model(widths_path), opts)
     tw, th = catalog["source"]["slide_size"]
     sw, sh = doc["slide_size_emu"]
     scale = tw / sw if opts.slide_size == "template" else 1.0
-    slide_over = ((overrides or {}).get("slides") or {})
     rows, ops = [], []
     slides = [s for s in doc["slides"] if "error" not in s]
+    ctx = DeckContext.from_deck(doc)  # override text drops the same boilerplate lines the rules drop
     for s, d in zip(slides, decisions):
         o = slide_over.get(s["index"]) or {}
+        op = o.get("op")
+        if op not in OVERRIDE_OPS:
+            raise ValueError(f"override slide {s['index']}: unknown op {op!r} (use copy, quote, caption or scripture)")
+        if "ref" in o:  # a reference the source slide does not show, typed by a person
+            if op in ("copy", "quote", "caption"):
+                raise ValueError(f"override slide {s['index']}: op {op} takes no ref (use op: scripture)")
+            ref = scripture_ref(str(o["ref"]))
+            if ref is None or ("ref" not in d.fields and op != "scripture"):
+                raise ValueError(f"override slide {s['index']}: ref {o['ref']!r} is not a reference or {d.kind} takes none")
+            d = replace(d, fields={**d.fields, "ref": ref}, flags=[f for f in d.flags if f not in REF_FLAGS])
+        # new slide forms are handled here, in the overrides file, not with new rules
+        text = " ".join(ln.strip() for ln in norm(view_of(s, ctx).text).splitlines() if compact(ln)) if op in OVERRIDE_OPS[2:] else ""
+        if op in OVERRIDE_OPS[2:] and not text:
+            raise ValueError(f"override slide {s['index']}: op {op} needs slide text")
         if o.get("skip"):
             mapped = []
-        elif o.get("op") == "copy":
+        elif op == "copy":
             mapped = [mapper.copy(s["index"], "override: copy")]
+        elif op == "quote":  # quote card without the 묵상 label
+            d = replace(d, kind=K.MEDITATION, rule_id="OVR", reason="override: quote card", flags=[])
+            mapped = [mapper.meditation(s["index"], "“" + text.strip("“”\"") + "”", label="")]
+        elif op == "caption":
+            d = replace(d, kind=K.CAPTION_SENTENCE, rule_id="OVR", reason="override: caption", fields={"body": text}, flags=[])
+            mapped = mapper.map(s["index"], d)
+        elif op == "scripture":
+            ref = d.fields.get("ref")
+            d = replace(d, kind=K.SCRIPTURE_BODY, rule_id="OVR", reason="override: scripture", fields={"ref": ref, "body": text, "quote": False},
+                        flags=[] if ref is not None else ["review:reference_unknown"])
+            mapped = mapper.map(s["index"], d)
         else:
             mapped = mapper.map(s["index"], d)
         for m in mapped:

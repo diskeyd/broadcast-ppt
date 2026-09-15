@@ -581,8 +581,10 @@ slides:
         lines_measured: 1.5
         max_lines: 2
         order: 2
-        mode: fixed
-        single_segment: false
+        mode: optional
+        single_segment: true
+        slot_map:
+        - label
       2264:
         id: 2264
         name: TextBox 7
@@ -1409,6 +1411,7 @@ slides:
         single_segment: false
         slot_map:
         - ref
+        hide_when_empty: true
       12:
         id: 12
         name: TextBox 12
@@ -1498,6 +1501,7 @@ slides:
         single_segment: false
         slot_map:
         - ref
+        hide_when_empty: true
       3:
         id: 3
         name: TextBox 12
@@ -1620,6 +1624,7 @@ slides:
         single_segment: false
         slot_map:
         - ref
+        hide_when_empty: true
       4:
         id: 4
         name: TextBox 12
@@ -1749,5 +1754,9 @@ slides:
         slot_map:
         - body
         nudge_y: 38100
+    shrink:
+      bar: 1
+      body: 2
+      line_emu: 492556
     line_capacity: 3
     color_set: null

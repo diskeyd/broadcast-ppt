@@ -140,6 +140,8 @@ def build_catalog(template: Path, roles_path: Path) -> dict:
                 desc["nudge_y"] = int(float(sspec["nudge_y_pt"]) * EMU_PER_PT)
             if sspec.get("drop_empty_paragraphs"):
                 desc["drop_empty_paragraphs"] = True
+            if sspec.get("hide_when_empty"):
+                desc["hide_when_empty"] = True
             if sspec.get("fit_one_line"):
                 desc["fit_one_line"] = dict(sspec["fit_one_line"])
             backing = (spec.get("backing") or {}).get(sid) or (spec.get("backing") or {}).get(int(sid))
@@ -168,7 +170,7 @@ def build_catalog(template: Path, roles_path: Path) -> dict:
         if spec.get("shrink"):
             sh = spec["shrink"]
             body = entry["shapes"][int(sh["body"])]
-            entry["shrink"] = {k: order.index(int(sh[k])) for k in ("group", "bar", "tag", "body")}
+            entry["shrink"] = {k: order.index(int(sh[k])) for k in ("group", "bar", "tag", "body") if k in sh}  # caption_3 has no group/tag
             entry["shrink"]["line_emu"] = body["line_emu"]
         caps = [s.get("max_lines") for s in entry["shapes"].values() if s.get("slot_map") and "body" in s["slot_map"]]
         entry["line_capacity"] = max([c for c in caps if c] or [1])

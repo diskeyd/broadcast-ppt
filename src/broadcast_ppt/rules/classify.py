@@ -18,6 +18,8 @@ from .version import RULES_VERSION
 VERSE_START_RE = re.compile(r"^\s*\d{1,3}\s+\S")
 BRACKET_REF_RE = re.compile(r"^\s*[\[［]")
 NAME_LIST_HEADER_RE = re.compile(r"[\[［][^\]］]*명단[\]］]")
+# at a line start, optionally after a 소요리/대요리(문답) heading: 제3문 inside a notice line is not a catechism slide
+CATECHISM_RE = re.compile(r"^\s*(?:[소대]요리(?:문답)?\s*[:：]?\s*)?제\s*\d{1,3}\s*문(?![가-힣])", re.M)
 
 
 @dataclass
@@ -193,6 +195,18 @@ def _classify(v: SlideView, c: str, pics: int, groups: int, media: int, ctx: Dec
     if len(items) >= 2 and ("환영" in c or "교회소식" in c or sum(1 for i in items if i["bracketed"]) >= 2):
         return Decision(K.ANNOUNCEMENT_BLOCK, "R300", f"{len(items)} titled announcement lines", {"items": items},
                         [i["flag"] for i in items if i["flag"]])
+
+    # catechism (제N문 at a line start): question + answer on caption pages, each bracketed verse on its own.
+    # After announcements (a 소식 line may mention 제3문), before scripture (the verse box is usually the longest)
+    if CATECHISM_RE.search(v.text):
+        quotes = [(b, _bracket_quote(b["text"])) for b in sorted(v.boxes, key=lambda b: (b.get("bbox") or [0, 0])[1::-1])]
+        verses = [q for _, q in quotes if q]
+        lines = [ln.strip() for b, q in quotes if not q for ln in norm(b["text"]).splitlines() if compact(ln)]
+        # question on its own line, the answer below: a 2-line tail left a blank line on the 3-line bar
+        ans = next((i for i, ln in enumerate(lines) if re.match(r"(답(?![가-힣])|A\s*[.:])", ln)), 1)
+        qa = "\n".join(p for p in (" ".join(lines[:ans]), " ".join(lines[ans:])) if p)
+        return Decision(K.CATECHISM, "R170", "제N문 question" + (f" + {len(verses)} bracketed verse(s)" if verses else ""),
+                        {"qa": qa, "verses": verses})
 
     # scripture: reference at the start, or verse-numbered continuation of the last reference
     head = norm(main).lstrip()[:40]

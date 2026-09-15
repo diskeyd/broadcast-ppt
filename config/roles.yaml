@@ -32,7 +32,8 @@ slides:
   8:  {role: meditation, family: meditation,
        # font_scale: 나눔손글씨 붓 is narrower than the fitted gothic widths (measured 0.59–0.72 on 18 quotes)
        shapes: {2262: {slots: [null, quote], fit_one_line: {font_scale: 0.74, margin: 0.96, min_pt: 36}, drop_empty_paragraphs: true},
-                2263: {mode: fixed}, 2264: {mode: fixed}}}
+                # label kept unless an override quote card blanks it (two segments: 묵 상 / Meditate)
+                2263: {slots: [label], mode: optional, single_segment: true}, 2264: {mode: fixed}}}
   17: {role: card_generic, family: card.generic,
        shapes: {3: {slots: [label]}, 4: {slots: [subtitle_en], mode: optional}},
        stack: {rows: [3, 4], glyph: {"3": [9.1, 65.1], "4": [18.9, 63.9]}}}
@@ -49,16 +50,18 @@ slides:
   55: {role: caption_1, family: caption,
        shapes: {4: {slots: [body], nudge_y_pt: 3}}, backing: {4: [3]}}
   67: {role: caption_3, family: caption,
-       shapes: {5: {slots: [body], single_segment: true, nudge_y_pt: 3}}}
+       shapes: {5: {slots: [body], single_segment: true, nudge_y_pt: 3}},
+       shrink: {bar: 6, body: 5}}  # no 2-line caption variant: a 2-line sentence drops one line off the bar
   58: {role: scripture_2, family: scripture,
        shapes: {4: {slots: [body], single_segment: true}}, backing: {4: [2]}}
   59: {role: scripture_3, family: scripture,
        shapes: {3: {slots: [body], single_segment: true}}, backing: {3: [2]}}
+  # hide_when_empty: a caption without a known reference hides its tag box instead of showing it empty (owner, 2026-09-15)
   60: {role: scripture_ref_1, family: scripture_ref,
-       shapes: {11: {slots: [ref]}, 12: {slots: [body], single_segment: true, clamp_to: 2}}}
+       shapes: {11: {slots: [ref], hide_when_empty: true}, 12: {slots: [body], single_segment: true, clamp_to: 2}}}
   61: {role: scripture_ref_2, family: scripture_ref,
-       shapes: {7: {slots: [ref]}, 3: {slots: [body], single_segment: true, clamp_to: 2}},
+       shapes: {7: {slots: [ref], hide_when_empty: true}, 3: {slots: [body], single_segment: true, clamp_to: 2}},
        shrink: {group: 4, bar: 2, tag: 7, body: 3}}
   62: {role: scripture_ref_3, family: scripture_ref,
-       shapes: {13: {slots: [ref]}, 4: {slots: [body], single_segment: true, clamp_to: 2}},
+       shapes: {13: {slots: [ref], hide_when_empty: true}, 4: {slots: [body], single_segment: true, clamp_to: 2}},
        shrink: {group: 3, bar: 2, tag: 13, body: 4}}

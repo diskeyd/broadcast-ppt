@@ -100,10 +100,13 @@ def name_role(text: str) -> list[dict]:
     return out
 
 
+_MASK_RE = re.compile(r"([가-힣]{2,4})[ \t]*(" + "|".join(ROLES) + r")(님|씨)?(?![가-힣])")
+
+
 def mask_names(text: str) -> str:
-    """Replace names that stand next to a role word with [이름] before text leaves the machine.
-    Ceiling: bare names and 명단 rosters are not caught."""
-    return _ROLE_RE.sub(lambda m: m.group(0) if m.group(1) in _ROLE_PREFIXES else f"[이름] {m.group(2)}", norm(text))
+    """Replace names that stand next to a role word (장로, 장로님) with [이름] before text leaves the machine.
+    Ceiling: bare names, names after the role and 명단 rosters are not caught."""
+    return _MASK_RE.sub(lambda m: m.group(0) if m.group(1) in _ROLE_PREFIXES else f"[이름] {m.group(2)}{m.group(3) or ''}", norm(text))
 
 
 def quoted_title(text: str) -> str | None:

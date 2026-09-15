@@ -34,13 +34,14 @@ def test_page_and_title():
 
 def test_name_role():
     assert name_role("기 도 Prayer 홍길동 장로") == [{"name": "홍길동", "role": "장로"}]
+    assert name_role("담임목사 위임식") == []
 
 
 def test_mask_names():
     assert mask_names("기 도 홍길동 장로") == "기 도 [이름] 장로"
+    assert mask_names("홍길동 장로님") == "[이름] 장로님"
     assert mask_names("담임목사 말씀") == "담임목사 말씀"
     assert mask_names("하나님은 우리와 함께하십니다") == "하나님은 우리와 함께하십니다"
-    assert name_role("담임목사 위임식") == []
 
 
 def test_announcement_items():

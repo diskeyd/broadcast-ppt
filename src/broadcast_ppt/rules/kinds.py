@@ -7,6 +7,7 @@ SCRIPTURE_TITLE = "scripture_title"
 SERMON_TITLE = "sermon_title"
 SCRIPTURE_BODY = "scripture_body"   # full-screen scripture text (reading or sermon quote)
 MEDITATION = "meditation"
+CATECHISM = "catechism"             # 제N문 question + 답 answer, usually with a bracketed verse
 ANNOUNCEMENT_TITLE = "announcement_title"
 ANNOUNCEMENT_BLOCK = "announcement_block"
 CAPTION_SENTENCE = "caption_sentence"
