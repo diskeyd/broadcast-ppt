@@ -7,7 +7,6 @@ from pptx.enum.shapes import MSO_SHAPE
 from pptx.util import Inches
 
 from broadcast_ppt.analyzer.core import analyze_file, classify_rgb, date_token, family_of, keywords_in
-from broadcast_ppt.analyzer.summary import summarize
 from broadcast_ppt.cli import main
 
 

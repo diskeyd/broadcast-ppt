@@ -19,14 +19,13 @@ from pathlib import Path
 from lxml import etree
 from PIL import Image
 from pptx import Presentation
-from pptx.enum.shapes import MSO_SHAPE_TYPE
 
 NS = {
     "a": "http://schemas.openxmlformats.org/drawingml/2006/main",
     "p": "http://schemas.openxmlformats.org/presentationml/2006/main",
     "r": "http://schemas.openxmlformats.org/officeDocument/2006/relationships",
 }
-R_EMBED = "{%s}embed" % NS["r"]
+R_EMBED = f"{{{NS['r']}}}embed"
 
 # Order matters only for display; every matching label is recorded.
 KEYWORDS: list[tuple[str, tuple[str, ...]]] = [
@@ -183,13 +182,13 @@ class Context:
             opaque = [c[:3] for c in px if c[3] >= 128]
             out["transparent_frac"] = round(1 - len(opaque) / n, 3)
             m = max(len(opaque), 1)
-            out["mean_rgb"] = "%02X%02X%02X" % tuple(sum(c[i] for c in opaque) // m for i in range(3))
-            kinds = Counter(classify_rgb("%02X%02X%02X" % c) for c in opaque)
+            out["mean_rgb"] = "{:02X}{:02X}{:02X}".format(*(sum(c[i] for c in opaque) // m for i in range(3)))
+            kinds = Counter(classify_rgb("{:02X}{:02X}{:02X}".format(*c)) for c in opaque)
             out["green_frac"] = round(kinds["green"] / n, 3)
             out["blue_frac"] = round(kinds["blue"] / n, 3)
             out["black_frac"] = round(sum(1 for c in opaque if max(c) <= 24) / n, 3)
             buckets = Counter(tuple(min(v // 51 * 51, 255) for v in c) for c in opaque)
-            out["top_colors"] = [["%02X%02X%02X" % k, round(v / n, 3)] for k, v in buckets.most_common(3)]
+            out["top_colors"] = [["{:02X}{:02X}{:02X}".format(*k), round(v / n, 3)] for k, v in buckets.most_common(3)]
         except Exception as exc:  # EMF/WMF and friends
             out["decode_error"] = type(exc).__name__
         self.image_cache[key] = out

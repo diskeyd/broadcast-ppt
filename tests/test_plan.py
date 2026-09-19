@@ -6,7 +6,8 @@ from broadcast_ppt.rules.classify import DeckContext, classify_slide
 
 def test_pack_respects_fit_and_order():
     units = ["21 가나다라마바사", "22 아자차카타파하", "23 가나다", "24 라마바사아자차카타파하가나다"]
-    fits = lambda t: len(t) <= 20
+    def fits(t):
+        return len(t) <= 20
     chunks = pack(units, fits)
     assert all(fits(c) for c in chunks)
     assert " ".join(chunks).replace("  ", " ") == " ".join(units)

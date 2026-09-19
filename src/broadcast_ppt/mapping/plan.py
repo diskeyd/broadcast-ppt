@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import functools
 import hashlib
 import json
 import math
@@ -71,7 +72,7 @@ class Mapper:
         return self.lines(tpl, text, slot) <= (max_lines or spec.get("max_lines") or 1)
 
     def smallest_variant(self, family: str, text: str) -> int | None:
-        for idx, entry in self.fam[family]:
+        for idx, _ in self.fam[family]:
             if self.fits(idx, text):
                 return idx
         return None
@@ -179,7 +180,7 @@ class Mapper:
             if it["no"] == 1 and it["title"].replace(" ", "") == "환영":
                 label = f"교회 소식 – {it['no']}. {it['title']}"
                 tpl = TEMPLATE["announcement_first"]
-                for chunk in pack([it["body"]], lambda t: self.fits(tpl, t)):
+                for chunk in pack([it["body"]], functools.partial(self.fits, tpl)):
                     ops.append(self.card(src, tpl, {"label": label, "body": chunk}, "announcement"))
                 continue
             title = f"[{it['title']}] : " if it["title"] else ""
@@ -188,7 +189,8 @@ class Mapper:
             spec = self._body_spec(tpl, "label")
             inner = spec["bbox"][2] - spec["bodyPr"]["lIns"] - spec["bodyPr"]["rIns"]
             label_w = self.model.width_emu(label, self._sz(spec, "label"))
-            fits = lambda t: label_w + self.model.width_emu(t, self._sz(spec, "body")) <= inner
+            def fits(t):
+                return label_w + self.model.width_emu(t, self._sz(spec, "body")) <= inner  # noqa: B023
             for chunk in pack([it["body"]], fits):
                 op = self.card(src, tpl, {"label": label, "body": chunk}, "announcement")
                 if it.get("flag"):

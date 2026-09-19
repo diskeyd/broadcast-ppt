@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import statistics
-import unicodedata
 from pathlib import Path
 
 from pptx import Presentation

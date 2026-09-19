@@ -15,9 +15,9 @@ def _png(color):
     return buf
 
 
-def _deck(color, width=Inches(10), height=Inches(5.625)):
+def _deck(color, width=10, height=5.625):
     prs = Presentation()
-    prs.slide_width, prs.slide_height = width, height
+    prs.slide_width, prs.slide_height = Inches(width), Inches(height)
     s = prs.slides.add_slide(prs.slide_layouts[6])
     s.shapes.add_picture(_png(color), Inches(1), Inches(1), Inches(2), Inches(2))
     tb = s.shapes.add_textbox(Inches(4), Inches(1), Inches(4), Inches(1))
@@ -32,19 +32,23 @@ def test_duplicate_within_package_keeps_images():
     dup, rep = duplicate_template_slide(prs, src)
     assert len(dup.shapes) == len(src.shapes)
     assert dup.shapes[0].image.blob == src.shapes[0].image.blob
-    buf = io.BytesIO(); prs.save(buf); buf.seek(0)
+    buf = io.BytesIO()
+    prs.save(buf)
+    buf.seek(0)
     assert len(Presentation(buf).slides) == 2
 
 
 def test_copy_foreign_scales_and_does_not_collide_images():
-    out = _deck((0, 255, 0), width=Inches(13.333), height=Inches(7.5))
+    out = _deck((0, 255, 0), width=13.333, height=7.5)
     base_ids = current_slide_ids(out)
     a, b = _deck((255, 0, 0)), _deck((0, 0, 255))  # both packages name their image image1.png
     k = out.slide_width / a.slide_width
     s1, _ = copy_foreign_slide(out, a.slides[0], scale=k)
     s2, _ = copy_foreign_slide(out, b.slides[0], scale=k)
     remove_slides(out, base_ids)
-    buf = io.BytesIO(); out.save(buf); buf.seek(0)
+    buf = io.BytesIO()
+    out.save(buf)
+    buf.seek(0)
     again = Presentation(buf)
     assert len(again.slides) == 2
     px = [Image.open(io.BytesIO(sl.shapes[0].image.blob)).getpixel((0, 0)) for sl in again.slides]

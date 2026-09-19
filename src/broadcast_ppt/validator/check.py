@@ -47,7 +47,6 @@ def validate_deck(deck: Path, plan: dict, catalog_path: Path, widths_path: Path 
 
     if len(slides) != len(ops):
         findings.append(Finding("critical", "slide_count", None, f"deck has {len(slides)} slides, plan has {len(ops)} operations"))
-    W, H = prs.slide_width, prs.slide_height
     master_bg = prs.slide_masters[0]._element.find(f"{{{P}}}cSld/{{{P}}}bg//{{{A}}}srgbClr")
     master_green = master_bg is not None and classify_rgb(master_bg.get("val")) == "green"
 

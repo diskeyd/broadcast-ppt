@@ -37,4 +37,4 @@ extend-exclude = ["local", "work", "tests/local"]
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "B", "UP"]
-ignore = ["E501"]
+ignore = ["E501", "B905"]

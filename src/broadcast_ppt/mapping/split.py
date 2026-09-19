@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import re
-from typing import Callable
+from collections.abc import Callable
 
 SENTENCE_RE = re.compile(r"(?<=[.?!…다요라」”'\"])\s+")
 

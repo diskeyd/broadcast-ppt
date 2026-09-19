@@ -84,7 +84,7 @@ export d to POSIX file "{tmp / 'out'}" as slide images with properties {{image f
 close d saving no
 end tell
 end timeout'''
-        for attempt in range(3):
+        for _ in range(3):
             r = subprocess.run(["osascript", "-e", script], capture_output=True, text=True, timeout=200)
             if r.returncode == 0 or "-609" not in r.stderr:
                 break

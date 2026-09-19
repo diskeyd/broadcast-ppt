@@ -59,7 +59,8 @@ def is_chroma_slide(sl: dict) -> bool:
 
 
 def md_table(headers: list[str], rows: list[list]) -> str:
-    esc = lambda v: str(v).replace("|", "\\|").replace("\n", " ")
+    def esc(v):
+        return str(v).replace("|", "\\|").replace("\n", " ")
     lines = ["| " + " | ".join(headers) + " |", "|" + "---|" * len(headers)]
     lines += ["| " + " | ".join(esc(v) for v in r) + " |" for r in rows]
     return "\n".join(lines)
@@ -134,7 +135,7 @@ def write_markdown(docs: list[dict], out_dir: Path) -> Path:
 
     src = Counter()
     rgb = Counter()
-    for d, s in all_slides:
+    for _, s in all_slides:
         for c in s.get("chroma", []):
             if c.get("area_frac", 0) >= 0.3:
                 src[(c["source"], c.get("kind") or c.get("fill"), c["key"])] += 1
@@ -143,7 +144,7 @@ def write_markdown(docs: list[dict], out_dir: Path) -> Path:
             [[a, b, k, v] for (a, b, k), v in src.most_common(20)]), "",
             md_table(["rgb", "key", "slides"], [[a, k, v] for (a, k), v in rgb.most_common(15)]), ""]
     partial = Counter()
-    for d, s in all_slides:
+    for _, s in all_slides:
         for c in s.get("chroma", []):
             if 0.05 <= c.get("area_frac", 0) < 0.3:
                 partial[(c["source"], c.get("kind") or c.get("fill"), c["key"], c.get("rgb"))] += 1
