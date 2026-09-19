@@ -1,13 +1,16 @@
 import io
 
+from lxml import etree
 from PIL import Image
 from pptx import Presentation
+from pptx.opc.constants import RELATIONSHIP_TYPE as RT
 from pptx.opc.package import Part
 from pptx.opc.packuri import PackURI
 from pptx.util import Inches, Pt
 
 from broadcast_ppt.builder.clone import _copy_part_into, copy_foreign_slide, duplicate_template_slide
 from broadcast_ppt.builder.package import current_slide_ids, remove_slides
+from broadcast_ppt.ooxml import R
 
 
 def _png(color):
@@ -66,3 +69,17 @@ def test_copied_media_part_keeps_the_media_base_name():
     mp4 = Part(PackURI("/ppt/media/media3.mp4"), "video/mp4", pkg, b"x")
     assert _copy_part_into(pkg, m4a).partname == "/ppt/media/media1.m4a"
     assert _copy_part_into(pkg, mp4).partname == "/ppt/media/media1.mp4"
+
+
+def test_copy_foreign_keeps_svg_images():
+    out = _deck((0, 255, 0), width=13.333, height=7.5)
+    slide = _deck((255, 0, 0)).slides[0]
+    svg = Part(PackURI("/ppt/media/image9.svg"), "image/svg+xml", slide.part.package, b"<svg xmlns='http://www.w3.org/2000/svg'/>")
+    blip = slide.shapes[0]._element.xpath(".//a:blip")[0]  # PowerPoint icons: PNG blip plus an svgBlip extension, which PIL cannot read
+    etree.SubElement(blip, "{http://schemas.microsoft.com/office/drawing/2016/SVG/main}svgBlip").set(f"{{{R}}}embed", slide.part.relate_to(svg, RT.IMAGE))
+    copy_foreign_slide(out, slide, scale=4 / 3)
+    buf = io.BytesIO()
+    out.save(buf)
+    buf.seek(0)
+    svgs = [p for p in Presentation(buf).part.package.iter_parts() if p.content_type == "image/svg+xml"]
+    assert [p.blob for p in svgs] == [svg.blob]

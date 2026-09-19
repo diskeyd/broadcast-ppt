@@ -89,9 +89,9 @@ def _rewrite_rels(elements, src_slide, dst_slide, same_package: bool, report: Cl
                     continue
                 elif same_package:
                     new = dst_part.relate_to(rel.target_part, rel.reltype)
-                elif rel.reltype == RT.IMAGE:
+                elif rel.reltype == RT.IMAGE and rel.target_part.content_type != "image/svg+xml":
                     _, new = dst_part.get_or_add_image_part(io.BytesIO(rel.target_part.blob))
-                elif rel.reltype in MEDIA_RELTYPES:
+                elif rel.reltype in MEDIA_RELTYPES or rel.reltype == RT.IMAGE:  # SVG icons: PIL cannot read them, copy as-is
                     new_part = _copy_part_into(dst_part.package, rel.target_part)
                     new = dst_part.relate_to(new_part, rel.reltype)
                 else:
