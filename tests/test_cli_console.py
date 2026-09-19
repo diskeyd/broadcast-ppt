@@ -74,3 +74,11 @@ def test_overrides_saved_as_ansi_is_a_message(tmp_path, monkeypatch, capsys):
     f.write_bytes('slides:\n  1: {ref: "요 1:1"}\n'.encode("cp949"))
     assert cli.main(["plan", str(_deck(tmp_path / "src.pptx")), "--overrides", str(f), "--out", str(tmp_path / "p.json")]) == 2
     assert "UTF-8" in capsys.readouterr().err
+
+
+def test_plan_of_a_non_pptx_file_is_a_message(tmp_path, monkeypatch, capsys):
+    monkeypatch.delenv("GEMINI_API_KEY", raising=False)
+    f = tmp_path / "._주일.pptx"  # the AppleDouble sidecar a Mac leaves on a USB stick
+    f.write_bytes(b"\x00\x05\x16\x07 not a zip")
+    assert cli.main(["plan", str(f), "--out", str(tmp_path / "p.json")]) == 2
+    assert ".pptx로 읽을 수 없습니다" in capsys.readouterr().err

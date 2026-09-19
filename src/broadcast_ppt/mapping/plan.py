@@ -260,6 +260,8 @@ def build_plan(src: Path, catalog_path: Path, widths_path: Path, opts: PlanOptio
     src = Path(src)
     catalog = load_catalog(catalog_path)
     doc = analyze_file(src, src.parent)
+    if "error" in doc:  # .ppt, a Mac '._' sidecar from a USB stick, or a broken file
+        raise ValueError(f"{src.name}: .pptx로 읽을 수 없습니다. PowerPoint에서 .pptx로 다시 저장하거나, '._'로 시작하는 파일이면 진짜 파일을 고르세요 ({doc['error']})")
     slide_over = ((overrides or {}).get("slides") or {})
     # a slide the overrides file decides is never sent to the model
     decisions = classify_deck(doc, fallback=(lambda v, d: None if v.index in slide_over else ai.classify_view(v, d, opts.ai_model))
