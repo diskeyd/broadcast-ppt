@@ -251,4 +251,4 @@ GitHub에는 코드, 설정, 문서만 있습니다. 아래 파일은 git에 없
 | `local/pii-patterns.txt`, `.git/hooks/pre-commit` | 커밋 전에 이름·개인정보를 막는 검사 | 코드를 고칠 때 필수 |
 | `local/input/`, `local/analysis/`, `local/work/`, `local/requirements/` | 원본 PPT(Drive에 원본 있음), 분석, 결과물, 요구사항 원문(볼트에 사본) | 보통 필요 없음 |
 
-복구 순서: `git clone` → `uv sync` → 템플릿을 `local/templates/`에 복사 → `uv run pytest` → 코드를 고칠 계획이면 표의 검사 파일과 규칙 파일도 제자리에 복사.
+복구 순서: `git clone` → `uv sync` → 템플릿을 `local/templates/`에 복사 → `uv run pytest` → 코드를 고칠 계획이면 표의 검사 파일도 제자리에 복사.
