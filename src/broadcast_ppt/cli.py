@@ -6,8 +6,10 @@ import argparse
 from collections import Counter
 import json
 import os
+import re
 import sys
 import time
+import traceback
 import unicodedata
 from concurrent.futures import ProcessPoolExecutor, as_completed
 from pathlib import Path
@@ -85,7 +87,16 @@ def cmd_summarize(args) -> int:
 
 
 def _stem(path: Path) -> str:
-    return unicodedata.normalize("NFC", Path(path).stem)
+    """Work folder name: Windows forbids <>:"/\\|?* and drops trailing spaces and dots."""
+    return re.sub(r'[<>:"/\\|?*]', "_", unicodedata.normalize("NFC", Path(path).stem)).rstrip(" .") or "deck"
+
+
+def _find_nfc(p: Path) -> Path:
+    """NTFS matches names exactly; a copy whose Korean name arrived decomposed (NFD) still counts."""
+    if p.exists() or not p.parent.is_dir():
+        return p
+    want = unicodedata.normalize("NFC", p.name)
+    return next((c for c in p.parent.iterdir() if unicodedata.normalize("NFC", c.name) == want), p)
 
 
 def _default_template() -> Path:
@@ -132,7 +143,11 @@ def cmd_plan(args) -> int:
     if args.overrides and not Path(args.overrides).is_file():
         print(f"overrides file not found: {args.overrides} (create it first, see README)", file=sys.stderr)
         return 2
-    overrides = yaml.safe_load(Path(args.overrides).read_text(encoding="utf-8")) if args.overrides else None
+    try:
+        overrides = yaml.safe_load(Path(args.overrides).read_text(encoding="utf-8-sig")) if args.overrides else None
+    except UnicodeDecodeError:
+        print(f"{args.overrides} 파일을 UTF-8로 저장해 주세요 (메모장: 다른 이름으로 저장 → 인코딩 UTF-8).", file=sys.stderr)
+        return 2
     opts = PlanOptions(slide_size=args.slide_size, scripture_both=not args.no_scripture_both, sermon_material=args.sermon_material,
                        ai_model=ai.enabled())
     if opts.ai_model:
@@ -154,10 +169,19 @@ def cmd_build(args) -> int:
     from .mapping.plan import load_plan
     plan = load_plan(Path(args.plan))
     out = Path(args.out) if args.out else Path(args.plan).with_name("broadcast.pptx")
+    template = _find_nfc(Path(args.template) if args.template else _default_template())
+    if not template.is_file():
+        print(f"템플릿이 없습니다: {template}\n원본 24.상반기.pptx를 PowerPoint로 다시 저장하지 말고 그대로 이 위치에 복사하거나, --template <경로>로 지정하세요.", file=sys.stderr)
+        return 2
     try:
-        res = build_deck(plan, Path(args.template) if args.template else _default_template(), Path(args.catalog), out,
-                         force=args.force, widths_path=Path(args.widths))
+        res = build_deck(plan, template, Path(args.catalog), out, force=args.force, widths_path=Path(args.widths))
+    except PermissionError as exc:
+        print(f"파일을 열 수 없습니다: {exc.filename}\nPowerPoint에서 {out.name}를 닫고 다시 실행하세요.", file=sys.stderr)
+        return 1
     except ValueError as exc:
+        if str(exc).startswith("template changed"):
+            print(f"템플릿이 원본과 다릅니다: {template}\n원본을 PowerPoint로 다시 저장하지 말고 그대로 복사하세요 (SHA256 {plan['template']['sha256'].upper()}).", file=sys.stderr)
+            return 1
         print(f"build refused: {exc} (re-run plan, or pass --force)", file=sys.stderr)
         return 1
     flagged = [r for r in res["ops"] if r["flags"]]
@@ -218,7 +242,17 @@ def cmd_run(args) -> int:
     return cmd_build(args)
 
 
+def _utf8_console() -> None:
+    """Redirected output on Korean Windows is cp949, which cannot print every character (same guard as dongdongs)."""
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(encoding="utf-8")
+        except (AttributeError, ValueError):
+            pass
+
+
 def main(argv: list[str] | None = None) -> int:
+    _utf8_console()
     ap = argparse.ArgumentParser(prog="broadcast-ppt")
     sub = ap.add_subparsers(dest="cmd", required=True)
     a = sub.add_parser("analyze", help="inventory the structure of .pptx files")
@@ -276,7 +310,14 @@ def main(argv: list[str] | None = None) -> int:
     cal.add_argument("--out", default=WIDTHS)
     cal.set_defaults(func=cmd_calibrate)
     args = ap.parse_args(argv)
-    return args.func(args)
+    try:
+        return args.func(args)
+    except KeyboardInterrupt:
+        return 130
+    except Exception as exc:  # the operator reads the last line; the traceback above it is for fixing the code
+        traceback.print_exc()
+        print(f"\n오류: {exc}\n파일 경로가 맞는지, PowerPoint가 그 파일을 열고 있지 않은지 확인하세요.", file=sys.stderr)
+        return 1
 
 
 if __name__ == "__main__":
