@@ -21,6 +21,53 @@ uv run pytest
 
 템플릿 원본은 `local/templates/24.상반기.pptx`에 둡니다. 위치는 `config/scope.yaml`에 적혀 있습니다. 명령은 어느 폴더에서 실행해도 저장소 기준 경로를 씁니다.
 
+Windows PC에서는 아래 [Windows에서 실행](#windows에서-실행)을 따르세요.
+
+## Windows에서 실행
+
+Windows PC에서도 Mac과 같은 명령으로 변환할 수 있습니다. 명령은 모두 **PowerShell** 창에 입력합니다(시작 메뉴에서 "PowerShell" 검색). 64비트(x64) PC에서만 됩니다.
+
+### 처음 한 번
+
+1. **폴더 위치**: `C:\broadcast-ppt`처럼 짧은 경로에 둡니다. 바탕 화면이나 문서 폴더처럼 OneDrive가 동기화하는 곳은 피하세요.
+2. **코드 받기**: 비공개 저장소라서 먼저 브라우저에서 GitHub에 로그인해야 합니다. 저장소 페이지의 **Code → Download ZIP**으로 받아 압축을 풀고 폴더 이름을 `C:\broadcast-ppt`로 맞춥니다. git이 있으면 이렇게 받아도 됩니다.
+   ```powershell
+   git clone https://github.com/diskeyd/broadcast-ppt.git C:\broadcast-ppt
+   ```
+3. **uv 설치**: `uv --version`이 안 되면 아래 한 줄로 설치합니다. 설치가 끝나면 **PowerShell 창을 닫고 다시 엽니다.** 새 창에서만 `uv`를 찾습니다.
+   ```powershell
+   powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
+   ```
+4. **설치**: 처음에는 파이썬까지 내려받아서 몇 분 걸립니다. 마지막 줄은 템플릿과 원본을 둘 폴더를 만듭니다.
+   ```powershell
+   cd C:\broadcast-ppt
+   uv sync
+   mkdir local\templates, local\input
+   ```
+5. **템플릿 복사**: Mac의 `local/templates/24.상반기.pptx`(또는 Drive에 있는 같은 원본)를 **그대로** `C:\broadcast-ppt\local\templates\24.상반기.pptx`에 복사합니다. PowerPoint로 열어서 다시 저장하면 안 됩니다. 복사한 뒤 원본과 같은지 확인하세요.
+   ```powershell
+   Get-FileHash local\templates\24.상반기.pptx -Algorithm SHA256
+   (Get-Item local\templates\24.상반기.pptx).Length
+   ```
+   첫 명령의 Hash 값이 `config/templates.yaml`의 `sha256` 값과 같아야 합니다(대소문자는 달라도 됩니다). 두 번째 명령은 `28279381`이 나와야 합니다. 다르면 다시 복사하세요. 변환할 때 템플릿이 없다고 나오면 `--template <경로>`로 템플릿 파일을 직접 지정합니다.
+
+### 매주 실행
+
+1. 원본 PPT를 `C:\broadcast-ppt\local\input\` 아래(예: `local\input\미편집\`)에 넣습니다. Mac의 `local\work` 폴더는 복사하지 마세요. PC에서 새로 만듭니다.
+2. PowerShell에서 실행합니다. 한글 파일 이름은 직접 치지 말고 `local\input\`까지 친 다음 **Tab** 키로 채웁니다.
+   ```powershell
+   cd C:\broadcast-ppt
+   uv run broadcast-ppt run "local\input\미편집\주일오전예배ppt(YYMMDD).pptx"
+   ```
+3. 결과는 Mac과 같이 `local\work\<원본 파일 이름>\broadcast.pptx`에 생깁니다. 탐색기에서 열면 됩니다.
+
+주의할 점:
+
+- 수정 파일을 고친 뒤 다시 실행할 때는 **PowerPoint에서 `broadcast.pptx`를 먼저 닫습니다.** 열려 있으면 덮어쓸 수 없다는 안내가 나옵니다.
+- `overrides.yaml`은 메모장에서 **UTF-8**로 저장합니다(다른 이름으로 저장 → 인코딩 UTF-8).
+- 미리 열어 둔 PowerShell 창에서 실행하세요. 오류가 나도 글이 창에 남습니다. `> log.txt`처럼 출력을 파일로 보내거나 Git Bash에서 실행하지 마세요.
+- Gemini 키(`GEMINI_API_KEY`)가 없으면 규칙만으로 변환합니다. Mac과 PC의 결과가 같으려면 키 설정을 두 곳에서 똑같이 둡니다(둘 다 있거나 둘 다 없거나).
+
 ## 매주 사용법
 
 ### 1. 변환
@@ -61,6 +108,15 @@ uv run python scripts/keynote_check.py render "local/work/<원본 파일 이름>
 ```
 
 그림은 `local/work/keynote/check/png/`에 저장됩니다. Keynote는 보안 제한 때문에 자기 iCloud 문서 폴더의 파일만 열 수 있습니다. 그래서 잠깐 그 폴더에 복사했다가 끝나면 지웁니다. 이름이 들어간 슬라이드는 가능하면 넣지 마세요.
+
+#### 송출 PC에서 처음 열 때
+
+방송본을 PowerPoint로 여는 것은 처음입니다. 첫 주에는 방송 전에 아래를 확인하세요.
+
+- 파일을 열 때 "복구" 창이 뜨는지. 뜨면 그 문구를 적어 둡니다.
+- **홈 → 바꾸기 → 글꼴 바꾸기**에서 쓰인 글꼴 목록을 보고 PC에 없는 글꼴이 있는지(나눔 글꼴, Script MT Bold, 맑은 고딕).
+- 카드 4종(예배로의 부름, 기도, 성경봉독, 설교)에서 영문 줄과 한글 줄이 겹치거나 너무 붙지 않았는지.
+- 문제가 있으면 그 주는 원본 PPT와 평소 하던 수작업 방식으로 방송합니다.
 
 ### 4. 단계별로 나눠서 실행
 
@@ -193,7 +249,6 @@ GitHub에는 코드, 설정, 문서만 있습니다. 아래 파일은 git에 없
 | `local/templates/24.상반기.pptx` | 방송 템플릿 정본 | 변환에 필수 |
 | `local/work/<원본 이름>/overrides.yaml` | 주마다 적은 수정 파일 | 그 주를 다시 만들 때만 |
 | `local/pii-patterns.txt`, `.git/hooks/pre-commit` | 커밋 전에 이름·개인정보를 막는 검사 | 코드를 고칠 때 필수 |
-| `CLAUDE.local.md`, `.claude/` | Claude Code 작업 규칙과 훅 | 코드를 고칠 때 |
 | `local/input/`, `local/analysis/`, `local/work/`, `local/requirements/` | 원본 PPT(Drive에 원본 있음), 분석, 결과물, 요구사항 원문(볼트에 사본) | 보통 필요 없음 |
 
 복구 순서: `git clone` → `uv sync` → 템플릿을 `local/templates/`에 복사 → `uv run pytest` → 코드를 고칠 계획이면 표의 검사 파일과 규칙 파일도 제자리에 복사.
