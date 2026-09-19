@@ -1,136 +1,221 @@
 # broadcast-ppt
 
-현장 예배용 PowerPoint 원본을 방송용(크로마키) PPT로 바꿔 주는 프로그램입니다. 방송 템플릿의 슬라이드를 복제해서 글자만 바꿔 넣습니다.
+현장 예배용 PowerPoint 원본을 방송용(크로마키) PPT로 바꾸는 명령줄 프로그램입니다. 방송 템플릿의 슬라이드를 복제한 뒤 글자만 원본 내용으로 바꿔 넣습니다. 글꼴과 색은 템플릿을 따르고, 글자 길이에 맞춰 상자 폭·위치와 자막 띠 높이만 조금 조정합니다.
 
-## 어떻게 동작하나
+- 실행 환경: Mac, Windows(x64). 파이썬 3.12를 쓰지만 따로 설치하지 않습니다. `uv`가 알아서 내려받습니다.
+- 입력: 원본 PowerPoint 파일(**.pptx**) 한 개. 옛 형식 `.ppt`는 PowerPoint에서 `.pptx`로 다시 저장해서 넣습니다.
+- 출력: 방송용 PPT, 변환 계획(`plan.json`), 검증 결과(`validation.json`).
+- 슬라이드 종류는 규칙으로 판정합니다. AI(Gemini)는 선택 사항이고 기본은 꺼져 있습니다.
 
-- 파일 작업은 전부 파이썬이 합니다. AI는 `GEMINI_API_KEY` 환경변수가 있을 때만, 규칙으로 종류를 못 정한 슬라이드에 한해 Gemini에게 종류만 묻습니다. 키가 없으면 AI에 아무것도 보내지 않습니다.
-- 원본 슬라이드마다 규칙으로 종류를 판정합니다. 예배로의 부름, 기도, 성경봉독, 설교, 묵상, 교리문답(제N문), 교회소식, 성경 본문, 핵심 문장 같은 종류입니다.
-- 템플릿 슬라이드를 복제하고 글자 상자 안의 글자만 바꿉니다. 글꼴과 색은 템플릿 그대로입니다.
-- 긴 글은 줄 수에 맞는 높이의 템플릿으로 나눠 여러 장에 담습니다.
-- 성경 본문과 설교 인용은 두 번 만듭니다. 원본 슬라이드를 화면 전체용으로 한 장 넣고, 그 뒤에 녹색 하단 자막을 넣습니다.
-- 교리문답(제N문) 슬라이드도 원본 한 장을 넣고, 문답을 하단 자막 한 장에, 함께 적힌 말씀을 참조 자막 한 장에 따로 넣습니다.
-- 사진, 영상, 찬송가 악보 슬라이드는 그대로 복사하고 검수 표시를 붙입니다.
+용어: **템플릿**은 방송용 양식 슬라이드가 모두 들어 있는 `24.상반기.pptx`입니다. **크로마키**는 녹색 부분을 방송 장비가 투명하게 합성하는 방식입니다. **카드**는 예배로의 부름·기도·성경봉독·설교처럼 제목을 크게 보여 주는 장, **하단 자막(띠)**은 화면 아래 녹색 띠에 글자를 넣은 장입니다. **원본 장 번호**와 **방송본 장 번호**는 서로 다릅니다(원본 한 장이 방송본 여러 장이 되기도 함).
 
-## 처음 설치
+> **처음 쓰는 Windows PC라면** [Windows 설치](#windows-설치-처음-한-번-약-10분) 1~5단계 → [매주 사용법](#매주-사용법) 1~3단계만 하면 됩니다. 막히면 [문제 해결](#문제-해결)을 봅니다.
 
-```bash
+**목차**: [한눈에 보기](#한눈에-보기) · [설치](#설치) · [매주 사용법](#매주-사용법) · [고치고 싶을 때](#고치고-싶을-때-수정-파일) · [문제 해결](#문제-해결) · [명령과 옵션](#명령과-옵션) · [동작 원리](#동작-원리) · [설정 파일](#설정-파일) · [아직 안 되는 것](#아직-안-되는-것) · [데이터 보관](#데이터-보관-원칙) · [백업과 복구](#백업과-복구)
+
+## 한눈에 보기
+
+```
+원본.pptx ─▶ ① 분석 ─▶ ② 분류 ─▶ ③ 계획 ─▶ ④ 생성 ─▶ ⑤ 검증
+             슬라이드   종류 판정   plan.json   broadcast.pptx   validation.json
+             구조 읽기  (규칙 먼저)  어떤 템플릿에  템플릿 복제 +    빈 칸·남은 견본
+                                    무엇을 넣을지  글자 바꾸기      글자 등 점검
+```
+
+`run` 명령 하나가 ①~⑤를 모두 합니다. 폴더는 이렇게 씁니다. `local/`은 교회 자료라서 git에 올라가지 않습니다.
+
+```
+broadcast-ppt/
+├── src/, tests/, config/         코드, 테스트, 설정 (git에 있음)
+└── local/                        git에 없음. 직접 만들고 채움
+    ├── templates/24.상반기.pptx   방송 템플릿 원본 (필수, 직접 복사)
+    ├── input/                    원본 PPT를 넣는 곳
+    └── work/<원본 파일 이름>/      결과가 생기는 곳 (.pptx를 뺀 이름)
+        ├── broadcast.pptx        방송용 PPT
+        ├── plan.json             원본 장마다 어떤 템플릿으로 바꿨는지 (슬라이드 글자 포함)
+        ├── validation.json       검증 결과
+        └── overrides.yaml        (선택) 그 주의 수정 파일
+```
+
+## 설치
+
+### 준비물
+
+| 항목 | 용도 | Windows | Mac |
+|---|---|---|---|
+| **uv** | 파이썬과 라이브러리를 설치하고 실행하는 도구 | 필수 (아래 2단계) | 필수 (`brew install uv`) |
+| 파이썬 3.12 | 프로그램 실행 | **따로 설치 안 함.** `uv sync`가 내려받음 | 같음 |
+| **Git** | 코드 받기·업데이트 | 권장 (없으면 ZIP으로 받음) | 보통 이미 있음 |
+| GitHub 권한 | 비공개 저장소라서 로그인 필요 | 필수 | 필수 |
+| 템플릿 원본 | `24.상반기.pptx`. git에 없음 | 필수 (USB·Mac·Drive에서 복사) | 필수 |
+| 인터넷 | 처음 설치 때 파이썬·라이브러리 내려받기(수백 MB) | 처음 한 번 | 처음 한 번 |
+| PowerPoint와 글꼴 | 결과를 열어 볼 때만 필요. 변환에는 필요 없음 | 아래 [글꼴](#글꼴) 참고 | Keynote로 확인 |
+
+### Windows 설치 (처음 한 번, 약 10분)
+
+모든 명령은 **PowerShell**에 입력합니다. 시작 메뉴에서 "PowerShell"을 검색해 엽니다(관리자 권한으로 열 필요는 없음). 64비트(x64) PC만 됩니다.
+
+- `winget`을 처음 쓰면 약관 동의를 묻습니다. `Y`를 누릅니다.
+- Git 설치 중 "이 앱이 디바이스를 변경하도록 허용하시겠어요?" 창이 뜨면 **예**를 누릅니다. 관리자 암호를 모르면 Git은 건너뛰고 3단계에서 ZIP으로 받습니다.
+
+**1. Git 설치** (ZIP으로 받을 거면 건너뜀)
+
+```powershell
+winget install --id Git.Git -e
+```
+
+**2. uv 설치**
+
+```powershell
+winget install --id astral-sh.uv -e
+```
+
+`winget`이 없는 PC라면 이 명령을 대신 씁니다.
+
+```powershell
+powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
+```
+
+설치가 끝나면 **PowerShell 창을 완전히 닫고**(Windows 터미널이면 탭이 아니라 창 전체) 새로 엽니다. 새 창에서 `uv --version`이 버전을 출력하면 됩니다. Git을 설치했다면 `git --version`도 확인합니다. 그래도 찾을 수 없다고 나오면 Windows에서 로그아웃했다가 다시 로그인합니다.
+
+**3. 코드 받기.** 짧은 경로에 둡니다. 바탕 화면이나 문서 폴더처럼 OneDrive가 동기화하는 곳은 피합니다.
+
+```powershell
+git clone https://github.com/diskeyd/broadcast-ppt.git C:\broadcast-ppt
+```
+
+처음이면 GitHub 로그인 창이 뜹니다. **Sign in with your browser**를 눌러 저장소 권한이 있는 계정으로 로그인합니다(2단계 인증을 쓰면 휴대폰이 필요합니다). 로그인 정보는 이 PC에 저장되어 다음 `git pull`부터는 묻지 않습니다.
+
+Git이 없으면 브라우저에서 GitHub에 로그인한 뒤 저장소 페이지의 **Code → Download ZIP**으로 받습니다. 압축을 풀면 `broadcast-ppt-main` 폴더 안에 같은 이름의 폴더가 한 겹 더 있을 수 있습니다. `pyproject.toml`이 바로 보이는 폴더를 `C:\`로 옮기고 이름을 `broadcast-ppt`로 바꿉니다. `C:\broadcast-ppt\pyproject.toml`이 있으면 맞습니다. 여러 사람이 쓰는 PC라면 받은 뒤 브라우저에서 GitHub 로그아웃합니다.
+
+**4. 파이썬과 라이브러리 설치.** 처음에는 파이썬 3.12까지 내려받아서 몇 분 걸립니다. 멈춘 것처럼 보여도 기다립니다.
+
+```powershell
+cd C:\broadcast-ppt
 uv sync
+uv run broadcast-ppt --help
+```
+
+마지막 명령이 `usage: broadcast-ppt`로 시작하는 영어 안내를 출력하면 설치가 된 것입니다.
+
+**5. 템플릿 넣기**
+
+```powershell
+New-Item -ItemType Directory -Force -Path local\templates, local\input
+ii local\templates
+```
+
+두 번째 명령이 탐색기로 `local\templates` 폴더를 엽니다. USB(또는 Mac·Drive)에 있는 템플릿 원본을 이 폴더에 **그대로** 복사합니다.
+
+- 파일 이름은 정확히 `24.상반기.pptx`여야 합니다. `24.상반기 (1).pptx`처럼 바뀌면 "템플릿이 없습니다"가 나옵니다.
+- PowerPoint로 열어서 다시 저장하면 안 됩니다. 한 바이트라도 다르면 변환할 때 "템플릿이 원본과 다릅니다"가 나오고 멈춥니다.
+- 미리 확인하려면 아래 명령의 `Hash`가 `EBC589F5`로 시작하는지 봅니다(전체 값은 `config\templates.yaml`의 `sha256`, 크기는 28,279,381바이트).
+
+```powershell
+Get-FileHash local\templates\*.pptx -Algorithm SHA256 | Format-List
+```
+
+**6. (선택) 동작 확인**
+
+```powershell
 uv run pytest
 ```
 
-템플릿 원본은 `local/templates/24.상반기.pptx`에 둡니다. 위치는 `config/scope.yaml`에 적혀 있습니다. 명령은 어느 폴더에서 실행해도 저장소 기준 경로를 씁니다.
+전부 `passed`면 이 PC에서 문제없이 돌아갑니다.
 
-Windows PC에서는 아래 [Windows에서 실행](#windows에서-실행)을 따르세요.
+### Mac 설치
 
-## Windows에서 실행
+```bash
+brew install uv                       # 또는 curl -LsSf https://astral.sh/uv/install.sh | sh
+git clone https://github.com/diskeyd/broadcast-ppt.git
+cd broadcast-ppt
+uv sync
+mkdir -p local/templates local/input  # 그다음 템플릿을 local/templates/에 복사
+uv run pytest
+```
 
-Windows PC에서도 Mac과 같은 명령으로 변환할 수 있습니다. 명령은 모두 **PowerShell** 창에 입력합니다(시작 메뉴에서 "PowerShell" 검색). 64비트(x64) PC에서만 됩니다.
+### 업데이트
 
-### 처음 한 번
+```powershell
+cd C:\broadcast-ppt
+git pull
+uv sync
+```
 
-1. **폴더 위치**: `C:\broadcast-ppt`처럼 짧은 경로에 둡니다. 바탕 화면이나 문서 폴더처럼 OneDrive가 동기화하는 곳은 피하세요.
-2. **코드 받기**: 비공개 저장소라서 먼저 브라우저에서 GitHub에 로그인해야 합니다. 저장소 페이지의 **Code → Download ZIP**으로 받아 압축을 풀고 폴더 이름을 `C:\broadcast-ppt`로 맞춥니다. git이 있으면 이렇게 받아도 됩니다.
-   ```powershell
-   git clone https://github.com/diskeyd/broadcast-ppt.git C:\broadcast-ppt
-   ```
-3. **uv 설치**: `uv --version`이 안 되면 아래 한 줄로 설치합니다. 설치가 끝나면 **PowerShell 창을 닫고 다시 엽니다.** 새 창에서만 `uv`를 찾습니다.
-   ```powershell
-   powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
-   ```
-4. **설치**: 처음에는 파이썬까지 내려받아서 몇 분 걸립니다. 마지막 줄은 템플릿과 원본을 둘 폴더를 만듭니다.
-   ```powershell
-   cd C:\broadcast-ppt
-   uv sync
-   mkdir local\templates, local\input
-   ```
-5. **템플릿 복사**: Mac의 `local/templates/24.상반기.pptx`(또는 Drive에 있는 같은 원본)를 **그대로** `C:\broadcast-ppt\local\templates\24.상반기.pptx`에 복사합니다. PowerPoint로 열어서 다시 저장하면 안 됩니다. 복사한 뒤 원본과 같은지 확인하세요.
-   ```powershell
-   Get-FileHash local\templates\24.상반기.pptx -Algorithm SHA256
-   (Get-Item local\templates\24.상반기.pptx).Length
-   ```
-   첫 명령의 Hash 값이 `config/templates.yaml`의 `sha256` 값과 같아야 합니다(대소문자는 달라도 됩니다). 두 번째 명령은 `28279381`이 나와야 합니다. 다르면 다시 복사하세요. 변환할 때 템플릿이 없다고 나오면 `--template <경로>`로 템플릿 파일을 직접 지정합니다.
+ZIP으로 받았다면 새 ZIP을 받아 코드 폴더만 바꾸고 `local` 폴더는 그대로 옮깁니다. `.venv` 폴더는 복사하지 않습니다. `uv sync`가 다시 만듭니다.
 
-### 매주 실행
+### 글꼴
 
-1. 원본 PPT를 `C:\broadcast-ppt\local\input\` 아래(예: `local\input\미편집\`)에 넣습니다. Mac의 `local\work` 폴더는 복사하지 마세요. PC에서 새로 만듭니다.
-2. PowerShell에서 실행합니다. 한글 파일 이름은 직접 치지 말고 `local\input\`까지 친 다음 **Tab** 키로 채웁니다.
-   ```powershell
-   cd C:\broadcast-ppt
-   uv run broadcast-ppt run "local\input\미편집\주일오전예배ppt(YYMMDD).pptx"
-   ```
-3. 결과는 Mac과 같이 `local\work\<원본 파일 이름>\broadcast.pptx`에 생깁니다. 탐색기에서 열면 됩니다.
+변환 자체에는 글꼴이 필요 없습니다. 결과를 PowerPoint로 열 PC(송출 PC)에는 템플릿이 쓰는 글꼴이 있어야 모양이 맞습니다.
 
-주의할 점:
+- **나눔스퀘어**(OTF 포함), **나눔고딕**, **나눔스퀘어라운드**, **나눔손글씨 붓**(묵상 인용): Windows 기본 글꼴이 아닙니다. 네이버 나눔 글꼴(무료)에서 받아 설치합니다. 템플릿을 만든 송출 PC에는 보통 이미 있습니다.
+- **Script MT Bold**: Microsoft Office와 함께 설치됩니다.
 
-- 수정 파일을 고친 뒤 다시 실행할 때는 **PowerPoint에서 `broadcast.pptx`를 먼저 닫습니다.** 열려 있으면 덮어쓸 수 없다는 안내가 나옵니다.
-- `overrides.yaml`은 메모장에서 **UTF-8**로 저장합니다(다른 이름으로 저장 → 인코딩 UTF-8).
-- 미리 열어 둔 PowerShell 창에서 실행하세요. 오류가 나도 글이 창에 남습니다. `> log.txt`처럼 출력을 파일로 보내거나 Git Bash에서 실행하지 마세요.
-- Gemini 키(`GEMINI_API_KEY`)가 없으면 규칙만으로 변환합니다. Mac과 PC의 결과가 같으려면 키 설정을 두 곳에서 똑같이 둡니다(둘 다 있거나 둘 다 없거나).
+PowerPoint의 **홈 → 바꾸기 → 글꼴 바꾸기** 목록에서 PC에 없는 글꼴을 확인할 수 있습니다.
 
 ## 매주 사용법
 
-### 1. 변환
+모든 명령은 저장소 폴더(`C:\broadcast-ppt`)에서 실행합니다. 새 PowerShell 창을 열었으면 먼저 `cd C:\broadcast-ppt`를 합니다.
 
-```bash
-uv run broadcast-ppt run "local/input/미편집/주일오전예배ppt(YYMMDD).pptx"
+### 1. 원본 넣고 변환
+
+USB의 원본 PPT를 `C:\broadcast-ppt\local\input\`에 복사합니다(`ii local\input`으로 폴더 열기). 하위 폴더 없이 바로 넣으면 입력이 쉽습니다.
+
+```powershell
+cd C:\broadcast-ppt
+uv run broadcast-ppt run "local\input\주일오전예배ppt(YYMMDD).pptx"
 ```
 
-한 번에 계획, 생성, 검증까지 합니다. 결과는 `local/work/<원본 파일 이름>/` 폴더에 생깁니다.
+- 한글 파일 이름은 직접 치지 말고 `"local\input\`까지 친 다음 **Tab** 키로 채웁니다. 파일이 여러 개면 Tab을 여러 번 눌러 고릅니다.
+- `YYMMDD`는 예배 날짜(예: `260920`)입니다. 파일 이름을 `0920.pptx`처럼 영문·숫자로 바꿔 넣어도 됩니다. 이름은 결과 폴더 이름에만 쓰입니다.
+- Mac이 USB에 만든 `._`로 시작하는 파일은 고르지 않습니다(진짜 파일이 아님).
 
-| 파일 | 내용 |
-|---|---|
-| `broadcast.pptx` | 방송용 PPT |
-| `plan.json` | 원본 슬라이드마다 어떤 템플릿으로 바꿨는지 |
-| `validation.json` | 검증 결과 |
+결과는 `local\work\<원본 파일 이름(.pptx 뺀 것)>\broadcast.pptx`에 생깁니다. 실행 끝의 `built … slides -> <경로>` 줄에 전체 경로가 나옵니다.
 
 ### 2. 검증 결과 보기
 
-실행이 끝나면 `critical`, `warning`, `info` 개수가 나옵니다.
+화면에는 이 순서로 나옵니다.
 
-- **critical**이 1개라도 있으면 방송에 쓰면 안 됩니다. 먼저 고쳐야 합니다.
-- **warning**은 자막 줄 수가 빠듯한 장입니다. 해당 슬라이드를 눈으로 확인하세요.
-- **info**는 검수 표시입니다. 아래 표를 보고 해당 장을 확인하세요.
+1. **plan 표**: 원본 장마다 한 줄. `src`=원본 장 번호, `kind`=판정한 종류, `rule`=쓴 규칙, `ops`=만든 장(`T23`=템플릿 23번 슬라이드, `copy`=원본 그대로), `[ ]`=검수 표시.
+2. `built … slides -> <broadcast.pptx 경로>`
+3. `validation: critical … · warning … · info …`와, critical·warning이 있으면 `critical  slide 12: …`처럼 한 줄씩.
+
+| 등급 | 뜻 | 할 일 |
+|---|---|---|
+| **critical** | 방송에 쓰면 안 되는 문제(빈 칸, 남은 견본 글자, 끊긴 연결 등) | 먼저 고침. 아래 참고 |
+| **warning** | 자막 줄 수·폭이 빠듯함 등 | 해당 장을 눈으로 확인 |
+| **info** | 검수 표시 | 화면에는 종류별 개수만 나옴. 어느 장인지는 plan 표에서 `[review:…]`가 붙은 줄로 확인. 뜻은 [검수 표시](#검수-표시) 표 |
+
+`slide 12`의 12는 **방송본** 장 번호입니다. [수정 파일](#고치고-싶을-때-수정-파일)에는 **원본** 장 번호를 써야 하므로 아래 명령으로 찾습니다(12 자리에 번호).
+
+```powershell
+(Get-Content "local\work\<원본 파일 이름>\plan.json" -Raw -Encoding UTF8 | ConvertFrom-Json).slides | Where-Object { $_.out -contains 12 } | Select-Object src, kind
+```
+
+critical이 있어도 `broadcast.pptx`는 만들어지지만 그대로 방송에 쓰지 않습니다. 빈 칸이나 견본 글자가 남은 장은 그 원본 장을 수정 파일에 `{op: copy}`로 적고 다시 실행하면 원본 그대로 들어갑니다. 시간이 없으면 그 주는 원본 PPT로 방송합니다.
 
 ### 3. 눈으로 확인
 
-`broadcast.pptx`를 Mac에서는 Keynote로, 송출 PC에서는 PowerPoint로 엽니다. 최소한 아래 장은 확인하세요.
+`ii local\work`로 탐색기를 열고 `<원본 파일 이름>` 폴더의 `broadcast.pptx`를 더블클릭해 PowerPoint로 엽니다. 최소한 아래 장은 봅니다.
 
 - 카드: 예배로의 부름, 기도, 성경봉독, 설교
-- 성경 자막 한 장
-- 묵상
-- 교회소식
+- 성경 자막 한 장, 묵상, 교회소식
+- 교리문답 자막(주황 질문·28pt 답), 참조 박스를 숨긴 성경 자막, 줄여진 3줄 자막 띠
 
-Mac에서는 명령으로 Keynote 그림을 뽑아 볼 수도 있습니다.
-
-```bash
-uv run python scripts/keynote_check.py render "local/work/<원본 파일 이름>/broadcast.pptx" --slides 2,4,12
-```
-
-그림은 `local/work/keynote/check/png/`에 저장됩니다. Keynote는 보안 제한 때문에 자기 iCloud 문서 폴더의 파일만 열 수 있습니다. 그래서 잠깐 그 폴더에 복사했다가 끝나면 지웁니다. 이름이 들어간 슬라이드는 가능하면 넣지 마세요.
-
-#### 송출 PC에서 처음 열 때
-
-방송본을 PowerPoint로 여는 것은 처음입니다. 첫 주에는 방송 전에 아래를 확인하세요.
+**송출 PC에서 처음 열 때** (첫 몇 주):
 
 - 파일을 열 때 "복구" 창이 뜨는지. 뜨면 그 문구를 적어 둡니다.
-- **홈 → 바꾸기 → 글꼴 바꾸기**에서 쓰인 글꼴 목록을 보고 PC에 없는 글꼴이 있는지(나눔 글꼴, Script MT Bold, 맑은 고딕).
-- 카드 4종(예배로의 부름, 기도, 성경봉독, 설교)에서 영문 줄과 한글 줄이 겹치거나 너무 붙지 않았는지.
-- 문제가 있으면 그 주는 원본 PPT와 평소 하던 수작업 방식으로 방송합니다.
+- 없는 글꼴이 있는지([글꼴](#글꼴)).
+- 카드 4종에서 영문 줄과 한글 줄이 겹치거나 너무 붙지 않았는지. 카드 간격은 Mac Keynote 기준으로 맞춰서 PowerPoint에서는 다를 수 있습니다.
+- 문제가 있으면 그 주는 원본 PPT와 평소 하던 수작업으로 방송합니다.
 
-### 4. 단계별로 나눠서 실행
+### 4. 필요하면 고치고 다시 실행
 
-중간에 계획표를 보고 싶을 때 씁니다.
+[수정 파일](#고치고-싶을-때-수정-파일)을 적고 `--overrides`를 붙여 다시 실행합니다. **PowerPoint에서 `broadcast.pptx`를 먼저 닫습니다.** 열려 있으면 "파일을 열 수 없습니다 … PowerPoint에서 broadcast.pptx를 닫고 다시 실행하세요"가 나옵니다.
 
-```bash
-uv run broadcast-ppt plan  "<원본.pptx>"                                  # 원본 슬라이드 → 종류 → 템플릿 표 출력
-uv run broadcast-ppt build "local/work/<원본 파일 이름>/plan.json"           # 생성 + 검증
-uv run broadcast-ppt validate "local/work/<원본 파일 이름>/broadcast.pptx" --plan "local/work/<원본 파일 이름>/plan.json"
-```
+### 5. 테스트 결과 남기기
 
-### 5. 테스트 피드백 남기기
-
-주일에 써 본 결과는 `local/work/<원본 파일 이름>/feedback.md`에 적습니다. `local/`은 GitHub에 올라가지 않습니다. 이름, 직분, 교인 정보는 적지 말고 장 번호와 증상만 적습니다. 스크린샷은 이름이 없는 장만 남깁니다.
+써 본 결과는 `local\work\<원본 파일 이름>\feedback.md`에 적습니다. `local`은 GitHub에 올라가지 않습니다. 이름, 직분, 교인 정보는 적지 말고 장 번호와 증상만 적습니다. 스크린샷은 이름이 없는 장만 남깁니다.
 
 ```markdown
 # 2026-09-20 주일 테스트
@@ -144,111 +229,174 @@ uv run broadcast-ppt validate "local/work/<원본 파일 이름>/broadcast.pptx"
 | 41 | 22 | 새 양식 | 원본 그대로 복사됨, 자막이 필요함 | 예 (caption) |
 ```
 
-- **원본 장**은 `plan` 표의 `src` 열 번호입니다.
-- 증상은 이런 식으로 적습니다: 글자 넘침, 띠 아래 여백, 색·크기, 영문·한글 줄 겹침, 종류가 틀림, 참조가 틀림·빠짐, 장이 빠짐·중복.
-- 수정 파일(`overrides.yaml`)로 해결되는 것은 그 주에 바로 고치고 표에 "예"로 남깁니다. **수정 파일로 안 되는 것만** 모아서 나중에 한 번에 코드 수정을 요청합니다.
-- 처음 몇 주는 특히 송출 PC에서 카드의 영문·한글 줄 간격, 교리문답 자막(주황 질문·28pt 답), 참조 박스를 숨긴 성경 자막, 줄여진 3줄 자막 띠를 봐 주세요.
+- 증상 예: 글자 넘침, 띠 아래 여백, 색·크기, 영문·한글 줄 겹침, 종류가 틀림, 참조가 틀림·빠짐, 장이 빠짐·중복.
+- 수정 파일로 해결되는 것은 그 주에 바로 고치고 표에 "예"로 남깁니다. **수정 파일로 안 되는 것만** 모아서 나중에 한 번에 코드 수정을 요청합니다.
 
-## 고치고 싶을 때
+### Mac에서
 
-`local/work/<원본 파일 이름>/overrides.yaml` 파일을 만들고 `plan --overrides` 다음 `build`를 다시 실행합니다.
+같은 명령을 경로만 `/`로 써서 실행합니다(`uv run broadcast-ppt run "local/input/….pptx"`). 결과는 Keynote로 엽니다. Keynote 그림을 명령으로 뽑아 볼 수도 있습니다. 그림은 `local/work/keynote/check/png/`에 저장됩니다.
+
+```bash
+uv run python scripts/keynote_check.py render "local/work/<원본 파일 이름>/broadcast.pptx" --slides 2,4,12
+```
+
+## 고치고 싶을 때 (수정 파일)
+
+새 양식이 나와도 코드를 고치지 않습니다. 결과 폴더에 `overrides.yaml`을 만들고 **원본** 장 번호(plan 표의 `src`, 방송본 번호가 아님)별로 한 줄씩 적은 뒤 `--overrides`를 붙여 다시 실행합니다. 결과 폴더는 첫 실행 뒤에 생깁니다.
+
+파일은 메모장으로 만듭니다. 없는 파일이면 새로 만들지 묻는데 **예**를 누릅니다.
+
+```powershell
+notepad "local\work\주일오전예배ppt(YYMMDD)\overrides.yaml"
+```
 
 ```yaml
 slides:
-  17: {skip: true}      # 원본 17번 슬라이드는 방송에 안 씀
+  17: {skip: true}      # 원본 17번은 방송본에서 뺌
   22: {op: copy}        # 원본 22번은 바꾸지 말고 그대로 복사
-  13: {ref: "요일 1:1-4"}  # 원본에 참조가 없는 성경 본문: 자막마다 이 참조를 넣음
+  13: {ref: "요일 1:1-4"}  # 참조가 없는 성경 본문·성경봉독·설교: 이 참조를 넣음
   14: {op: quote}       # 노란 인용 카드로 만들되 '묵 상 Meditate' 글자는 비움
   30: {op: caption}     # 슬라이드 글자를 하단 자막으로 (원본 한 장 + 자막)
-  31: {op: scripture, ref: "시 23:1-6"}  # 슬라이드 글자를 성경 자막으로. ref는 없어도 됨(참조 칸 비움)
+  31: {op: scripture, ref: "시 23:1-6"}  # 슬라이드 글자를 성경 자막으로. ref가 없으면 참조 박스를 숨기고 검수 표시
 ```
 
-새 양식이 나오면 코드를 고치지 않습니다. 처음에는 원본 그대로 복사되고 `review:unclassified`가 붙으니, 방송본에서 바꾸고 싶은 슬라이드만 위 파일에 한 줄 적습니다. `op`에는 `copy`, `quote`, `caption`, `scripture`만 쓸 수 있고, 다른 값을 쓰면 `plan`이 멈추고 알려 줍니다.
+```powershell
+uv run broadcast-ppt run "local\input\주일오전예배ppt(YYMMDD).pptx" --overrides "local\work\주일오전예배ppt(YYMMDD)\overrides.yaml"
+```
 
-`ref`는 참조 칸이 있는 슬라이드(성경 본문·성경봉독·설교)나 `op: scripture`와 함께 쓸 수 있고, `copy`·`quote`·`caption`과는 같이 쓸 수 없습니다. 참조 형식이 틀리거나, 글자가 없는 슬라이드에 `quote`·`caption`·`scripture`를 쓰면 `plan`이 멈추고 알려 줍니다. `op: quote`는 슬라이드의 글자를 모두 한 줄 인용문으로 넣습니다.
+- 다시 실행할 때마다 `--overrides`를 붙입니다. 빼면 수정 없이 다시 만들어집니다. **↑** 키로 앞 명령을 불러와 끝에 붙이면 한글 경로를 다시 칠 필요가 없습니다.
+- 들여쓰기는 **공백 2칸**만 씁니다(Tab 키 금지). `17:`처럼 콜론 뒤에 공백이 한 칸 있어야 합니다.
+- 메모장 '다른 이름으로 저장'을 쓸 때는 파일 형식을 **모든 파일(\*.\*)**로 바꿔야 `.txt`가 붙지 않습니다. 인코딩은 **UTF-8**(Windows 10 1903 이후 기본).
+- `op`에는 `copy`, `quote`, `caption`, `scripture`만 씁니다. `skip: true`는 그 장을 뺍니다.
+- `ref`는 참조 칸이 있는 슬라이드(성경 본문·성경봉독·설교)나 `op: scripture`와 함께 씁니다. `copy`·`quote`·`caption`과는 같이 못 씁니다.
+- 규칙에 안 맞는 줄(모르는 `op`, 틀린 참조 형식, 글자 없는 장에 `quote`·`caption`·`scripture`)이 있으면 `plan refused: override slide N: …`가 나오고 멈춥니다.
+- 처음 보는 양식은 원본 그대로 복사되고 `review:unclassified`가 붙습니다. 바꾸고 싶은 장만 적으면 됩니다.
 
-## 검수 표시
+## 문제 해결
+
+오류가 나면 PowerShell 창의 마지막 몇 줄(특히 `오류:`로 시작하는 줄)을 그대로 복사해 전달합니다. 창 내용에는 슬라이드 글자가 나오지 않습니다.
+
+| 증상 | 원인 | 해결 |
+|---|---|---|
+| `uv`(또는 `git`)를 찾을 수 없음 | 설치 직후 창에 경로가 반영 안 됨 | PowerShell 창 전체를 닫고 새로 열기. 그래도 안 되면 로그아웃 후 다시 로그인 |
+| `winget`을 찾을 수 없음 | winget이 없는 Windows 10 | uv는 2단계의 대체 명령으로 설치, 코드는 ZIP으로 받기 |
+| `git clone`이 `Repository not found` | 저장소 권한이 없는 계정으로 로그인됨 | 제어판 → 자격 증명 관리자 → Windows 자격 증명에서 `git:https://github.com`을 지우고 다시 시도, 또는 ZIP |
+| `Failed to spawn: broadcast-ppt` 또는 `No pyproject.toml found` | 저장소 폴더 밖에서 실행했거나 ZIP이 한 겹 더 풀림 | `cd C:\broadcast-ppt` 후 다시 실행. `C:\broadcast-ppt\pyproject.toml`이 있는지 확인 |
+| `uv sync`가 `error sending request`·시간 초과로 실패 | 인터넷 차단·방화벽·프록시 | 다시 실행(받은 것은 캐시에 남음). 교회 망이 막혀 있으면 휴대폰 핫스팟으로 설치. ARM PC는 지원 안 함 |
+| 처음 `uv sync`가 몇 분간 멈춘 듯함, 또는 `액세스가 거부되었습니다` | 파이썬 내려받는 중이거나 백신이 새 파일을 검사 중 | 5~10분 기다림. 오류면 다시 실행. 계속되면 백신 검사 예외에 `C:\broadcast-ppt`와 `%LOCALAPPDATA%\uv` 추가 |
+| "템플릿이 없습니다" | `local\templates\24.상반기.pptx`가 없거나 이름이 다름 | 템플릿을 그 이름으로 복사, 또는 `--template <경로>`로 지정 |
+| "템플릿이 원본과 다릅니다" | PowerPoint로 다시 저장했거나 다른 판 | 원본 파일을 그대로 다시 복사. 안내에 나온 SHA256과 비교 |
+| `plan refused: … .pptx로 읽을 수 없습니다` | 원본이 `.ppt`, Mac이 만든 `._` 파일, 또는 손상된 파일 | `.ppt`는 PowerPoint에서 `.pptx`로 다시 저장. `._` 파일이면 진짜 파일을 고름 |
+| `오류: [Errno 2] …` / `지정된 파일을 찾을 수 없습니다` | 원본 경로·이름 오타 | Tab으로 이름 채우기. `C:\broadcast-ppt`에서 실행했는지 확인 |
+| "파일을 열 수 없습니다 … PowerPoint에서 닫고" | 결과 파일이 PowerPoint에 열려 있음 | PowerPoint에서 닫고 다시 실행 |
+| `overrides file not found: …` | 수정 파일 경로가 틀림(메모장이 `.txt`를 붙였거나 폴더 이름이 다름) | 탐색기 **보기 → 파일 확장명** 켜고 이름 확인, 경로는 Tab으로 채우기 |
+| "UTF-8로 저장해 주세요" | 수정 파일이 ANSI(cp949)로 저장됨 | 메모장 → 다른 이름으로 저장 → 인코딩 UTF-8 |
+| `plan refused: override slide N: …` | 수정 파일 N번 줄 값이 틀림 | 메시지대로 고치고 다시 실행 |
+| `오류:` 뒤에 `while scanning`·`found character '\t'` | 수정 파일 문법(Tab 들여쓰기, 콜론 뒤 공백 없음) | 공백 2칸 들여쓰기, `  17: {skip: true}` 형식 그대로 |
+| critical이 1개 이상 | 방송에 쓰면 안 되는 장이 있음 | [2. 검증 결과 보기](#2-검증-결과-보기)대로 원본 장 번호를 찾아 수정 파일에 적기. 시간이 없으면 그 주는 원본 PPT |
+| Mac과 Windows 결과가 다름 | 한쪽에만 `GEMINI_API_KEY`가 있음(실행할 때 `ai fallback: …` 줄이 나오면 켜진 것) | 두 곳을 똑같이. PowerShell 확인 `$env:GEMINI_API_KEY`, 끄기 `Remove-Item Env:GEMINI_API_KEY`. Mac은 `echo $GEMINI_API_KEY` / `unset GEMINI_API_KEY` |
+
+## 명령과 옵션
+
+모든 명령은 저장소 폴더에서 `uv run broadcast-ppt <명령>`으로 실행합니다. 설정·템플릿·`local/work` 기본 위치는 저장소 기준으로 정해지고, 명령에 직접 적는 경로(원본 PPT, `--overrides` 등)는 지금 있는 폴더 기준입니다.
+
+| 명령 | 하는 일 |
+|---|---|
+| `run <원본.pptx>` | 계획 + 생성 + 검증을 한 번에. 매주 쓰는 명령 |
+| `plan <원본.pptx>` | plan 표를 출력하고 `plan.json` 저장 |
+| `build <plan.json>` | `plan.json`으로 방송본 생성 + 검증 |
+| `validate <방송본.pptx> --plan <plan.json>` | 이미 만든 방송본만 다시 검증(`--report 파일`로 결과 위치 지정) |
+| `analyze <파일 또는 폴더>` | 샘플 PPT 구조 분석(관리용). 실패한 파일이 있으면 종료 코드 1 |
+| `summarize`, `catalog`, `calibrate` | 관리용. 아래 [관리용 명령](#관리용-명령) |
+
+| 명령 | 옵션 | 효과 |
+|---|---|---|
+| `plan`, `run` | `--overrides 파일` | [수정 파일](#고치고-싶을-때-수정-파일) 적용 |
+| `plan`, `run` | `--slide-size template` 또는 `source` | 그대로 복사하는 원본 장의 크기 맞춤. `template`(기본)은 방송본 폭(13.33인치)에 맞게 키움(4:3 원본이면 4/3배), `source`는 키우지 않음. 방송본 크기는 어느 쪽이든 템플릿 크기 |
+| `plan`, `run` | `--no-scripture-both` | 성경 본문·교리문답·짧은 문장 장에서 원본(화면 전체용) 장을 빼고 자막만 만듦 |
+| `plan`, `run` | `--sermon-material lower-third` 또는 `passthrough` | 짧은 문장 장(설교 문장, 수정 파일의 `op: caption` 포함)을 자막으로 만들지(기본), 원본 그대로 복사할지 |
+| `plan`, `run` | `--work 폴더` | 결과 폴더의 상위 위치(기본 `local/work`) |
+| `plan` / `run`, `build` | `--out 파일` | plan: `plan.json` 저장 위치 / run·build: 방송본 저장 위치(기본은 결과 폴더의 `broadcast.pptx`) |
+| `build`, `run` | `--template 파일` | 템플릿 파일을 직접 지정 |
+| `build`, `run` | `--force` | 계획 뒤에 템플릿이나 원본이 바뀌어도 생성 |
+| `build` | `--no-validate` | 생성 후 검증을 건너뜀 |
+| `analyze` | `--workers N`, `--force`, `--scope 파일` | 병렬 작업 수, 이미 분석한 파일도 다시 분석, 요약 범위 |
+| `plan`, `run` | 환경변수 `GEMINI_API_KEY` (선택 `GEMINI_MODEL`) | 키가 있으면 규칙으로 못 정한 장을 Gemini에 물어봄. 기본 모델 `gemini-3.5-flash`. 확신도 0.8 미만이면 그대로 복사하고 `plan.json`의 `ai`에 제안만 남김 |
+
+### 검수 표시
+
+실행 결과의 info 항목입니다. 어느 장인지는 plan 표의 `[ ]` 안에 나옵니다.
 
 | 표시 | 뜻 |
 |---|---|
 | `review:inherited_reference` | 절 번호로 시작하는 본문에 참조가 없어서, 앞 참조나 성경봉독 참조를 이어받음 |
 | `review:reference_unknown` | 절 번호가 알고 있는 어느 참조에도 안 맞음. 자막의 참조 박스를 숨김 |
 | `review:no_reference_tag` | 자막 한 장에 넣을 참조가 없어서 참조 박스를 숨김. 틀린 참조는 넣지 않음 |
-| `review:no_reference` | 성경봉독이나 설교 카드에 참조가 없음 |
+| `review:no_reference` | 성경봉독 카드에 참조가 없음. 견본 참조가 남아 critical도 함께 나옴 → 수정 파일에 `N: {ref: "책 장:절-절"}` |
 | `review:no_page_number` | 성경봉독 카드에 쪽수가 없음. 쪽수 줄을 비워 둠 |
-| `review:no_sermon_title` | 설교 카드에 따옴표 제목이 없음 |
-| `review:no_quote` | 인용문 없는 묵상 슬라이드라서 그대로 복사함 |
+| `review:no_sermon_title` | 설교 카드에 따옴표 제목이 없음. 견본 제목이 남아 critical도 함께 나옴 → 원본 PPT에서 제목을 “ ” 따옴표로 감싸고 다시 실행(수정 파일로는 제목을 넣을 수 없음. 급하면 `N: {op: copy}`). 설교 카드에 참조가 없어도 critical이 나오며 `N: {ref: "…"}`로 고침 |
+| `review:no_quote` | 인용문 없는 묵상 장이라서 그대로 복사함 |
 | `review:quote_too_long` | 묵상 인용이 너무 길어서 최소 글자 크기로 줄임 |
 | `review:sentence_over_picture` | 사진 위의 짧은 문장을 자막으로 만듦 |
 | `review:empty_item_body` | 교회소식 항목에 제목만 있고 내용이 없음 |
-| `review:empty_slide` | 글자도 사진도 없는 슬라이드 |
-| `review:graphic` | 도표나 질문지 슬라이드라서 그대로 복사함 |
+| `review:empty_slide` | 글자도 사진도 없는 장 |
+| `review:graphic` | 도표나 질문지 장이라서 그대로 복사함 |
 | `review:unclassified` | 어느 규칙에도 안 맞아서 그대로 복사함 |
-| `review:ai_classified` | 규칙으로 못 정한 슬라이드를 Gemini가 분류함(확신도 0.8 이상). 종류가 맞는지 확인. 글자는 원본 그대로 |
+| `review:ai_classified` | 규칙으로 못 정한 장을 Gemini가 분류함(확신도 0.8 이상). 종류가 맞는지 확인. 글자는 원본 그대로 |
 | `deferred:hymn` | 찬송가 악보·가사 그림을 그대로 복사함. 크로마 처리는 나중에 |
 
-## 명령 옵션
+## 동작 원리
 
-| 명령 | 옵션 | 효과 |
-|---|---|---|
-| `plan`, `run` | `--overrides 파일` | 위의 수정 파일 적용 |
-| `plan`, `run` | `--slide-size template` 또는 `source` | 출력 크기. 기본은 템플릿 크기 13.33인치이고 원본 슬라이드는 4/3배로 키움 |
-| `plan`, `run` | `--no-scripture-both` | 성경 본문을 화면 전체용 없이 자막만 만듦 |
-| `plan`, `run` | `--sermon-material lower-third` 또는 `passthrough` | 설교 문장을 자막으로 만들지(기본), 그대로 복사할지 |
-| `build`, `run` | `--template 파일` | 다른 템플릿으로 생성 |
-| `build`, `run` | `--force` | 계획 뒤에 템플릿이나 원본이 바뀌어도 생성 |
-| `build` | `--no-validate` | 생성 후 검증을 건너뜀 |
-| `analyze` | `--workers N`, `--force`, `--scope 파일` | 병렬 작업 수, 이미 분석한 파일도 다시 분석, 요약 범위 |
-| `plan`, `run` | 환경변수 `GEMINI_API_KEY` (선택 `GEMINI_MODEL`) | 키가 있으면 분류 못 한 슬라이드를 Gemini에 물어봄. 기본 모델 `gemini-3.5-flash`. 확신도 0.8 미만이면 그대로 복사하고 `plan.json`의 `ai`에 제안만 남김 |
+- **분류**: 원본 장마다 규칙(`rules/classify.py`, R010~R900)으로 종류를 정합니다. 예배로의 부름, 기도, 성경봉독, 설교, 묵상, 교리문답(제N문), 교회소식, 성경 본문, 핵심 문장 같은 종류입니다. 어느 규칙에도 안 맞으면 R900(미분류)이 되고 원본 그대로 복사합니다.
+- **AI(선택)**: `GEMINI_API_KEY` 환경변수가 있을 때만, R900 장에 한해 Gemini에게 종류와 자막에 쓸 줄 번호만 묻습니다. 글자는 원본에서 다시 가져오고 좌표는 건드리지 않습니다. 호출이 실패하면 한 줄 안내만 출력하고 그 장은 그대로 복사합니다. 키가 없으면 아무것도 보내지 않습니다.
+- **생성**: 템플릿 슬라이드를 복제하고 글자 상자 안의 글자만 바꿉니다. 긴 글은 줄 수에 맞는 높이의 템플릿(1·2·3줄)으로 나눠 여러 장에 담습니다.
+- **두 번 만드는 장**: 성경 본문, 설교 인용, 짧은 문장(핵심 문장)은 원본(화면 전체용) 한 장 뒤에 녹색 하단 자막을 넣습니다. 교리문답은 원본, 문답 자막, 함께 적힌 말씀의 참조 자막을 따로 넣습니다.
+- **그대로 복사하는 장**: 사진·영상·명단 장은 원본을 그대로 복사합니다(검수 표시 없음). 찬송가 악보, 도표·질문지, 규칙에 안 맞는 장도 그대로 복사하되 검수 표시(`deferred:hymn`, `review:graphic`, `review:unclassified`)를 붙입니다.
+- **검증**: 만든 방송본을 다시 열어 점검합니다. critical은 장 수가 계획과 다름, 그림·영상 연결이 끊김, 채워야 할 칸이 비었거나 템플릿 견본 글자가 남음입니다. warning은 자막 줄 수·폭이 빠듯함, 녹색 배경이 아님, 도형 번호 중복입니다. info는 검수 표시입니다.
 
 ## 설정 파일
 
-- `config/scope.yaml`: 변환 대상 예배와 템플릿 위치.
-- `config/roles.yaml`: 템플릿 슬라이드마다 어떤 역할이고 어느 글자 칸에 무엇을 넣을지 손으로 적은 표. 배치 규칙도 여기 있습니다.
-  - `slots`, `mode`, `single_segment`: 어느 서식 구간에 어떤 값을 넣을지. `mode`는 `fill`(반드시 채움), `optional`(값이 있을 때만), `fixed`(안 건드림).
-  - `clamp_to`: 자막 본문 상자를 막대 안으로 좁힘.
-  - `shrink`: 줄이 남으면 막대 위쪽을 줄임.
-  - `nudge_y_pt`: 상자를 아래로 내림. 자막은 3pt.
-  - `fit_one_line`: 묵상 인용이 한 줄에 들어가게 글자 크기를 줄임.
-  - `drop_empty_paragraphs`: 빈 줄을 지워서 가운데 정렬이 맞게 함.
-  - `hide_when_empty`: 넣을 값이 없으면 도형을 숨김(도형은 남기고 채우기·선·그림자만 없앰). 참조 박스에 씀.
-  - `stack`, `card_gap_pt`, `card_max_bottom_pt`: 카드의 노란 줄과 흰 줄을 아래에서부터 쌓음. 줄 사이 간격과 맨 아래 글자선을 정합니다. 줄별 `glyph` 값은 Keynote에서 잰 글자 위치입니다. 템플릿을 고치면 `scripts/keynote_check.py calibrate-cards`로 다시 재야 합니다.
-- `config/templates.yaml`: 템플릿과 `roles.yaml`로 자동 생성하는 파일입니다. 직접 고치지 마세요.
+- `config/scope.yaml`: 분석 요약(`analyze`·`summarize`)에서 집계할 예배 종류와 기본 템플릿 위치(`templates:`). `run`은 예배 종류를 검사하지 않고 넣은 파일을 그대로 변환합니다.
+- `config/roles.yaml`: 템플릿 슬라이드마다 역할, 글자 칸에 넣을 값, 배치 규칙(`clamp_to`, `shrink`, `stack`, `hide_when_empty` 등)을 손으로 적은 표. 각 키의 뜻은 파일 맨 위 주석에 있습니다. 카드 간격 값(`card_gap_pt`, `glyph`)은 Keynote에서 잰 값이라 템플릿을 고치면 `scripts/keynote_check.py calibrate-cards`로 다시 잽니다.
+- `config/templates.yaml`: 템플릿과 `roles.yaml`로 자동 생성하는 파일입니다. 직접 고치지 말고 `catalog` 명령으로 다시 만듭니다.
 - `config/widths.yaml`: 글자 폭 보정값. PowerPoint가 저장한 자동 맞춤 상자 크기로 계산했습니다.
 
-## 관리용 명령
+### 관리용 명령
 
 ```bash
 uv run broadcast-ppt catalog                                          # roles.yaml이나 템플릿을 고친 뒤 templates.yaml 다시 만들기
 uv run broadcast-ppt calibrate <방송본 PPT 또는 폴더>                    # 글자 폭 보정값 다시 계산
 uv run broadcast-ppt analyze local/input --out local/analysis         # 샘플 PPT 구조 분석
-uv run python scripts/pull_drive.py <Drive 폴더 ID>                     # Google Drive 폴더를 local/input으로 내려받기
-uv run python scripts/keynote_check.py calibrate-cards                # 카드 줄 위치를 Keynote로 다시 재기(가짜 이름 사용)
+uv run broadcast-ppt summarize                                        # 이미 만든 분석 JSON으로 summary.csv, clusters.md 다시 만들기
+uv run python scripts/pull_drive.py <Drive 폴더 ID>                     # Google Drive 폴더를 local/input으로 내려받기(gws 필요)
+uv run python scripts/keynote_check.py calibrate-cards                # 카드 줄 위치를 Keynote로 다시 재기(Mac 전용, 가짜 이름 사용, local/input/미편집/에 주일오전예배ppt(…) 원본 하나 필요)
 uv run python scripts/keynote_check.py bands <그림.png> ...             # 그림에서 글자가 그려진 세로 위치 재기
 ```
+
+테스트는 `uv run pytest`입니다. `main`에 push하거나 PR을 열면 Windows에서도 같은 테스트가 자동으로 돕니다(GitHub Actions, `.github/workflows/tests.yml`).
 
 ## 아직 안 되는 것
 
 - 찬송가 악보·가사 그림은 아직 크로마 처리를 안 합니다.
 - 담임목사 위임식 같은 특별 예배는 주일 규칙으로 바뀌어서 따로 규칙이 필요합니다.
-- Mac에서만 확인했습니다. 이 Mac에는 Script MT Bold와 맑은 고딕이 없어서 Keynote가 다른 글꼴로 바꿔 보여 줍니다. 카드 간격은 Keynote 기준으로 맞췄습니다. 송출 PC에 진짜 Script MT Bold가 있으면 영문 부제가 한글 줄과 가까워지거나 겹칠 수 있으니 카드 한 장을 확인하세요.
+- 카드 간격은 Mac Keynote 기준으로 맞췄습니다. 개발용 Mac에는 Script MT Bold와 맑은 고딕이 없어서 Keynote가 다른 글꼴로 보여 줍니다. 송출 PC PowerPoint에서는 영문 부제가 한글 줄과 가까워지거나 겹칠 수 있습니다.
 - 템플릿 성경 본문의 강조 색은 재현하지 않습니다. 자막 본문은 한 가지 색입니다.
 
 ## 데이터 보관 원칙
 
-PPT에는 이름, 직분, 교회 정보가 들어 있습니다. 원본, 템플릿, 분석 결과, 계획, 수정 파일, 검증 결과, 확인용 그림, 방송본은 모두 `local/`에 두고 GitHub에 올리지 않습니다. 저장소에는 코드, 일반 설정, 문서만 올립니다. `config/templates.yaml`에는 위치, 서식, 글자 수, 템플릿 샘플 글자의 SHA-1 요약값만 저장하고 글자 자체는 저장하지 않습니다. 명령 출력과 보고서에는 글자 수 같은 통계만 나오고 슬라이드 글자는 나오지 않습니다.
+PPT에는 이름, 직분, 교회 정보가 들어 있습니다. 원본, 템플릿, 분석 결과, 계획, 수정 파일, 검증 결과, 확인용 그림, 방송본은 모두 `local/`에 두고 GitHub에 올리지 않습니다. 저장소에는 코드, 일반 설정, 문서만 올립니다. `config/templates.yaml`에는 위치, 서식, 글자 수, 템플릿 샘플 글자의 SHA-1 요약값만 저장하고 글자 자체는 저장하지 않습니다. 명령 출력과 검증 결과(`validation.json`)에는 글자 수 같은 통계만 나오고 슬라이드 글자는 나오지 않습니다. `plan.json`에는 슬라이드 글자(이름 포함)가 그대로 들어 있으니 전달하지 마세요.
 
-`GEMINI_API_KEY`가 있으면 규칙으로 분류 못 한 슬라이드의 글자 줄과 도형 개수만 Google Gemini로 나갑니다. 직분 앞 이름(`홍길동 집사`, `홍길동 장로님` → `[이름] 집사`, `[이름] 장로님`)은 가리고 보내지만, 직분 없이 쓴 이름이나 명단은 가려지지 않습니다. 슬라이드 노트, 표, 파일 자체와 수정 파일에 적은 슬라이드는 보내지 않습니다. 보내고 싶지 않은 주에는 키를 빼고 실행하세요.
+`GEMINI_API_KEY`가 있으면 규칙으로 분류 못 한 장의 글자 줄, 도형 종류별 개수, 글상자 수, 전체 화면 사진 여부(사진 자체는 아님)만 Google Gemini로 나갑니다. 직분 앞 이름(`홍길동 집사`, `홍길동 장로님` → `[이름] 집사`, `[이름] 장로님`)은 가리고 보내지만, 직분 없이 쓴 이름이나 명단은 가려지지 않습니다. 슬라이드 노트, 표, 파일 자체와 수정 파일에 적은 장은 보내지 않습니다. 보내고 싶지 않은 주에는 키를 빼고 실행하세요.
 
-## 폴더를 지우기 전에 (보관과 복구)
+## 백업과 복구
 
 GitHub에는 코드, 설정, 문서만 있습니다. 아래 파일은 git에 없어서 프로젝트 폴더를 지우면 같이 사라집니다. 다시 쓸 파일은 교회 자료를 두는 비공개 위치(예: Google Drive)에 따로 보관하세요. 지우기 전에 커밋이 GitHub에 push됐는지(`git status`에 `ahead`가 없는지)도 확인하세요.
 
 | 경로 | 내용 | 다시 쓸 때 |
 |---|---|---|
-| `local/templates/24.상반기.pptx` | 방송 템플릿 정본 | 변환에 필수 |
+| `local/templates/24.상반기.pptx` | 방송 템플릿 원본 | 변환에 필수 |
 | `local/work/<원본 이름>/overrides.yaml` | 주마다 적은 수정 파일 | 그 주를 다시 만들 때만 |
-| `local/pii-patterns.txt`, `.git/hooks/pre-commit` | 커밋 전에 이름·개인정보를 막는 검사 | 코드를 고칠 때 필수 |
-| `local/input/`, `local/analysis/`, `local/work/`, `local/requirements/` | 원본 PPT(Drive에 원본 있음), 분석, 결과물, 요구사항 원문(볼트에 사본) | 보통 필요 없음 |
+| `local/pii-patterns.txt` | 커밋 전에 이름·개인정보를 막는 검사의 패턴 목록(검사 스크립트는 저장소에 없음) | 코드를 고칠 때 필수 |
+| `local/input/`, `local/analysis/`, `local/work/`, `local/requirements/` | 원본 PPT(Drive에 원본 있음), 분석, 결과물, 요구사항 원문(따로 보관) | 보통 필요 없음 |
 
-복구 순서: `git clone` → `uv sync` → 템플릿을 `local/templates/`에 복사 → `uv run pytest` → 코드를 고칠 계획이면 표의 검사 파일도 제자리에 복사.
+복구 순서: [설치](#설치) 순서대로 다시 설치 → 템플릿을 `local/templates/`에 복사 → `uv run pytest` → 코드를 고칠 계획이면 검사 패턴 파일도 제자리에 복사.
