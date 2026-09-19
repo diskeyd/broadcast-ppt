@@ -6,7 +6,8 @@ from pathlib import Path
 
 A = "http://schemas.openxmlformats.org/drawingml/2006/main"
 P = "http://schemas.openxmlformats.org/presentationml/2006/main"
-NS = {"a": A, "p": P}
+R = "http://schemas.openxmlformats.org/officeDocument/2006/relationships"
+NS = {"a": A, "p": P, "r": R}
 
 EMU_PER_PT = 12700
 AUTOFIT_LINE_HEIGHT = 1.212  # measured: spAutoFit box height = lines * 1.212 * font size + insets

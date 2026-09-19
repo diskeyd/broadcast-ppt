@@ -9,6 +9,7 @@ import re
 from collections import Counter
 from dataclasses import dataclass, field
 
+from ..analyzer.core import flatten
 from . import kinds as K
 from .fields import (
     announcement_items, compact, english_line, name_role, norm, page_ref, quoted_title, scripture_ref,
@@ -29,12 +30,6 @@ class Decision:
     fields: dict = field(default_factory=dict)
     flags: list[str] = field(default_factory=list)
     confidence: float = 1.0
-
-
-def _flat(shapes):
-    for s in shapes:
-        yield s
-        yield from _flat(s.get("children", []))
 
 
 @dataclass
@@ -75,7 +70,7 @@ class SlideView:
 
 def view_of(slide: dict, ctx: DeckContext) -> SlideView:
     boxes = []
-    for sh in _flat(slide.get("shapes", [])):
+    for sh in flatten(slide.get("shapes", [])):
         t = sh.get("text")
         if not t:
             continue
@@ -86,6 +81,12 @@ def view_of(slide: dict, ctx: DeckContext) -> SlideView:
     return SlideView(slide["index"], text, boxes, Counter(slide.get("kinds", {})), slide.get("full_bleed_picture", False), slide)
 
 
+def _after_bracket(t: str, ref) -> str:
+    """The text after the closing bracket of a leading bracketed reference."""
+    close = min([i for i in (t.find("]"), t.find("］")) if i >= 0] or [len(ref.raw)])
+    return t[close + 1:].lstrip()
+
+
 def _bracket_quote(text: str) -> dict | None:
     """A box that starts with a bracketed reference: its own reference and body."""
     t = norm(text).lstrip()
@@ -94,8 +95,7 @@ def _bracket_quote(text: str) -> dict | None:
     ref = scripture_ref(t[:40])
     if ref is None:
         return None
-    close = min([i for i in (t.find("]"), t.find("］")) if i >= 0] or [len(ref.raw)])
-    body = t[close + 1:].lstrip()
+    body = _after_bracket(t, ref)
     return {"ref": ref, "body": body} if compact(body) else None
 
 
@@ -156,8 +156,9 @@ def _classify(v: SlideView, c: str, pics: int, groups: int, media: int, ctx: Dec
             return Decision(K.SCRIPTURE_TITLE, "R120", "keyword 성경봉독" + (" + reference" if ref else ""),
                             {"ref": ref, "page": page}, flags)
         if "설교" in c and "Sermon" in v.text or re.search(r"^설\s*교", norm(v.text), re.M):
-            return Decision(K.SERMON_TITLE, "R130", "keyword 설교", {"title": quoted_title(v.text), "ref": scripture_ref(v.text)},
-                            [] if quoted_title(v.text) else ["review:no_sermon_title"])
+            title = quoted_title(v.text)
+            return Decision(K.SERMON_TITLE, "R130", "keyword 설교", {"title": title, "ref": scripture_ref(v.text)},
+                            [] if title else ["review:no_sermon_title"])
         if ("교회소식" in c or "announcement" in c.lower()) and v.clen <= 40:
             return Decision(K.ANNOUNCEMENT_TITLE, "R150", "keyword 교회소식", {"label": "교회 소식"})
         if re.search(r"(^|\s)기\s*도(\s|$)", norm(v.text), re.M) or c.startswith("기도"):
@@ -203,8 +204,7 @@ def _classify(v: SlideView, c: str, pics: int, groups: int, media: int, ctx: Dec
     if v.clen >= 30 and ref is not None and (head.startswith(("[", "［")) or norm(main).lstrip().find(ref.raw) <= 2):
         body = norm(main).lstrip()
         if body.startswith(("[", "［")):
-            close = min([i for i in (body.find("]"), body.find("］")) if i >= 0] or [len(ref.raw)])
-            body = body[close + 1:].lstrip()
+            body = _after_bracket(body, ref)
         else:
             body = body[body.find(ref.raw) + len(ref.raw):].lstrip(" \n")
         return Decision(K.SCRIPTURE_BODY, "R200" if not BRACKET_REF_RE.match(main) else "R205",

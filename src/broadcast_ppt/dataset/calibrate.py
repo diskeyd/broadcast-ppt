@@ -7,20 +7,12 @@ from pathlib import Path
 
 import yaml
 from pptx import Presentation
-from pptx.enum.shapes import MSO_SHAPE_TYPE
 
+from ..mapping.catalog import text_shapes
 from ..mapping.textfit import CLASSES, DEFAULT_EM, EMU_PER_PT, WidthModel, class_counts
 
 from ..ooxml import A, DEFAULT_INSETS as DEF_INS
 from ..ooxml import AUTOFIT_LINE_HEIGHT as LINE_HEIGHT
-
-
-def _walk(shapes):
-    for sh in shapes:
-        if sh.shape_type == MSO_SHAPE_TYPE.GROUP:
-            yield from _walk(sh.shapes)
-        else:
-            yield sh
 
 
 def collect_samples(paths: list[Path]) -> tuple[list[dict], list[dict]]:
@@ -32,7 +24,7 @@ def collect_samples(paths: list[Path]) -> tuple[list[dict], list[dict]]:
         except Exception:
             continue
         for slide in prs.slides:
-            for sh in _walk(slide.shapes):
+            for sh in text_shapes(slide.shapes):
                 if not sh.has_text_frame or sh.width is None or sh.height is None:
                     continue
                 body = sh.text_frame._txBody

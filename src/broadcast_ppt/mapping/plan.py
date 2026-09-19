@@ -77,6 +77,12 @@ class Mapper:
                 return idx
         return None
 
+    def _fit(self, op: dict, tpl: int, chunk: str) -> None:
+        op["fit"] = {"chars": len(chunk), "est_lines": self.lines(tpl, chunk), "max_lines": self._body_spec(tpl)["max_lines"]}
+        spare = op["fit"]["max_lines"] - op["fit"]["est_lines"]
+        if spare > 0 and self.cat["slides"][tpl].get("shrink"):
+            op["shrink_lines"] = spare  # no empty lines at the bottom of the bar
+
     # --- per-kind mapping ------------------------------------------------------------------------
     def copy(self, src: int, note: str) -> dict:
         return {"op": "copy", "src": src, "note": note}
@@ -101,10 +107,7 @@ class Mapper:
             # never leave the template's sample reference in place: blank + review flag instead
             op = self.card(src, tpl, {"ref": tag if tag is not None else "", "body": chunk}, "scripture caption")
             op["chunk"] = {"i": i, "n": len(chunks)}
-            op["fit"] = {"chars": len(chunk), "est_lines": self.lines(tpl, chunk), "max_lines": self._body_spec(tpl)["max_lines"]}
-            spare = op["fit"]["max_lines"] - op["fit"]["est_lines"]
-            if spare > 0 and self.cat["slides"][tpl].get("shrink"):
-                op["shrink_lines"] = spare  # no empty lines at the bottom of the bar
+            self._fit(op, tpl, chunk)
             if tag is None:
                 op.setdefault("flags", []).append("review:no_reference_tag")
             ops.append(op)
@@ -116,10 +119,7 @@ class Mapper:
         for chunk in pack([text], lambda t: self.fits(big, t)):
             tpl = self.smallest_variant("caption", chunk) or big
             op = self.card(src, tpl, {"body": chunk}, "caption")
-            op["fit"] = {"chars": len(chunk), "est_lines": self.lines(tpl, chunk), "max_lines": self._body_spec(tpl)["max_lines"]}
-            spare = op["fit"]["max_lines"] - op["fit"]["est_lines"]
-            if spare > 0 and self.cat["slides"][tpl].get("shrink"):
-                op["shrink_lines"] = spare  # same as scripture captions: no empty lines at the bottom of the bar
+            self._fit(op, tpl, chunk)
             ops.append(op)
         return ops
 

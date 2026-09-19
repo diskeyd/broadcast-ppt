@@ -16,7 +16,7 @@ from pptx import Presentation
 from pptx.enum.shapes import MSO_SHAPE_TYPE
 
 from ..ooxml import AUTOFIT_LINE_HEIGHT as LINE_HEIGHT
-from ..ooxml import DEFAULT_INSETS, EMU_PER_PT, NS, run_segments
+from ..ooxml import DEFAULT_INSETS, EMU_PER_PT, NS, P, run_segments
 
 COLOR_SETS = {"FFFF00": "a", "FFFF99": "b", "FFCCFF": "c"}
 
@@ -101,7 +101,7 @@ def build_catalog(template: Path, roles_path: Path) -> dict:
         if spec is None:
             continue
         shapes = {sh.shape_id: sh for sh in text_shapes(slide.shapes)}
-        order = [int(el.get("id")) for el in slide.shapes._spTree.iter("{http://schemas.openxmlformats.org/presentationml/2006/main}cNvPr")]
+        order = [int(el.get("id")) for el in slide.shapes._spTree.iter(f"{{{P}}}cNvPr")]
         entry: dict = {"role": spec["role"], "family": spec["family"], "layout": slide.slide_layout.name,
                        "has_slide_bg": slide._element.find("p:cSld/p:bg", NS) is not None, "shapes": {}}
         colors = set()

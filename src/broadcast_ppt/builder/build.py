@@ -8,7 +8,7 @@ from pathlib import Path
 from pptx import Presentation
 
 from ..mapping.catalog import load_catalog
-from ..ooxml import REPO_ROOT
+from ..ooxml import P, REPO_ROOT
 from ..mapping.textfit import WidthModel, load_model
 from .clone import copy_foreign_slide, duplicate_template_slide
 from .fill import fill_shape, shape_by_order
@@ -59,7 +59,6 @@ def layout_stack(slide, entry: dict, model: WidthModel) -> None:
     the glyphs of neighbouring rows. The lowest row keeps the template's bottom edge. Glyph offsets per row
     (top and bottom of the drawn text, measured from the box top) are measured renders stored in roles.yaml."""
     st = entry["stack"]
-    P = "http://schemas.openxmlformats.org/presentationml/2006/main"
     next_id = max(int(c.get("id")) for c in slide.shapes._spTree.iter(f"{{{P}}}cNvPr")) + 1
     split: dict[int, tuple[list, int]] = {}
     rows = []

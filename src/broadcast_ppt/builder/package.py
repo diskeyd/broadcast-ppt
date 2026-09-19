@@ -3,8 +3,8 @@ that would otherwise dangle."""
 
 from __future__ import annotations
 
-NS_P = "http://schemas.openxmlformats.org/presentationml/2006/main"
-NS_R = "http://schemas.openxmlformats.org/officeDocument/2006/relationships"
+from ..ooxml import P, R
+
 SECTION_EXT_URI = "{521415D9-36F7-43E2-AB2F-B90AF26B5E84}"
 BLANK_LAYOUT_NAMES = ("빈 화면", "Blank")
 
@@ -40,7 +40,7 @@ def remove_slides(prs, slide_ids: list[int]) -> int:
     removed = 0
     for sld in list(lst):
         if int(sld.get("id")) in wanted:
-            prs.part.drop_rel(sld.get(f"{{{NS_R}}}id"))
+            prs.part.drop_rel(sld.get(f"{{{R}}}id"))
             lst.remove(sld)
             removed += 1
     return removed
@@ -49,7 +49,7 @@ def remove_slides(prs, slide_ids: list[int]) -> int:
 def drop_section_list(prs) -> bool:
     """Remove the PowerPoint 2010 section list; its slide references break when slides are removed."""
     root = prs.part._element
-    ext_lst = root.find(f"{{{NS_P}}}extLst")
+    ext_lst = root.find(f"{{{P}}}extLst")
     if ext_lst is None:
         return False
     dropped = False

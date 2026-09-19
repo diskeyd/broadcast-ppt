@@ -20,12 +20,9 @@ from lxml import etree
 from PIL import Image
 from pptx import Presentation
 
-NS = {
-    "a": "http://schemas.openxmlformats.org/drawingml/2006/main",
-    "p": "http://schemas.openxmlformats.org/presentationml/2006/main",
-    "r": "http://schemas.openxmlformats.org/officeDocument/2006/relationships",
-}
-R_EMBED = f"{{{NS['r']}}}embed"
+from ..ooxml import NS, R
+
+R_EMBED = f"{{{R}}}embed"
 
 # Order matters only for display; every matching label is recorded.
 KEYWORDS: list[tuple[str, tuple[str, ...]]] = [

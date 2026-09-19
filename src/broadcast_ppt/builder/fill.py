@@ -9,15 +9,11 @@ template's formatting — is what the text is drawn with.
 from __future__ import annotations
 
 import copy
-import hashlib
-import unicodedata
 from dataclasses import dataclass, field
 
 from lxml import etree
 
-from ..ooxml import A, run_segments
-
-NS = {"a": A}
+from ..ooxml import A, NS, P, run_segments
 
 
 @dataclass
@@ -27,14 +23,11 @@ class FillResult:
     flags: list[str] = field(default_factory=list)
 
 
-paragraph_segments = run_segments
-
-
 def flat_segments(txBody) -> list[dict]:
     """Segments in reading order, filtered the same way as catalog slot maps (text or explicit size)."""
     out = []
     for pi, p in enumerate(txBody.findall("a:p", NS)):
-        for seg in paragraph_segments(p):
+        for seg in run_segments(p):
             if seg["text"].strip() or seg["key"][0]:
                 seg["paragraph"] = pi
                 out.append(seg)
@@ -46,10 +39,6 @@ def _set_run_text(r, text: str) -> None:
     if t is None:
         t = etree.SubElement(r, f"{{{A}}}t")
     t.text = text
-
-
-def segment_sha1(text: str) -> str:
-    return hashlib.sha1(unicodedata.normalize("NFC", text).encode()).hexdigest()
 
 
 def _fill_single(txBody, value: str, result: FillResult) -> None:
@@ -85,7 +74,7 @@ def fill_shape(sp_el, spec: dict, values: dict[str, str]) -> FillResult:
     slot_map = spec.get("slot_map") or []
     if mode == "fixed" or not slot_map:
         return result
-    txBody = sp_el.find(".//{http://schemas.openxmlformats.org/presentationml/2006/main}txBody")
+    txBody = sp_el.find(f".//{{{P}}}txBody")
     if txBody is None:
         result.flags.append("no_text_body")
         return result
@@ -122,7 +111,6 @@ def fill_shape(sp_el, spec: dict, values: dict[str, str]) -> FillResult:
 
 def shape_by_order(slide, order: int):
     """The shape element (p:sp / p:pic / p:grpSp …) owning the cNvPr at document-order position `order`."""
-    P = "http://schemas.openxmlformats.org/presentationml/2006/main"
     cnv = list(slide.shapes._spTree.iter(f"{{{P}}}cNvPr"))
     el = cnv[order]
     # cNvPr -> nvSpPr/nvPicPr/nvGrpSpPr -> shape element

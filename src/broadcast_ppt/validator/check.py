@@ -11,13 +11,10 @@ from pathlib import Path
 from pptx import Presentation
 
 from ..analyzer.core import classify_rgb
-from ..builder.fill import flat_segments, segment_sha1, shape_by_order
-from ..mapping.catalog import load_catalog
+from ..builder.fill import flat_segments, shape_by_order
+from ..mapping.catalog import load_catalog, sha1
 from ..mapping.textfit import WidthModel, load_model
-
-P = "http://schemas.openxmlformats.org/presentationml/2006/main"
-A = "http://schemas.openxmlformats.org/drawingml/2006/main"
-R = "http://schemas.openxmlformats.org/officeDocument/2006/relationships"
+from ..ooxml import A, P, R
 
 
 @dataclass
@@ -95,12 +92,12 @@ def validate_deck(deck: Path, plan: dict, catalog_path: Path, widths_path: Path 
                                             f"{len(segs)} text segments for {len(slot_map)} slots; template text may remain"))
                 for seg, cseg, slot in zip(segs, _catalog_segments(spec), slot_map):
                     if slot is None:
-                        if mode == "fill" and cseg["sample_len"] and segment_sha1(seg["text"]) == cseg["sample_sha1"]:
+                        if mode == "fill" and cseg["sample_len"] and sha1(seg["text"]) == cseg["sample_sha1"]:
                             findings.append(Finding("critical", "leftover_sample_text", n, "an unmapped segment still holds template text"))
                         continue
-                    if segment_sha1(seg["text"]) == cseg["sample_sha1"] and (mode == "fill" or slot in fill):
+                    if sha1(seg["text"]) == cseg["sample_sha1"] and (mode == "fill" or slot in fill):
                         value = fill.get(slot)
-                        intended = value is not None and segment_sha1(value.replace("\n", " ")) == cseg["sample_sha1"]
+                        intended = value is not None and sha1(value.replace("\n", " ")) == cseg["sample_sha1"]
                         if not intended:  # a label that legitimately equals the template's own label is fine
                             findings.append(Finding("critical", "leftover_sample_text", n, f"slot '{slot}' still holds the template sample"))
                     if mode == "fill" and slot not in fill:

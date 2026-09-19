@@ -19,12 +19,10 @@ from pptx.opc.constants import RELATIONSHIP_TYPE as RT
 from pptx.opc.package import Part
 from pptx.opc.packuri import PackURI
 
+from ..ooxml import A, P, R
 from .package import add_blank_slide
 from .scale import scale_tree
 
-P = "http://schemas.openxmlformats.org/presentationml/2006/main"
-A = "http://schemas.openxmlformats.org/drawingml/2006/main"
-R = "http://schemas.openxmlformats.org/officeDocument/2006/relationships"
 MEDIA_RELTYPES = {RT.MEDIA, RT.VIDEO, RT.AUDIO, "http://schemas.microsoft.com/office/2007/relationships/media"}
 
 
