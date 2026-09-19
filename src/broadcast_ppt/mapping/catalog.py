@@ -18,8 +18,6 @@ from pptx.enum.shapes import MSO_SHAPE_TYPE
 from ..ooxml import AUTOFIT_LINE_HEIGHT as LINE_HEIGHT
 from ..ooxml import DEFAULT_INSETS, EMU_PER_PT, NS, P, run_segments
 
-COLOR_SETS = {"FFFF00": "a", "FFFF99": "b", "FFCCFF": "c"}
-
 
 def sha1(text: str) -> str:
     return hashlib.sha1(unicodedata.normalize("NFC", text).encode()).hexdigest()
@@ -47,12 +45,11 @@ def text_shapes(shapes):
             yield sh
 
 
-def describe_shape(sh, slide_w: int, slide_h: int) -> dict:
+def describe_shape(sh) -> dict:
     d: dict = {
         "id": sh.shape_id,
         "name": sh.name,
         "bbox": [int(sh.left), int(sh.top), int(sh.width), int(sh.height)],
-        "bbox_frac": [round(sh.left / slide_w, 4), round(sh.top / slide_h, 4), round(sh.width / slide_w, 4), round(sh.height / slide_h, 4)],
         "in_group": sh._element.getparent().tag.endswith("}grpSp"),
     }
     if not sh.has_text_frame:
@@ -77,7 +74,6 @@ def describe_shape(sh, slide_w: int, slide_h: int) -> dict:
         # (largest) sets the capacity of the remaining height
         para_sz = [max([sg["sz"] or 0 for sg in pr["segments"]] or [0]) or max_sz for pr in paras]
         d["line_emu"] = int(LINE_HEIGHT * max_sz * EMU_PER_PT)
-        d["lines_measured"] = round(inner / (LINE_HEIGHT * max_sz * EMU_PER_PT), 2)
         fixed = sum(LINE_HEIGHT * sz * EMU_PER_PT for sz in para_sz[1:]) if len(para_sz) > 1 else 0
         d["max_lines"] = max(len(paras), round((inner - fixed) / (LINE_HEIGHT * max_sz * EMU_PER_PT)) + len(paras) - 1)
     return d
@@ -102,14 +98,12 @@ def build_catalog(template: Path, roles_path: Path) -> dict:
             continue
         shapes = {sh.shape_id: sh for sh in text_shapes(slide.shapes)}
         order = [int(el.get("id")) for el in slide.shapes._spTree.iter(f"{{{P}}}cNvPr")]
-        entry: dict = {"role": spec["role"], "family": spec["family"], "layout": slide.slide_layout.name,
-                       "has_slide_bg": slide._element.find("p:cSld/p:bg", NS) is not None, "shapes": {}}
-        colors = set()
+        entry: dict = {"role": spec["role"], "family": spec["family"], "layout": slide.slide_layout.name, "shapes": {}}
         for sid, sspec in (spec.get("shapes") or {}).items():
             sh = shapes.get(int(sid))
             if sh is None:
                 raise ValueError(f"template slide {idx}: shape id {sid} not found")
-            desc = describe_shape(sh, W, H)
+            desc = describe_shape(sh)
             desc["order"] = order.index(int(sid))  # position among cNvPr in document order (ids are renumbered on copy)
             desc["mode"] = sspec.get("mode", "fill")
             desc["single_segment"] = bool(sspec.get("single_segment"))
@@ -121,9 +115,6 @@ def build_catalog(template: Path, roles_path: Path) -> dict:
                 if len(slots) > len(flat):
                     raise ValueError(f"template slide {idx} shape {sid}: {len(slots)} slots but {len(flat)} segments")
                 desc["slot_map"] = slots + [None] * (len(flat) - len(slots))
-            for seg in flat:
-                if seg["color"] in COLOR_SETS:
-                    colors.add(COLOR_SETS[seg["color"]])
             clamp = sspec.get("clamp_to")
             if clamp is not None:
                 # keep the text box inside its bar with the same margin on both sides
@@ -134,7 +125,6 @@ def build_catalog(template: Path, roles_path: Path) -> dict:
                 limit = int(bar.left) + int(bar.width) - margin
                 if desc["bbox"][0] + desc["bbox"][2] > limit:
                     desc["bbox"][2] = limit - desc["bbox"][0]
-                    desc["bbox_frac"][2] = round(desc["bbox"][2] / W, 4)
                     desc["set_cx"] = desc["bbox"][2]
             if sspec.get("nudge_y_pt"):
                 desc["nudge_y"] = int(float(sspec["nudge_y_pt"]) * EMU_PER_PT)
@@ -151,7 +141,7 @@ def build_catalog(template: Path, roles_path: Path) -> dict:
                     b = shapes.get(int(bid))
                     if b is None:
                         raise ValueError(f"template slide {idx}: backing shape {bid} not found")
-                    bd = describe_shape(b, W, H)
+                    bd = describe_shape(b)
                     desc["backing"].append({"id": bd["id"], "order": order.index(int(bid)), "bbox": bd["bbox"], "in_group": bd["in_group"]})
             entry["shapes"][int(sid)] = desc
         if spec.get("stack"):
@@ -174,7 +164,6 @@ def build_catalog(template: Path, roles_path: Path) -> dict:
             entry["shrink"]["line_emu"] = body["line_emu"]
         caps = [s.get("max_lines") for s in entry["shapes"].values() if s.get("slot_map") and "body" in s["slot_map"]]
         entry["line_capacity"] = max([c for c in caps if c] or [1])
-        entry["color_set"] = sorted(colors)[0] if colors else None
         cat["slides"][idx] = entry
     return cat
 

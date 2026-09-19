@@ -12,7 +12,6 @@ slides:
     role: card_call_to_worship
     family: card.call_to_worship
     layout: 빈 화면
-    has_slide_bg: true
     shapes:
       3:
         id: 3
@@ -22,11 +21,6 @@ slides:
         - 5417466
         - 4283545
         - 923330
-        bbox_frac:
-        - 0.3243
-        - 0.7899
-        - 0.3513
-        - 0.1346
         in_group: false
         bodyPr:
           lIns: 91440
@@ -46,7 +40,6 @@ slides:
             sample_len: 7
             sample_sha1: 87c843fa2569dd04fb167e4084d384bd24ea8740
         line_emu: 831189
-        lines_measured: 1.0
         max_lines: 1
         order: 1
         mode: optional
@@ -61,11 +54,6 @@ slides:
         - 6150114
         - 2281394
         - 707886
-        bbox_frac:
-        - 0.4064
-        - 0.8968
-        - 0.1871
-        - 0.1032
         in_group: false
         bodyPr:
           lIns: 91440
@@ -85,7 +73,6 @@ slides:
             sample_len: 10
             sample_sha1: 6e77a66b8e67e05ca75aba5a51b541fc7bc39227
         line_emu: 615696
-        lines_measured: 1.0
         max_lines: 1
         order: 2
         mode: optional
@@ -107,12 +94,10 @@ slides:
       gap_pt: 0.5
       max_bottom_pt: 527.0
     line_capacity: 1
-    color_set: a
   4:
     role: card_prayer
     family: card.prayer
     layout: 빈 화면
-    has_slide_bg: true
     shapes:
       3:
         id: 3
@@ -122,11 +107,6 @@ slides:
         - 5241111
         - 4301177
         - 923330
-        bbox_frac:
-        - 0.3236
-        - 0.7642
-        - 0.3528
-        - 0.1346
         in_group: false
         bodyPr:
           lIns: 91440
@@ -152,7 +132,6 @@ slides:
             sample_len: 8
             sample_sha1: c6c6a6063bf195f5ebfa29fc805b6ab0d9bc876c
         line_emu: 831189
-        lines_measured: 1.0
         max_lines: 1
         order: 1
         mode: fill
@@ -168,11 +147,6 @@ slides:
         - 6007844
         - 3940502
         - 707886
-        bbox_frac:
-        - 0.3384
-        - 0.876
-        - 0.3232
-        - 0.1032
         in_group: false
         bodyPr:
           lIns: 91440
@@ -192,7 +166,6 @@ slides:
             sample_len: 17
             sample_sha1: ab70f3d601b32bc687109ff3070f75f839118019
         line_emu: 615696
-        lines_measured: 1.0
         max_lines: 1
         order: 2
         mode: optional
@@ -214,12 +187,10 @@ slides:
       gap_pt: 0.5
       max_bottom_pt: 527.0
     line_capacity: 1
-    color_set: a
   6:
     role: card_scripture
     family: card.scripture
     layout: 빈 화면
-    has_slide_bg: false
     shapes:
       3:
         id: 3
@@ -229,11 +200,6 @@ slides:
         - 4816360
         - 2787943
         - 923330
-        bbox_frac:
-        - 0.3857
-        - 0.7023
-        - 0.2287
-        - 0.1346
         in_group: false
         bodyPr:
           lIns: 91440
@@ -253,7 +219,6 @@ slides:
             sample_len: 4
             sample_sha1: 56ade4342cf755531cf38bdbddece4153ea63fb6
         line_emu: 831189
-        lines_measured: 1.0
         max_lines: 1
         order: 1
         mode: optional
@@ -268,11 +233,6 @@ slides:
         - 5856244
         - 3488455
         - 878446
-        bbox_frac:
-        - 0.3569
-        - 0.8539
-        - 0.2861
-        - 0.1281
         in_group: false
         bodyPr:
           lIns: 91440
@@ -300,7 +260,6 @@ slides:
             sample_len: 11
             sample_sha1: 5ff42f4b3897f2aa83a7d42bbb5cfea0cadf1d8b
         line_emu: 554126
-        lines_measured: 1.42
         max_lines: 2
         order: 2
         mode: fill
@@ -328,12 +287,10 @@ slides:
       gap_pt: 0.5
       max_bottom_pt: 527.0
     line_capacity: 1
-    color_set: a
   7:
     role: card_sermon
     family: card.sermon
     layout: 빈 화면
-    has_slide_bg: false
     shapes:
       3:
         id: 3
@@ -343,11 +300,6 @@ slides:
         - 4893998
         - 6397905
         - 923330
-        bbox_frac:
-        - 0.2438
-        - 0.7136
-        - 0.5248
-        - 0.1346
         in_group: false
         bodyPr:
           lIns: 91440
@@ -373,7 +325,6 @@ slides:
             sample_len: 13
             sample_sha1: 6039bc5ff5e3557928aa0dca0d21605f5d82ecf9
         line_emu: 831189
-        lines_measured: 1.0
         max_lines: 1
         order: 1
         mode: fill
@@ -389,11 +340,6 @@ slides:
         - 6307041
         - 1372107
         - 490840
-        bbox_frac:
-        - 0.4499
-        - 0.9197
-        - 0.1125
-        - 0.0716
         in_group: false
         bodyPr:
           lIns: 91440
@@ -413,7 +359,6 @@ slides:
             sample_len: 6
             sample_sha1: 476b785c4760f8f2c6ca5c84f9691612cca7bb88
         line_emu: 492556
-        lines_measured: 0.81
         max_lines: 1
         order: 2
         mode: optional
@@ -428,11 +373,6 @@ slides:
         - 5838348
         - 3118162
         - 486287
-        bbox_frac:
-        - 0.3783
-        - 0.8513
-        - 0.2558
-        - 0.0709
         in_group: false
         bodyPr:
           lIns: 91440
@@ -452,7 +392,6 @@ slides:
             sample_len: 11
             sample_sha1: f6244a0970c2b3969b9c6d4378a0d627dea27925
         line_emu: 492556
-        lines_measured: 0.8
         max_lines: 1
         order: 3
         mode: fill
@@ -479,12 +418,10 @@ slides:
       gap_pt: 0.5
       max_bottom_pt: 527.0
     line_capacity: 1
-    color_set: a
   8:
     role: meditation
     family: meditation
     layout: 빈 화면
-    has_slide_bg: false
     shapes:
       2262:
         id: 2262
@@ -494,11 +431,6 @@ slides:
         - 4779264
         - 11346293
         - 2003373
-        bbox_frac:
-        - 0.0347
-        - 0.6969
-        - 0.9306
-        - 0.2921
         in_group: false
         bodyPr:
           lIns: 17144
@@ -548,11 +480,6 @@ slides:
         - 4779265
         - 6550145
         - 584775
-        bbox_frac:
-        - 0.0487
-        - 0.6969
-        - 0.5372
-        - 0.0853
         in_group: false
         bodyPr:
           lIns: 60959
@@ -578,7 +505,6 @@ slides:
             sample_len: 8
             sample_sha1: 22230c3ebad67b49a2a4ea860c98210a9788b16a
         line_emu: 328319
-        lines_measured: 1.5
         max_lines: 2
         order: 2
         mode: optional
@@ -593,11 +519,6 @@ slides:
         - 6433824
         - 12070081
         - 318100
-        bbox_frac:
-        - 0.3502
-        - 0.9381
-        - 0.99
-        - 0.0464
         in_group: false
         bodyPr:
           lIns: 60959
@@ -629,18 +550,15 @@ slides:
             sample_len: 3
             sample_sha1: cb361226262f45e1c0e3bed26ee99569838e7467
         line_emu: 225806
-        lines_measured: 1.0
         max_lines: 1
         order: 3
         mode: fixed
         single_segment: false
     line_capacity: 1
-    color_set: null
   17:
     role: card_generic
     family: card.generic
     layout: 빈 화면
-    has_slide_bg: false
     shapes:
       3:
         id: 3
@@ -650,11 +568,6 @@ slides:
         - 5332166
         - 3632726
         - 923330
-        bbox_frac:
-        - 0.351
-        - 0.7775
-        - 0.298
-        - 0.1346
         in_group: false
         bodyPr:
           lIns: 91440
@@ -674,7 +587,6 @@ slides:
             sample_len: 6
             sample_sha1: 98f59a4fd759f2e9d8494e2aa60fea9a770f7aae
         line_emu: 831189
-        lines_measured: 1.0
         max_lines: 1
         order: 1
         mode: fill
@@ -689,11 +601,6 @@ slides:
         - 6135217
         - 4507965
         - 646331
-        bbox_frac:
-        - 0.3151
-        - 0.8946
-        - 0.3697
-        - 0.0942
         in_group: false
         bodyPr:
           lIns: 91440
@@ -713,7 +620,6 @@ slides:
             sample_len: 22
             sample_sha1: a426f25e485d4bf5008e7f8721016a86912dd318
         line_emu: 554126
-        lines_measured: 1.0
         max_lines: 1
         order: 2
         mode: optional
@@ -735,12 +641,10 @@ slides:
       gap_pt: 0.5
       max_bottom_pt: 527.0
     line_capacity: 1
-    color_set: a
   20:
     role: card_announcement
     family: card.announcement
     layout: 빈 화면
-    has_slide_bg: false
     shapes:
       3:
         id: 3
@@ -750,11 +654,6 @@ slides:
         - 5332166
         - 2981907
         - 923330
-        bbox_frac:
-        - 0.3777
-        - 0.7775
-        - 0.2446
-        - 0.1346
         in_group: false
         bodyPr:
           lIns: 91440
@@ -774,7 +673,6 @@ slides:
             sample_len: 5
             sample_sha1: 7d3f11d6b6f8e3c8f3ea24cd4b2cd9947baadcd9
         line_emu: 831189
-        lines_measured: 1.0
         max_lines: 1
         order: 1
         mode: optional
@@ -789,11 +687,6 @@ slides:
         - 6135217
         - 2791149
         - 646331
-        bbox_frac:
-        - 0.3855
-        - 0.8946
-        - 0.2289
-        - 0.0942
         in_group: false
         bodyPr:
           lIns: 91440
@@ -813,7 +706,6 @@ slides:
             sample_len: 12
             sample_sha1: cf84a98d6cf7f156862a08ba8236467b6f471004
         line_emu: 554126
-        lines_measured: 1.0
         max_lines: 1
         order: 2
         mode: optional
@@ -835,12 +727,10 @@ slides:
       gap_pt: 0.5
       max_bottom_pt: 527.0
     line_capacity: 1
-    color_set: a
   21:
     role: announcement_first
     family: announcement.first
     layout: 빈 화면
-    has_slide_bg: false
     shapes:
       4:
         id: 4
@@ -850,11 +740,6 @@ slides:
         - 5540523
         - 3009157
         - 523220
-        bbox_frac:
-        - 0.0386
-        - 0.8079
-        - 0.2468
-        - 0.0763
         in_group: false
         bodyPr:
           lIns: 91440
@@ -874,7 +759,6 @@ slides:
             sample_len: 13
             sample_sha1: 165b6316ba3ec37584079aca239c3320dbaa8610
         line_emu: 430987
-        lines_measured: 1.0
         max_lines: 1
         order: 3
         mode: fill
@@ -889,11 +773,6 @@ slides:
         - 6032966
         - 10046340
         - 584775
-        bbox_frac:
-        - 0.0386
-        - 0.8797
-        - 0.824
-        - 0.0853
         in_group: false
         bodyPr:
           lIns: 91440
@@ -913,7 +792,6 @@ slides:
             sample_len: 32
             sample_sha1: 9573092fdece42ac4e26f051864e252eafc7b6ae
         line_emu: 492556
-        lines_measured: 1.0
         max_lines: 1
         order: 4
         mode: fill
@@ -946,12 +824,10 @@ slides:
           - 1107995
           in_group: false
     line_capacity: 1
-    color_set: a
   23:
     role: announcement_item
     family: announcement.item
     layout: 빈 화면
-    has_slide_bg: false
     shapes:
       4:
         id: 4
@@ -961,11 +837,6 @@ slides:
         - 6125298
         - 11442556
         - 523220
-        bbox_frac:
-        - 0.0386
-        - 0.8932
-        - 0.9385
-        - 0.0763
         in_group: false
         bodyPr:
           lIns: 91440
@@ -991,7 +862,6 @@ slides:
             sample_len: 27
             sample_sha1: 8bc4387b2e4f5888c05500753782d44909a94255
         line_emu: 430987
-        lines_measured: 1.0
         max_lines: 1
         order: 3
         mode: fill
@@ -1025,12 +895,10 @@ slides:
           - 523220
           in_group: false
     line_capacity: 1
-    color_set: a
   31:
     role: card_offertory
     family: card.offertory
     layout: 빈 화면
-    has_slide_bg: false
     shapes:
       4:
         id: 4
@@ -1040,11 +908,6 @@ slides:
         - 5267136
         - 5128327
         - 923330
-        bbox_frac:
-        - 0.2868
-        - 0.768
-        - 0.4206
-        - 0.1346
         in_group: false
         bodyPr:
           lIns: 91440
@@ -1064,7 +927,6 @@ slides:
             sample_len: 9
             sample_sha1: bc97f897ef8b25a96ce1bfa2a4c2073edb68a1ef
         line_emu: 831189
-        lines_measured: 1.0
         max_lines: 1
         order: 1
         mode: optional
@@ -1079,11 +941,6 @@ slides:
         - 6221246
         - 4646337
         - 543675
-        bbox_frac:
-        - 0.3065
-        - 0.9072
-        - 0.3811
-        - 0.0793
         in_group: false
         bodyPr:
           lIns: 91440
@@ -1103,7 +960,6 @@ slides:
             sample_len: 29
             sample_sha1: 4b9b0781639d29aa801fc1c0ea5e6a2115fa2afe
         line_emu: 451459
-        lines_measured: 1.0
         max_lines: 1
         order: 2
         mode: optional
@@ -1125,12 +981,10 @@ slides:
       gap_pt: 0.5
       max_bottom_pt: 527.0
     line_capacity: 1
-    color_set: a
   55:
     role: caption_1
     family: caption
     layout: 빈 화면
-    has_slide_bg: false
     shapes:
       4:
         id: 4
@@ -1140,11 +994,6 @@ slides:
         - 6032691
         - 11027825
         - 615551
-        bbox_frac:
-        - 0.0477
-        - 0.8797
-        - 0.9045
-        - 0.0898
         in_group: false
         bodyPr:
           lIns: 60959
@@ -1164,7 +1013,6 @@ slides:
             sample_len: 9
             sample_sha1: 14f0747d3ff19e869ccc0909c9e3081e487ec314
         line_emu: 492556
-        lines_measured: 1.0
         max_lines: 1
         order: 2
         mode: fill
@@ -1182,12 +1030,10 @@ slides:
           - 869937
           in_group: false
     line_capacity: 1
-    color_set: null
   58:
     role: scripture_2
     family: scripture
     layout: 빈 화면
-    has_slide_bg: false
     shapes:
       4:
         id: 4
@@ -1197,11 +1043,6 @@ slides:
         - 5699998
         - 11128957
         - 892552
-        bbox_frac:
-        - 0.0436
-        - 0.8311
-        - 0.9128
-        - 0.1301
         in_group: false
         bodyPr:
           lIns: 60959
@@ -1271,7 +1112,6 @@ slides:
             sample_len: 13
             sample_sha1: 9be56d45ff39ff2b1858229ab0c02b162133dcd9
         line_emu: 400202
-        lines_measured: 2.0
         max_lines: 2
         order: 2
         mode: fill
@@ -1288,12 +1128,10 @@ slides:
           - 1167351
           in_group: false
     line_capacity: 2
-    color_set: null
   59:
     role: scripture_3
     family: scripture
     layout: 빈 화면
-    has_slide_bg: false
     shapes:
       3:
         id: 3
@@ -1303,11 +1141,6 @@ slides:
         - 5341193
         - 11169077
         - 1292662
-        bbox_frac:
-        - 0.042
-        - 0.7788
-        - 0.9161
-        - 0.1885
         in_group: false
         bodyPr:
           lIns: 60959
@@ -1351,7 +1184,6 @@ slides:
             sample_len: 35
             sample_sha1: 47f80484f32088e19d7208b87f9baebe1150fcef
         line_emu: 400202
-        lines_measured: 3.0
         max_lines: 3
         order: 2
         mode: fill
@@ -1368,12 +1200,10 @@ slides:
           - 1484851
           in_group: false
     line_capacity: 3
-    color_set: null
   60:
     role: scripture_ref_1
     family: scripture_ref
     layout: 빈 화면
-    has_slide_bg: false
     shapes:
       11:
         id: 11
@@ -1383,11 +1213,6 @@ slides:
         - 5501809
         - 1892754
         - 457202
-        bbox_frac:
-        - 0.0306
-        - 0.8022
-        - 0.1552
-        - 0.0667
         in_group: true
         bodyPr:
           lIns: 91440
@@ -1420,11 +1245,6 @@ slides:
         - 6057256
         - 11144549
         - 574451
-        bbox_frac:
-        - 0.043
-        - 0.8832
-        - 0.9141
-        - 0.0838
         in_group: false
         bodyPr:
           lIns: 60959
@@ -1450,7 +1270,6 @@ slides:
             sample_len: 17
             sample_sha1: dec243d9aaf77f2eea153575a6eef43e46766735
         line_emu: 430987
-        lines_measured: 1.05
         max_lines: 1
         order: 4
         mode: fill
@@ -1458,12 +1277,10 @@ slides:
         slot_map:
         - body
     line_capacity: 1
-    color_set: null
   61:
     role: scripture_ref_2
     family: scripture_ref
     layout: 빈 화면
-    has_slide_bg: false
     shapes:
       7:
         id: 7
@@ -1473,11 +1290,6 @@ slides:
         - 5104542
         - 1892754
         - 457202
-        bbox_frac:
-        - 0.0306
-        - 0.7443
-        - 0.1552
-        - 0.0667
         in_group: true
         bodyPr:
           lIns: 91440
@@ -1510,11 +1322,6 @@ slides:
         - 5653410
         - 10946276
         - 984883
-        bbox_frac:
-        - 0.0511
-        - 0.8244
-        - 0.8978
-        - 0.1436
         in_group: false
         bodyPr:
           lIns: 60959
@@ -1566,7 +1373,6 @@ slides:
             sample_len: 17
             sample_sha1: a3de82af3d207b87a2bc70cd8ef835448174f319
         line_emu: 430987
-        lines_measured: 2.0
         max_lines: 2
         order: 4
         mode: fill
@@ -1581,12 +1387,10 @@ slides:
       body: 4
       line_emu: 430987
     line_capacity: 2
-    color_set: null
   62:
     role: scripture_ref_3
     family: scripture_ref
     layout: 빈 화면
-    has_slide_bg: false
     shapes:
       13:
         id: 13
@@ -1596,11 +1400,6 @@ slides:
         - 4807742
         - 2159505
         - 457202
-        bbox_frac:
-        - 0.0306
-        - 0.701
-        - 0.1771
-        - 0.0667
         in_group: true
         bodyPr:
           lIns: 91440
@@ -1633,11 +1432,6 @@ slides:
         - 5335729
         - 11003280
         - 1323437
-        bbox_frac:
-        - 0.0405
-        - 0.778
-        - 0.9025
-        - 0.193
         in_group: false
         bodyPr:
           lIns: 60959
@@ -1681,7 +1475,6 @@ slides:
             sample_len: 27
             sample_sha1: 5b72841d2beb01f046bfbf7fb010c926d368e25e
         line_emu: 400202
-        lines_measured: 3.0
         max_lines: 3
         order: 4
         mode: fill
@@ -1695,12 +1488,10 @@ slides:
       body: 4
       line_emu: 400202
     line_capacity: 3
-    color_set: null
   67:
     role: caption_3
     family: caption
     layout: 빈 화면
-    has_slide_bg: false
     shapes:
       5:
         id: 5
@@ -1710,11 +1501,6 @@ slides:
         - 5113623
         - 11025808
         - 1569660
-        bbox_frac:
-        - 0.0478
-        - 0.7456
-        - 0.9043
-        - 0.2289
         in_group: false
         bodyPr:
           lIns: 60959
@@ -1746,7 +1532,6 @@ slides:
             sample_len: 14
             sample_sha1: 79a8087c480db4591f5f3636839787fa082e8ce6
         line_emu: 492556
-        lines_measured: 3.0
         max_lines: 3
         order: 2
         mode: fill
@@ -1759,4 +1544,3 @@ slides:
       body: 2
       line_emu: 492556
     line_capacity: 3
-    color_set: null
