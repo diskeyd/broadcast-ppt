@@ -84,7 +84,7 @@ def test_cli_and_summary(tmp_path):
     build_deck(src / "미편집" / "주일오전예배ppt(240101).pptx")
     (src / "broken.pptx").write_bytes(b"not a zip")
     out = tmp_path / "out"
-    assert main(["analyze", str(src), "--out", str(out), "--workers", "1", "--scope", ""]) == 0
+    assert main(["analyze", str(src), "--out", str(out), "--workers", "1", "--scope", ""]) == 1
     md = (out / "clusters.md").read_text(encoding="utf-8")
     assert "paired: 1" in md
     assert "broken.pptx" in md

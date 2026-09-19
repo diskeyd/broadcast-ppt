@@ -13,8 +13,8 @@ from . import kinds as K
 from .classify import Decision, SlideView
 from .fields import compact, mask_names, norm
 
-MODEL = os.environ.get("GEMINI_MODEL", "gemini-3.5-flash")  # ponytail: id from env; the current flash model as of 2026-05
-MIN_CONFIDENCE = 0.8  # ponytail: single gate; the planned 4-step gate if weekly data asks for it
+MODEL = os.environ.get("GEMINI_MODEL", "gemini-3.5-flash")  # model id from GEMINI_MODEL; default is the current flash model (2026-05)
+MIN_CONFIDENCE = 0.8  # Limit: one confidence gate; revisit (4-step gate) when weekly data asks for it
 # only kinds without a keyword: 묵상/기도/교회소식/성경봉독 slides carry their word, so the rules already caught them
 # (a 2026-08-02 slide without 묵상 came back as meditation). No announcement_block (structured), no hymn (deferred:hymn flag)
 ALLOWED = [K.CAPTION_SENTENCE, K.GRAPHIC, K.PICTURE_ONLY, K.NAME_LIST, K.UNKNOWN]

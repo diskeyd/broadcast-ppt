@@ -54,7 +54,7 @@ def _renumber_ids(slide) -> None:
 def _copy_part_into(dst_package, src_part) -> Part:
     ext = posixpath.splitext(str(src_part.partname))[1] or ".bin"
     folder = posixpath.dirname(str(src_part.partname))
-    base = posixpath.basename(str(src_part.partname)).rstrip("0123456789." + ext.lstrip(".")) or "media"
+    base = posixpath.splitext(posixpath.basename(str(src_part.partname)))[0].rstrip("0123456789") or "media"
     tmpl = f"{folder}/{base}%d{ext}"
     partname = dst_package.next_partname(tmpl)
     return Part(PackURI(partname), src_part.content_type, dst_package, src_part.blob)

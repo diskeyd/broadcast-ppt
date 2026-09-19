@@ -77,7 +77,7 @@ def cmd_analyze(args) -> int:
             print(f"[{i}/{len(todo)}] {'FAIL' if err else 'ok  '} {n:>3} slides  {rel}" + (f"  ({err[:80]})" if err else ""))
     csv_path, md_path = summarize(out, args.scope)
     print(f"done in {time.time() - t0:.0f}s, failed {failed}\n{csv_path}\n{md_path}")
-    return 0
+    return 1 if failed else 0
 
 
 def cmd_summarize(args) -> int:
@@ -186,7 +186,7 @@ def cmd_build(args) -> int:
         return 1
     flagged = [r for r in res["ops"] if r["flags"]]
     print(f"built {res['slides']} slides -> {res['out']} ({len(flagged)} with flags)")
-    if getattr(args, "validate", True):
+    if args.validate:
         from .validator.check import validate_deck
         rep = validate_deck(out, plan, Path(args.catalog), Path(args.widths))
         out.with_name("validation.json").write_text(json.dumps(rep, ensure_ascii=False, indent=1), encoding="utf-8")
@@ -299,7 +299,7 @@ def main(argv: list[str] | None = None) -> int:
     plan_args(r)
     r.add_argument("--template")
     r.add_argument("--force", action="store_true")
-    r.set_defaults(func=cmd_run)
+    r.set_defaults(func=cmd_run, validate=True)
     c = sub.add_parser("catalog", help="rebuild config/templates.yaml from the template and config/roles.yaml")
     c.add_argument("template", nargs="?", default=str(REPO_ROOT / "local/templates/24.상반기.pptx"))
     c.add_argument("--roles", default=str(REPO_ROOT / "config/roles.yaml"))

@@ -2,9 +2,11 @@ import io
 
 from PIL import Image
 from pptx import Presentation
+from pptx.opc.package import Part
+from pptx.opc.packuri import PackURI
 from pptx.util import Inches, Pt
 
-from broadcast_ppt.builder.clone import copy_foreign_slide, duplicate_template_slide
+from broadcast_ppt.builder.clone import _copy_part_into, copy_foreign_slide, duplicate_template_slide
 from broadcast_ppt.builder.package import current_slide_ids, remove_slides
 
 
@@ -56,3 +58,11 @@ def test_copy_foreign_scales_and_does_not_collide_images():
     tb = again.slides[0].shapes[1]
     assert abs(tb.left / again.slide_width - Inches(4) / Inches(10)) < 0.001
     assert tb.text_frame.paragraphs[0].runs[0].font.size.pt == 42.67
+
+
+def test_copied_media_part_keeps_the_media_base_name():
+    pkg = Presentation().part.package
+    m4a = Part(PackURI("/ppt/media/media3.m4a"), "audio/mp4", pkg, b"x")  # 'a' and 'm' of the extension once ate into the base name
+    mp4 = Part(PackURI("/ppt/media/media3.mp4"), "video/mp4", pkg, b"x")
+    assert _copy_part_into(pkg, m4a).partname == "/ppt/media/media1.m4a"
+    assert _copy_part_into(pkg, mp4).partname == "/ppt/media/media1.mp4"

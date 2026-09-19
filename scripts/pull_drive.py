@@ -14,6 +14,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import shutil
 import subprocess
 import sys
 import unicodedata
@@ -23,10 +24,12 @@ from pathlib import Path
 PPTX = "application/vnd.openxmlformats-officedocument.presentationml.presentation"
 WANTED = {PPTX, "application/vnd.ms-powerpoint", "application/haansoftpptx", "application/vnd.google-apps.presentation"}
 FOLDER = "application/vnd.google-apps.folder"
+ROOT = Path(__file__).resolve().parents[1]
+GWS = shutil.which("gws")  # on Windows the npm shim is gws.cmd, which subprocess finds only by full path
 
 
 def gws_json(args: list[str], cwd: Path | None = None) -> dict:
-    r = subprocess.run(["gws", *args], capture_output=True, text=True, cwd=cwd)
+    r = subprocess.run([GWS, *args], capture_output=True, encoding="utf-8", errors="replace", cwd=cwd)
     body = r.stdout[r.stdout.find("{"):] if "{" in r.stdout else ""
     data = json.loads(body) if body else {}
     if r.returncode != 0 or "error" in data:
@@ -88,11 +91,14 @@ def download(item: dict, dest: Path) -> tuple[str, str]:
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("folder_id")
-    ap.add_argument("--dest", default="local/input")
+    ap.add_argument("--dest", default=str(ROOT / "local/input"))
     ap.add_argument("--list-only", action="store_true")
     ap.add_argument("--workers", type=int, default=8)
     ap.add_argument("--first", action="append", default=[], help="download paths containing this text first (repeatable)")
     args = ap.parse_args()
+    if not GWS:
+        print("gws not found on PATH: install the gws CLI and log in first", file=sys.stderr)
+        return 2
     dest = Path(args.dest).expanduser().resolve()
     dest.mkdir(parents=True, exist_ok=True)
     manifest_path = dest / "_manifest.json"
