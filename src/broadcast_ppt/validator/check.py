@@ -40,8 +40,7 @@ def validate_deck(deck: Path, plan: dict, catalog_path: Path, widths_path: Path 
     # under-estimated on the calibration set); the validator removes most of that bonus so warnings mark
     # chunks that are close to overflowing, not every chunk.
     planner_model = load_model(widths_path)
-    strict = WidthModel(em=planner_model.em, line_height=planner_model.line_height,
-                        width_scale=max(1.0, planner_model.width_scale - 0.06))
+    strict = WidthModel(em=planner_model.em, width_scale=max(1.0, planner_model.width_scale - 0.06))
     ops = plan["ops"]
     slides = list(prs.slides)
 
@@ -116,7 +115,6 @@ def validate_deck(deck: Path, plan: dict, catalog_path: Path, widths_path: Path 
                     findings.append(Finding("warning", "lines_fit", n, f"estimated {lines} lines in a {spec['max_lines']}-line box (strict width)"))
             # single-line boxes: filled text wider than the bar it sits on
             if bp.get("wrap") == "none" and spec.get("backing"):
-                text = "".join(seg["text"] for seg in segs)
                 width = sum(strict.width_emu(seg["text"], int(seg["key"][0]) / 100 if seg["key"][0] else 28) for seg in segs)
                 bar = max(b["bbox"][0] + b["bbox"][2] for b in spec["backing"]) - spec["bbox"][0]
                 if width + bp["lIns"] + bp["rIns"] > bar:

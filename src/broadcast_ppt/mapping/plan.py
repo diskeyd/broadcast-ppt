@@ -192,10 +192,7 @@ class Mapper:
             def fits(t):
                 return label_w + self.model.width_emu(t, self._sz(spec, "body")) <= inner  # noqa: B023
             for chunk in pack([it["body"]], fits):
-                op = self.card(src, tpl, {"label": label, "body": chunk}, "announcement")
-                if it.get("flag"):
-                    op.setdefault("flags", []).append(it["flag"])
-                ops.append(op)
+                ops.append(self.card(src, tpl, {"label": label, "body": chunk}, "announcement"))
         return ops
 
     def map(self, src: int, d) -> list[dict]:

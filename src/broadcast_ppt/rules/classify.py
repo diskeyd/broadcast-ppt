@@ -13,7 +13,6 @@ from . import kinds as K
 from .fields import (
     announcement_items, compact, english_line, name_role, norm, page_ref, quoted_title, scripture_ref,
 )
-from .version import RULES_VERSION
 
 VERSE_START_RE = re.compile(r"^\s*\d{1,3}\s+\S")
 BRACKET_REF_RE = re.compile(r"^\s*[\[［]")
@@ -43,8 +42,6 @@ class DeckContext:
     boilerplate: set[str] = field(default_factory=set)
     last_ref: object = None     # most recent reference (scripture title, body or bracketed quote)
     title_ref: object = None    # the service's 성경봉독 reference
-    last_kind: str | None = None
-    rules_version: str = RULES_VERSION
 
     @classmethod
     def from_deck(cls, doc: dict) -> DeckContext:
@@ -114,19 +111,11 @@ def _other_quotes(v: SlideView, main: str) -> list[dict]:
     return out
 
 
-def _card_label(text: str, word: str) -> str:
-    for line in norm(text).splitlines():
-        if word in compact(line):
-            return re.sub(r"\s+", " ", line).strip()
-    return word
-
-
 def classify_slide(slide: dict, ctx: DeckContext) -> Decision:
     v = view_of(slide, ctx)
     c = compact(v.text)
     pics, groups, media = v.kinds.get("PICTURE", 0), v.kinds.get("GROUP", 0), v.kinds.get("MEDIA", 0)
     d = _classify(v, c, pics, groups, media, ctx)
-    ctx.last_kind = d.kind
     if d.kind == K.SCRIPTURE_TITLE and d.fields.get("ref"):
         ctx.last_ref = d.fields["ref"]
         ctx.title_ref = d.fields["ref"]

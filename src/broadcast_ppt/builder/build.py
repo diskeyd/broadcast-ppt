@@ -14,7 +14,7 @@ from .clone import copy_foreign_slide, duplicate_template_slide
 from .fill import fill_shape, shape_by_order
 from .geometry import (EMU_PER_PT, cy_of, drop_blank_paragraphs, hide_shape, in_group, insets, one_line_height, plain_line_spacing,
                        runs_with_size, set_font_size, style_paragraphs, set_width, set_y, shift, split_paragraph_boxes, text_align, y_of)
-from .package import current_slide_ids, drop_section_list, open_base, remove_slides
+from .package import current_slide_ids, drop_section_list, remove_slides
 
 SINGLE_LINE_SLACK = 1.06  # room for renderers whose glyphs run a little wider than PowerPoint's
 
@@ -126,7 +126,7 @@ def build_deck(plan: dict, template: Path, catalog_path: Path, out: Path, force:
     src_path = Path(plan["source"]["path"])
     if hashlib.sha256(src_path.read_bytes()).hexdigest() != plan["source"]["sha256"] and not force:
         raise ValueError(f"source deck changed since planning: {src_path}")
-    prs = open_base(template)
+    prs = Presentation(str(template))
     base_ids = current_slide_ids(prs)
     tpl_slides = list(prs.slides)
     src = Presentation(str(src_path))

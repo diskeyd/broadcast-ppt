@@ -14,7 +14,6 @@ from pathlib import Path
 
 import yaml
 
-from ..ooxml import AUTOFIT_LINE_HEIGHT as LINE_HEIGHT
 from ..ooxml import EMU_PER_PT
 
 CLASSES = ("hangul", "latin_upper", "latin_lower", "digit", "space", "punct", "wide")
@@ -50,7 +49,6 @@ def class_counts(text: str) -> dict[str, int]:
 @dataclass
 class WidthModel:
     em: dict[str, float] = field(default_factory=lambda: dict(DEFAULT_EM))
-    line_height: float = LINE_HEIGHT
     # PowerPoint fits slightly more per line than the per-character widths suggest (kerning, justify);
     # calibrated as the largest factor that never under-estimates line counts, minus a margin
     width_scale: float = 1.0
@@ -86,9 +84,8 @@ class WidthModel:
             out.append(line.rstrip())
         return out
 
-    def estimate_lines(self, text: str, box_width_emu: int, sz_pt: float, lIns: int = 91440, rIns: int = 91440,
-                       safety: float = 1.0) -> int:
-        inner = (box_width_emu - lIns - rIns) * safety * self.width_scale
+    def estimate_lines(self, text: str, box_width_emu: int, sz_pt: float, lIns: int = 91440, rIns: int = 91440) -> int:
+        inner = (box_width_emu - lIns - rIns) * self.width_scale
         return len(self.wrap_lines(text, inner, sz_pt))
 
 
@@ -97,6 +94,5 @@ def load_model(path: Path | None) -> WidthModel:
         data = yaml.safe_load(Path(path).read_text(encoding="utf-8")) or {}
         em = dict(DEFAULT_EM)
         em.update({k: float(v) for k, v in (data.get("em") or {}).items()})
-        return WidthModel(em=em, line_height=float(data.get("line_height", LINE_HEIGHT)),
-                          width_scale=float(data.get("width_scale", 1.0)))
+        return WidthModel(em=em, width_scale=float(data.get("width_scale", 1.0)))
     return WidthModel()

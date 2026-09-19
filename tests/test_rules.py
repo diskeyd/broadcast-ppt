@@ -1,12 +1,11 @@
 from broadcast_ppt.rules.fields import (
-    announcement_items, english_line, korean_title_line, mask_names, name_role, page_ref, quoted_title, scripture_ref, verse_chunks,
+    announcement_items, english_line, mask_names, name_role, page_ref, quoted_title, scripture_ref, verse_chunks,
 )
 
 
 def test_scripture_ref_forms():
     r = scripture_ref("삼상26:21-25")
     assert (r.book, r.chapter, r.verse_start, r.verse_end, r.testament) == ("사무엘상", 26, 21, 25, "old")
-    assert r.short == "삼상26:21-25"
     r = scripture_ref("사무엘상 7:7-12")
     assert (r.book, r.verse_end) == ("사무엘상", 12)
     r = scripture_ref("시편 62편")  # no verse -> not a reference
@@ -28,8 +27,6 @@ def test_page_and_title():
     assert page_ref("사무엘상26:21-25") is None
     assert quoted_title("설 교 “갚으시리니” 삼상26") == "갚으시리니"
     assert english_line("기 도\nPrayer of worship\n") == "Prayer of worship"
-    assert korean_title_line("기 도\nPrayer") == "기도"
-    assert korean_title_line("성경봉독  Scripture") == "성경봉독 Scripture"
 
 
 def test_name_role():

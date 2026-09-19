@@ -26,13 +26,13 @@ def _pieces(unit: str, fits: Callable[[str], bool]) -> list[str]:
     return out + ([cur] if cur else [])
 
 
-def pack(units: list[str], fits: Callable[[str], bool], joiner: str = " ") -> list[str]:
+def pack(units: list[str], fits: Callable[[str], bool]) -> list[str]:
     chunks: list[str] = []
     cur = ""
     for unit in (u.strip() for u in units):
         if not unit:
             continue
-        cand = f"{cur}{joiner}{unit}" if cur else unit
+        cand = f"{cur} {unit}" if cur else unit
         if fits(cand):
             cur = cand
             continue

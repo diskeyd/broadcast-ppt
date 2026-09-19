@@ -13,13 +13,16 @@ import statistics
 from collections import Counter, defaultdict
 from pathlib import Path
 
+import yaml
+
+from .core import classify_rgb
+
 UNEDITED_MARK = "미편집"
 
 
 def load_scope(path: Path | None) -> dict | None:
     if not path or not Path(path).exists():
         return None
-    import yaml
     return yaml.safe_load(Path(path).read_text(encoding="utf-8")) or {}
 
 
@@ -46,12 +49,6 @@ def load_all(out_dir: Path, scope: dict | None = None) -> list[dict]:
         if in_scope(doc, scope):
             docs.append(doc)
     return docs
-
-
-def flat(shapes):
-    for s in shapes:
-        yield s
-        yield from flat(s.get("children", []))
 
 
 def is_chroma_slide(sl: dict) -> bool:
@@ -268,7 +265,6 @@ def write_markdown(docs: list[dict], out_dir: Path) -> Path:
 
 
 def _key_of(label: str) -> str:
-    from .core import classify_rgb
     m = re.search(r":([0-9A-F]{6})$", label)
     return (classify_rgb(m.group(1)) or "") if m else ""
 

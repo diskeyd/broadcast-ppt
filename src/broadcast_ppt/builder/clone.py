@@ -25,14 +25,12 @@ from .scale import scale_tree
 P = "http://schemas.openxmlformats.org/presentationml/2006/main"
 A = "http://schemas.openxmlformats.org/drawingml/2006/main"
 R = "http://schemas.openxmlformats.org/officeDocument/2006/relationships"
-NS = {"p": P, "a": A, "r": R}
 MEDIA_RELTYPES = {RT.MEDIA, RT.VIDEO, RT.AUDIO, "http://schemas.microsoft.com/office/2007/relationships/media"}
 
 
 @dataclass
 class CloneReport:
     flags: list[str] = field(default_factory=list)
-    dropped: list[str] = field(default_factory=list)
 
     def flag(self, f: str) -> None:
         if f not in self.flags:
@@ -84,10 +82,7 @@ def _rewrite_rels(elements, src_slide, dst_slide, same_package: bool, report: Cl
                     report.flag("missing_relationship")
                     continue
                 if rel.is_external:
-                    if rel.reltype == RT.HYPERLINK:
-                        new = dst_part.relate_to(rel.target_ref, rel.reltype, is_external=True)
-                    else:
-                        new = dst_part.relate_to(rel.target_ref, rel.reltype, is_external=True)
+                    new = dst_part.relate_to(rel.target_ref, rel.reltype, is_external=True)
                 elif rel.reltype == RT.SLIDE:
                     parent = el.getparent()  # internal jump to another slide of the source deck
                     if parent is not None:
@@ -102,7 +97,6 @@ def _rewrite_rels(elements, src_slide, dst_slide, same_package: bool, report: Cl
                     new_part = _copy_part_into(dst_part.package, rel.target_part)
                     new = dst_part.relate_to(new_part, rel.reltype)
                 else:
-                    report.dropped.append(rel.reltype.rsplit("/", 1)[-1])
                     report.flag("unsupported_relationship")
                     del el.attrib[attr]
                     continue

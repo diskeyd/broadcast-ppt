@@ -6,7 +6,7 @@ import re
 import unicodedata
 from dataclasses import dataclass
 
-from .books import ABBREV, BOOK_NAMES_BY_LENGTH, BOOKS
+from .books import BOOK_NAMES_BY_LENGTH, BOOKS
 
 ROLES = ["담임목사", "부목사", "안수집사", "목사", "전도사", "강도사", "장로", "권사", "집사", "성도", "사모", "교사", "선교사"]
 _ROLE_RE = re.compile(r"([가-힣]{2,4})\s*(" + "|".join(ROLES) + r")(?![가-힣])")
@@ -39,7 +39,6 @@ def compact(s: str) -> str:
 @dataclass(frozen=True)
 class ScriptureRef:
     book: str          # full name
-    abbrev: str
     testament: str
     chapter: int
     verse_start: int
@@ -49,10 +48,6 @@ class ScriptureRef:
 
     def contains(self, verse: int) -> bool:
         return self.verse_start <= verse <= self.verse_end or any(a <= verse <= b for a, b in self.extra)
-
-    @property
-    def short(self) -> str:
-        return f"{self.abbrev}{self.chapter}:{self.verse_start}" + (f"-{self.verse_end}" if self.verse_end != self.verse_start else "")
 
     @property
     def long(self) -> str:
@@ -75,7 +70,7 @@ def scripture_ref(text: str) -> ScriptureRef | None:
         for part in re.findall(r"\d{1,3}(?:\s*[-~–—]\s*\d{1,3})?", m.group("more") or ""):
             nums = [int(n) for n in re.findall(r"\d{1,3}", part)]
             extra.append((nums[0], nums[-1]))
-        return ScriptureRef(full, ABBREV[full], test, int(m.group("ch")), v1, max(v1, v2), m.group(0).strip(), tuple(extra))
+        return ScriptureRef(full, test, int(m.group("ch")), v1, max(v1, v2), m.group(0).strip(), tuple(extra))
     return None
 
 
@@ -168,15 +163,4 @@ def english_line(text: str) -> str | None:
         s = line.strip()
         if s and re.fullmatch(r"[A-Za-z][A-Za-z '’&,.\-]{2,60}", s):
             return s
-    return None
-
-
-def korean_title_line(text: str) -> str | None:
-    """First line containing Hangul, with inner spacing normalised ('기 도' -> '기도' only for 2-3 syllable words)."""
-    for line in norm(text).splitlines():
-        s = line.strip()
-        if s and re.search(r"[가-힣]", s):
-            if re.fullmatch(r"(?:[가-힣]\s+){1,3}[가-힣]", s):
-                return re.sub(r"\s+", "", s)
-            return re.sub(r"\s{2,}", " ", s)
     return None

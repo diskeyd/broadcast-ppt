@@ -162,7 +162,9 @@ def test_catechism_splits_qa_and_verse(tmp_path):
     parts = ["제1문 사람의 제일 되는 목적은 무엇입니까?", "답: 사람의 제일 되는 목적은\n하나님을 영화롭게 하는 것입니다",
              "[엡1:3] 찬송하리로다 하나님 곧 우리 주 예수 그리스도의 아버지께서\n그리스도 안에서 하늘에 속한 모든 신령한 복으로"]
     d = classify_slide(_slide(15, "||".join(parts)), DeckContext())
-    assert (d.kind, d.rule_id) == (K.CATECHISM, "R170") and len(d.fields["verses"]) == 1 and d.fields["verses"][0]["ref"].short.startswith("엡1:3")
+    assert (d.kind, d.rule_id) == (K.CATECHISM, "R170") and len(d.fields["verses"]) == 1
+    ref = d.fields["verses"][0]["ref"]
+    assert (ref.book, ref.chapter, ref.verse_start) == ("에베소서", 1, 3)
     assert d.fields["qa"].startswith("제1문") and "영화롭게" in d.fields["qa"] and "찬송" not in d.fields["qa"]
     assert d.fields["qa"].split("\n")[1].startswith("답")  # question line, answer below
 

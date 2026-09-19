@@ -5,12 +5,14 @@ from __future__ import annotations
 import statistics
 from pathlib import Path
 
+import yaml
 from pptx import Presentation
 from pptx.enum.shapes import MSO_SHAPE_TYPE
 
-from ..mapping.textfit import CLASSES, DEFAULT_EM, EMU_PER_PT, LINE_HEIGHT, WidthModel, class_counts
+from ..mapping.textfit import CLASSES, DEFAULT_EM, EMU_PER_PT, WidthModel, class_counts
 
 from ..ooxml import A, DEFAULT_INSETS as DEF_INS
+from ..ooxml import AUTOFIT_LINE_HEIGHT as LINE_HEIGHT
 
 
 def _walk(shapes):
@@ -141,6 +143,3 @@ def calibrate(paths: list[Path], out: Path) -> dict:
     data = {"version": 1, "line_height": LINE_HEIGHT, "width_scale": scale, "em": em, "stats": stats, "sources": len(paths)}
     Path(out).write_text(yaml.safe_dump(data, sort_keys=False, allow_unicode=True), encoding="utf-8")
     return data
-
-
-import yaml  # noqa: E402  (kept at the end to avoid a circular import during package init)

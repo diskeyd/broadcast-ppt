@@ -26,10 +26,8 @@ _BOOKS: list[tuple[str, list[str], str]] = [
 ]
 
 BOOKS: dict[str, tuple[str, str, int]] = {}  # any spelling -> (full name, testament, order)
-ABBREV: dict[str, str] = {}  # full name -> canonical short form
 for _order, (_full, _abbrs, _test) in enumerate(_BOOKS, start=1):
     BOOKS[_full] = (_full, _test, _order)
-    ABBREV[_full] = _abbrs[0]
     for _a in _abbrs:
         BOOKS[_a] = (_full, _test, _order)
 

@@ -1,20 +1,12 @@
-"""Output package handling: open the template as the base document, add blank slides,
-remove the template's own slides and the section list that would otherwise dangle."""
+"""Output package handling: add blank slides, remove the template's own slides and the section list
+that would otherwise dangle."""
 
 from __future__ import annotations
-
-from pathlib import Path
-
-from pptx import Presentation
 
 NS_P = "http://schemas.openxmlformats.org/presentationml/2006/main"
 NS_R = "http://schemas.openxmlformats.org/officeDocument/2006/relationships"
 SECTION_EXT_URI = "{521415D9-36F7-43E2-AB2F-B90AF26B5E84}"
 BLANK_LAYOUT_NAMES = ("빈 화면", "Blank")
-
-
-def open_base(template: Path) -> Presentation:
-    return Presentation(str(template))
 
 
 def blank_layout(prs):
