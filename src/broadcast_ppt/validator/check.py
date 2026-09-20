@@ -121,7 +121,7 @@ def validate_deck(deck: Path, plan: dict, catalog_path: Path, widths_path: Path 
             if flag.startswith("review:"):
                 findings.append(Finding("info", "review", n, flag))
     for op in ops:
-        if op["op"] == "copy":
+        if op["op"] != "template":  # template flags are collected above, while the slide is open
             for flag in op.get("flags", []):
                 if flag.startswith(("review:", "deferred:")):
                     findings.append(Finding("info", "review", op["out_index"], flag))

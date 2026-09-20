@@ -130,3 +130,28 @@ def test_stack_offset_moves_one_row_after_the_bottom_clamp():
     moved = _card_rows(3.0, 380)
     assert round(moved[1] - base[1], 2) == 3.0
     assert round(moved[0] - base[0], 2) == 0.0  # the Korean row above keeps its place
+
+
+def test_shape_clusters_are_spread_along_the_bottom_band():
+    from pptx.util import Emu
+
+    from broadcast_ppt.builder.build import layout_bottom_row
+    from broadcast_ppt.builder.geometry import box_of
+
+    prs = Presentation()
+    s = prs.slides.add_slide(prs.slide_layouts[6])
+    # two boxes near the top, each with a smaller label drawn inside it
+    for left, top in ((Inches(1), Inches(1)), (Inches(1), Inches(3))):
+        s.shapes.add_textbox(left, top, Inches(3), Inches(1.5)).text_frame.text = "host"
+        s.shapes.add_textbox(left + Inches(0.5), top + Inches(0.5), Inches(2), Inches(0.5)).text_frame.text = "label"
+    band = (Emu(Inches(0.5)), Emu(Inches(6)), Emu(Inches(9)), Emu(Inches(1)))
+
+    assert layout_bottom_row(s, band) == 2  # the labels travel with their hosts, not on their own
+    boxes = [box_of(el) for el in s.shapes._spTree if box_of(el) is not None]
+    widest = max(b[2] for b in boxes)
+    hosts = sorted((b for b in boxes if b[2] == widest), key=lambda b: b[0])
+    assert hosts[0][0] == band[0]                                  # first cluster at the left edge
+    assert hosts[-1][0] + hosts[-1][2] == band[0] + band[2]        # last at the right edge
+    assert all(b[1] + b[3] <= band[1] + band[3] for b in boxes)    # nothing hangs below the band
+    for h in hosts:                                                # each label still inside its host
+        assert any(h[0] <= b[0] and b[0] + b[2] <= h[0] + h[2] for b in boxes if b is not h)

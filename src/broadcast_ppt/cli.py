@@ -128,7 +128,8 @@ def _print_plan(plan: dict) -> None:
     print(f"{'src':>3} {'kind':<20} {'rule':<5} ops")
     for row in plan["slides"]:
         ops = by_src.get(row["src"], [])
-        desc = " ".join(("copy" if o["op"] == "copy" else f"T{o['template_slide']}") + _fit_text(o.get("fit")) for o in ops)
+        desc = " ".join(("copy" if o["op"] == "copy" else "shapes" if o["op"] == "shapes" else f"T{o['template_slide']}")
+                        + _fit_text(o.get("fit")) for o in ops)
         flags = sorted({f for o in ops for f in o.get("flags", [])})
         ai = f"  ai:{row['ai']['kind']}@{row['ai']['confidence']:.2f}" if row.get("ai") else ""
         print(f"{row['src']:>3} {row['kind']:<20} {row['rule']:<5} {desc or 'skip'}" + (f"  [{', '.join(flags)}]" if flags else "") + ai)

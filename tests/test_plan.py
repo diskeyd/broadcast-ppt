@@ -366,3 +366,27 @@ def test_catechism_long_answer_keeps_styles_on_every_page(tmp_path):
     assert len(caps) >= 2 and caps[0]["fill"]["body"].startswith("제7문") and caps[0]["para_style"] == [{"color": "FF9300"}, {"sz": 28.0}]
     assert all(o["para_style"] == [{"sz": 28.0}] for o in caps[1:]) and all(o["fit"]["est_lines"] <= o["fit"]["max_lines"] for o in caps)
     assert [o["fill"]["ref"] for o in ops if o["note"] == "scripture caption"] == ["에베소서1:11", "로마서8:28"]
+
+
+def _shape_slide(index):
+    """Two ellipses, each with a short label drawn inside it. The ellipses hold no text of their own."""
+    def box(kind, text, bbox):
+        return {"kind": kind, "text": text, "bbox": bbox, "depth": 0}
+    shapes = [box("AUTO_SHAPE", "\n\n", [222, 219, 276, 89]),
+              box("AUTO_SHAPE", "\n\n", [222, 108, 276, 86]),
+              box("TEXT_BOX", "어떻게 되는가?", [243, 134, 233, 32]),
+              box("TEXT_BOX", "어떻게 사는가?", [243, 247, 244, 32])]
+    return {"index": index, "text": "\n".join(s["text"] for s in shapes), "shapes": shapes,
+            "kinds": {"TEXT_BOX": 2, "AUTO_SHAPE": 2}, "full_bleed_picture": False, "keywords": [], "text_len": 30}
+
+
+def test_labelled_shapes_are_laid_out_instead_of_captioned():
+    d = classify_slide(_shape_slide(14), DeckContext())
+    # this used to fall through to R550, which merged both labels into one line of caption text
+    assert (d.kind, d.rule_id) == (K.SHAPES_LAYOUT, "R410") and "review:shapes_layout" in d.flags
+
+
+def test_free_floating_short_boxes_are_not_a_shape_layout():
+    s = _shape_slide(15)
+    s["shapes"][2]["bbox"] = [700, 10, 200, 30]  # a label outside every drawn shape
+    assert classify_slide(s, DeckContext()).kind != K.SHAPES_LAYOUT

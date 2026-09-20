@@ -143,6 +143,29 @@ def set_y(el, y: int) -> None:
     xfrm(el).find(f"{{{A}}}off").set("y", str(int(y)))
 
 
+def box_of(el) -> tuple[int, int, int, int] | None:
+    """(x, y, cx, cy) in EMU, or None for an element with no frame of its own."""
+    xf = xfrm(el)
+    if xf is None:
+        return None
+    off, ext = xf.find(f"{{{A}}}off"), xf.find(f"{{{A}}}ext")
+    if off is None or ext is None:
+        return None
+    return int(off.get("x")), int(off.get("y")), int(ext.get("cx")), int(ext.get("cy"))
+
+
+def translate(el, dx: int, dy: int) -> None:
+    """Move an element and, for a group, its child frame with it."""
+    xf = xfrm(el)
+    if xf is None:
+        return
+    for tag in ("off", "chOff"):
+        node = xf.find(f"{{{A}}}{tag}")
+        if node is not None:
+            node.set("x", str(int(node.get("x")) + dx))
+            node.set("y", str(int(node.get("y")) + dy))
+
+
 def insets(sp_el) -> dict:
     bp = sp_el.find(f".//{{{A}}}bodyPr")
     d = dict(DEFAULT_INSETS)

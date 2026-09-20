@@ -116,6 +116,19 @@ def _unit(text: str) -> dict | None:
     return None
 
 
+def _labels_inside_shapes(v: SlideView) -> bool:
+    """Every text box sits inside a drawn shape — a few labelled shapes, not free-floating text.
+
+    This is what separates the slide from an announcement card or a meditation quote, which also
+    carry two short boxes but draw nothing around them."""
+    def inside(a, b) -> bool:
+        return b[0] <= a[0] and b[1] <= a[1] and a[0] + a[2] <= b[0] + b[2] and a[1] + a[3] <= b[1] + b[3]
+
+    drawn = [sh for sh in flatten(v.raw.get("shapes", [])) if sh.get("kind") in ("AUTO_SHAPE", "FREEFORM")]
+    return bool(drawn) and all(b.get("bbox") and any(sh.get("bbox") and inside(b["bbox"], sh["bbox"]) for sh in drawn)
+                               for b in v.boxes)
+
+
 def _bracketed_verse(u: dict | None) -> bool:
     """A unit the catechism rule counts as a verse: a bracketed reference with text under it."""
     return bool(u and u["quote"] and u["ref"] and compact(u["body"]))
@@ -300,6 +313,12 @@ def _classify(v: SlideView, c: str, pics: int, groups: int, media: int, ctx: Dec
     if groups >= 2 and pics >= 1 and v.clen <= 120:
         return Decision(K.HYMN_IMAGE, "R400", "picture + grouped lyric boxes", flags=["passthrough", "deferred:hymn"])
     drawn = v.kinds.get("AUTO_SHAPE", 0) + v.kinds.get("FREEFORM", 0) + v.kinds.get("CHART", 0) + v.kinds.get("LINE", 0)
+    # before R420, which would pass a 3-shape slide straight through: a few drawn shapes each holding
+    # one short label is a layout to rearrange, not a diagram to copy
+    if 2 <= drawn <= 4 and pics == 0 and not v.full_bleed_picture and 2 <= len(v.boxes) <= 4 \
+            and all(len(compact(b["text"])) <= 20 for b in v.boxes) and _labels_inside_shapes(v):
+        return Decision(K.SHAPES_LAYOUT, "R410", f"{drawn} drawn shapes, each holding a short label",
+                        flags=["review:shapes_layout"], confidence=0.8)
     if drawn >= 3 and len(v.boxes) >= 3:
         return Decision(K.GRAPHIC, "R420", "diagram or question sheet built from many shapes", flags=["passthrough", "review:graphic"])
 

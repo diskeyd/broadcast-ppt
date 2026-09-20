@@ -15,6 +15,7 @@ HYMN_IMAGE = "hymn_image"
 NAME_LIST = "name_list"
 PICTURE_ONLY = "picture_only"
 GRAPHIC = "graphic"                  # sermon outline diagrams, discussion questions: many shapes
+SHAPES_LAYOUT = "shapes_layout"      # a few labelled shapes: moved to the bottom band over chroma
 UNKNOWN = "unknown"
 
 # kinds that are copied through unchanged (scaled) with a review flag

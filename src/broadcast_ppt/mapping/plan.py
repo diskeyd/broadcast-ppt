@@ -208,6 +208,8 @@ class Mapper:
         f = d.fields
         if d.kind in K.PASSTHROUGH:
             return [self.copy(src, d.kind)]
+        if d.kind == K.SHAPES_LAYOUT:
+            return [{"op": "shapes", "src": src, "note": "shapes moved to the caption band"}]
         if d.kind == K.CARD_TITLE:
             tpl = TEMPLATE.get(f.get("card"), TEMPLATE["generic"])
             ops = [self.card(src, tpl, {"label": f.get("label")}, "card")]

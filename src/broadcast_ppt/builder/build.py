@@ -12,9 +12,11 @@ from ..ooxml import P, REPO_ROOT
 from ..mapping.textfit import WidthModel, load_model
 from .clone import copy_foreign_slide, duplicate_template_slide
 from .fill import fill_shape, shape_by_order
-from .geometry import (EMU_PER_PT, cy_of, drop_blank_paragraphs, hide_shape, in_group, insets, one_line_height, plain_line_spacing,
-                       runs_with_size, set_font_size, style_paragraphs, set_width, set_y, shift, split_paragraph_boxes, text_align, y_of)
+from .geometry import (EMU_PER_PT, box_of, cy_of, drop_blank_paragraphs, hide_shape, in_group, insets, one_line_height,
+                       plain_line_spacing, runs_with_size, set_font_size, style_paragraphs, set_width, set_y, shift,
+                       split_paragraph_boxes, text_align, translate, y_of)
 from .package import current_slide_ids, drop_section_list, remove_slides
+from .scale import scale_tree
 
 SINGLE_LINE_SLACK = 1.06  # room for renderers whose glyphs run a little wider than PowerPoint's
 
@@ -52,6 +54,78 @@ def fit_single_line_width(sp, default_sz: float, model: WidthModel) -> None:
     ins = insets(sp)
     width = sum(model.width_emu(t, sz) for t, sz in runs_with_size(sp, default_sz))
     set_width(sp, int(width * SINGLE_LINE_SLACK + ins["lIns"] + ins["rIns"]), keep_center=text_align(sp) == "ctr")
+
+
+def caption_band(catalog: dict) -> tuple[int, int, int, int]:
+    """(x, y, cx, cy) of the widest caption body in the template: where a lower third lives.
+
+    Read from the catalog rather than written down, so these slides follow the template if it moves."""
+    bodies = [spec["bbox"] for entry in catalog["slides"].values() if entry.get("family") == "caption"
+              for spec in entry["shapes"].values() if spec.get("slot_map")]
+    x, y, cx, cy = max(bodies, key=lambda b: b[2] * b[3])
+    return int(x), int(y), int(cx), int(cy)
+
+
+def _clusters(slide) -> list[list]:
+    """Top-level shapes grouped by containment: a label drawn inside an ellipse belongs to it.
+
+    A "shape" the owner points at is what the eye sees as one thing, not one XML element, so a box
+    whose frame sits inside another's is carried along with it instead of being placed on its own."""
+    items = []
+    for el in slide.shapes._spTree:
+        box = box_of(el)
+        if box is not None:
+            items.append((el, box))
+    items.sort(key=lambda t: t[1][2] * t[1][3], reverse=True)  # containers before what sits in them
+    out: list[list] = []
+    for el, (x, y, cx, cy) in items:
+        host = None
+        for c in out:
+            if any(bx <= x and by <= y and x + cx <= bx + bcx and y + cy <= by + bcy for _, (bx, by, bcx, bcy) in c):
+                host = c
+                break
+        if host is None:
+            host = []
+            out.append(host)
+        host.append((el, (x, y, cx, cy)))
+    return out
+
+
+def _union(cluster) -> tuple[int, int, int, int]:
+    xs = [b[0] for _, b in cluster] + [b[0] + b[2] for _, b in cluster]
+    ys = [b[1] for _, b in cluster] + [b[1] + b[3] for _, b in cluster]
+    return min(xs), min(ys), max(xs) - min(xs), max(ys) - min(ys)
+
+
+def layout_bottom_row(slide, band: tuple[int, int, int, int]) -> int:
+    """Spread the slide's shape clusters along the bottom band, equally spaced, bottom aligned.
+
+    `band` is (x, y, cx, cy) in EMU — the lower-third caption box, so these slides sit where every
+    other caption sits. Clusters only ever shrink; the gaps carry whatever width is left over."""
+    groups = [c for c in _clusters(slide) if c]
+    if not groups:
+        return 0
+    groups.sort(key=lambda c: _union(c)[0])  # left to right, as they were read on the original
+    bx, by, bcx, bcy = band
+    boxes = [_union(c) for c in groups]
+    k = min([1.0] + [bcy / h for *_, h in boxes if h > 0])
+    total = sum(w for *_, w, _ in boxes) * k
+    if total > bcx:  # too wide even at the band height: shrink until the row fits with no gap
+        k *= bcx / total
+        total = bcx
+    # the outer clusters sit at the band's edges (bottom left and bottom right) with equal gaps
+    # between them, so two shapes land in the corners and three or four space out evenly
+    gap = (bcx - total) / (len(groups) - 1) if len(groups) > 1 else 0.0
+    x = bx if len(groups) > 1 else bx + (bcx - total) / 2
+    for cluster, (ux, uy, ucx, ucy) in zip(groups, boxes, strict=True):
+        for el, _ in cluster:
+            scale_tree(el, k)
+        dy = int(by + bcy - (uy + ucy) * k)          # bottom of the band
+        dx = int(x - ux * k)
+        for el, _ in cluster:
+            translate(el, dx, dy)
+        x += ucx * k + gap
+    return len(groups)
 
 
 def layout_stack(slide, entry: dict, model: WidthModel) -> None:
@@ -153,9 +227,15 @@ def build_deck(plan: dict, template: Path, catalog_path: Path, out: Path, force:
                 layout_stack(slide, entry, model)
             if entry.get("shrink") and op.get("shrink_lines"):
                 shrink_variant(slide, entry, int(op["shrink_lines"]))
-        elif op["op"] == "copy":
-            slide, rep = copy_foreign_slide(prs, src.slides[op["src"] - 1], scale=scale, keep_bg=True)
+        elif op["op"] in ("copy", "shapes"):
+            # "shapes": drop the source background so the template master's green shows through,
+            # then move the shape clusters into the band the captions use
+            keep_bg = op["op"] == "copy"
+            slide, rep = copy_foreign_slide(prs, src.slides[op["src"] - 1], scale=scale, keep_bg=keep_bg)
             rec["flags"] += rep.flags
+            if op["op"] == "shapes":
+                n = layout_bottom_row(slide, caption_band(catalog))
+                rec["flags"] += [] if n else ["missing:shapes"]
         results.append(rec)
     remove_slides(prs, base_ids)
     drop_section_list(prs)
