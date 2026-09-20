@@ -14,12 +14,14 @@ version: 1
 # (local calibration script; 0.5pt reproduces the scripture card approved on 2026-09-15); rows are listed top to
 # bottom and laid out bottom-up (the lowest row keeps its place). "6.1" = paragraph 1 of shape 6 in its own box.
 card_gap_pt: 0.5
-# Lowest drawn text of a card ends no lower than this (pt): the approved scripture card's bottom line.
-card_max_bottom_pt: 527
-# The English subtitle row of every card is moved down by this (pt), applied after the row chain and the
-# max_bottom clamp so the Korean line above it stays put. Checked on the broadcast PC, not in Keynote:
-# the font substitution there hides the difference. Per-row override: stack: {offset: {"4": 3}}.
-card_en_offset_pt: 3
+# Lowest drawn text of a card ends no lower than this (pt). Raising it lowers the whole card, since the
+# bottom row is the anchor the rows above hang from: 532 puts every row 5pt below the template (2026-09-20).
+card_max_bottom_pt: 532
+# The English subtitle row of every card is moved down by this (pt) on top of that, applied after the row
+# chain and the max_bottom clamp so the Korean line above it stays put — English ends up 10pt below the
+# template, Korean 5pt. Checked on the broadcast PC, not in Keynote: the font substitution there hides a
+# difference this small. Per-row override: stack: {offset: {"4": 5}}.
+card_en_offset_pt: 5
 slides:
   3:  {role: card_call_to_worship, family: card.call_to_worship,
        shapes: {3: {slots: [label], mode: optional}, 4: {slots: [subtitle_en], mode: optional}},

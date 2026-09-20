@@ -92,9 +92,9 @@ slides:
         glyph:
         - 20.7
         - 59.7
-        offset_pt: 3.0
+        offset_pt: 5.0
       gap_pt: 0.5
-      max_bottom_pt: 527.0
+      max_bottom_pt: 532.0
     line_capacity: 1
   4:
     role: card_prayer
@@ -187,9 +187,9 @@ slides:
         glyph:
         - 19.9
         - 70.9
-        offset_pt: 3.0
+        offset_pt: 5.0
       gap_pt: 0.5
-      max_bottom_pt: 527.0
+      max_bottom_pt: 532.0
     line_capacity: 1
   6:
     role: card_scripture
@@ -292,7 +292,7 @@ slides:
         - 40.3
         offset_pt: 0.0
       gap_pt: 0.5
-      max_bottom_pt: 527.0
+      max_bottom_pt: 532.0
     line_capacity: 1
   7:
     role: card_sermon
@@ -424,9 +424,9 @@ slides:
         glyph:
         - 15.7
         - 47.7
-        offset_pt: 3.0
+        offset_pt: 5.0
       gap_pt: 0.5
-      max_bottom_pt: 527.0
+      max_bottom_pt: 532.0
     line_capacity: 1
   8:
     role: meditation
@@ -649,9 +649,9 @@ slides:
         glyph:
         - 18.9
         - 63.9
-        offset_pt: 3.0
+        offset_pt: 5.0
       gap_pt: 0.5
-      max_bottom_pt: 527.0
+      max_bottom_pt: 532.0
     line_capacity: 1
   20:
     role: card_announcement
@@ -737,9 +737,9 @@ slides:
         glyph:
         - 19.9
         - 53.9
-        offset_pt: 3.0
+        offset_pt: 5.0
       gap_pt: 0.5
-      max_bottom_pt: 527.0
+      max_bottom_pt: 532.0
     line_capacity: 1
   21:
     role: announcement_first
@@ -993,9 +993,9 @@ slides:
         glyph:
         - 14.1
         - 52.1
-        offset_pt: 3.0
+        offset_pt: 5.0
       gap_pt: 0.5
-      max_bottom_pt: 527.0
+      max_bottom_pt: 532.0
     line_capacity: 1
   55:
     role: caption_1
