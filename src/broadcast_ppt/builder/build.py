@@ -82,9 +82,10 @@ def fit_boxed_line(slide, entry: dict, spec: dict, model: WidthModel) -> list[st
     if box is None:
         return flags
     left = None
+    centred = text_align(sp) == "ctr"  # the bar follows the text: centred text grows both ways, left-aligned to the right
     for b in spec.get("backing", []):
         bar = shape_by_order(slide, b["order"])
-        set_width(bar, min(box[2] + 2 * pad, limit), keep_center=True)
+        set_width(bar, min(box[2] + 2 * pad, limit), keep_center=centred)
         bar_box = box_of(bar)
         left = bar_box[0] if left is None else min(left, bar_box[0])
     # a label over the bar keeps the lyric's left margin, so it lines up with the text under it
