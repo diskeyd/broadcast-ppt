@@ -298,9 +298,11 @@ def build_deck(plan: dict, template: Path, catalog_path: Path, out: Path, force:
             rec["flags"] += rep.flags
             if op["op"] == "shapes":
                 n, dropped = layout_bottom_row(slide, caption_band(catalog))
-                for el in dropped:  # a box with no shape around it: off the air, but never unannounced
-                    hide_shape(el)
-                rec["flags"] += ([] if n else ["missing:shapes"]) + (["review:text_dropped"] if dropped else [])
+                for el in dropped:
+                    # hide_shape only drops the fill, and this is a text box: remove it outright, or it
+                    # stays readable where the original put it. R410 raises review:text_dropped for it.
+                    el.getparent().remove(el)
+                rec["flags"] += [] if n else ["missing:shapes"]
         results.append(rec)
     remove_slides(prs, base_ids)
     drop_section_list(prs)

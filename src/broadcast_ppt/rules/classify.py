@@ -116,17 +116,32 @@ def _unit(text: str) -> dict | None:
     return None
 
 
+def _inside(a, b) -> bool:
+    return bool(a and b) and b[0] <= a[0] and b[1] <= a[1] and a[0] + a[2] <= b[0] + b[2] and a[1] + a[3] <= b[1] + b[3]
+
+
+def _drawn_shapes(v: SlideView) -> list[dict]:
+    return [sh for sh in flatten(v.raw.get("shapes", [])) if sh.get("kind") in ("AUTO_SHAPE", "FREEFORM")]
+
+
 def _labels_inside_shapes(v: SlideView) -> bool:
     """Every text box sits inside a drawn shape — a few labelled shapes, not free-floating text.
 
     This is what separates the slide from an announcement card or a meditation quote, which also
     carry two short boxes but draw nothing around them."""
-    def inside(a, b) -> bool:
-        return b[0] <= a[0] and b[1] <= a[1] and a[0] + a[2] <= b[0] + b[2] and a[1] + a[3] <= b[1] + b[3]
+    drawn = _drawn_shapes(v)
+    return bool(drawn) and all(any(_inside(b.get("bbox"), sh.get("bbox")) for sh in drawn) for b in v.boxes)
 
-    drawn = [sh for sh in flatten(v.raw.get("shapes", [])) if sh.get("kind") in ("AUTO_SHAPE", "FREEFORM")]
-    return bool(drawn) and all(b.get("bbox") and any(sh.get("bbox") and inside(b["bbox"], sh["bbox"]) for sh in drawn)
-                               for b in v.boxes)
+
+def _loose_text(v: SlideView) -> bool:
+    """A shape carries text that no drawn shape contains, so the layout cannot move it with them.
+
+    Read from the raw shapes, not `v.boxes`: a credit line repeated across the deck is dropped as
+    boilerplate before the rules see it, but it is still on the slide and still has to be accounted for."""
+    drawn = _drawn_shapes(v)
+    return any(compact(sh.get("text") or "") and sh not in drawn
+               and not any(_inside(sh.get("bbox"), d.get("bbox")) for d in drawn)
+               for sh in flatten(v.raw.get("shapes", [])))
 
 
 def _bracketed_verse(u: dict | None) -> bool:
@@ -321,8 +336,10 @@ def _classify(v: SlideView, c: str, pics: int, groups: int, media: int, ctx: Dec
     # one short label is a layout to rearrange, not a diagram to copy
     if 2 <= drawn <= 4 and pics == 0 and not v.full_bleed_picture and 2 <= len(v.boxes) <= 4 \
             and all(len(compact(b["text"])) <= 20 for b in v.boxes) and _labels_inside_shapes(v):
+        # text with no shape around it cannot travel with the shapes, so the layout leaves it behind
         return Decision(K.SHAPES_LAYOUT, "R410", f"{drawn} drawn shapes, each holding a short label",
-                        flags=["review:shapes_layout"], confidence=0.8)
+                        flags=["review:shapes_layout"] + (["review:text_dropped"] if _loose_text(v) else []),
+                        confidence=0.8)
     if drawn >= 3 and len(v.boxes) >= 3:
         return Decision(K.GRAPHIC, "R420", "diagram or question sheet built from many shapes", flags=["passthrough", "review:graphic"])
 

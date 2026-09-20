@@ -398,6 +398,21 @@ def test_labelled_shapes_are_laid_out_instead_of_captioned():
     assert (d.kind, d.rule_id) == (K.SHAPES_LAYOUT, "R410") and "review:shapes_layout" in d.flags
 
 
+def test_shape_layout_flags_text_no_shape_can_carry():
+    s = _shape_slide(16)
+    # a credit line in the corner: not inside any ellipse, so the layout cannot take it along
+    s["shapes"].append({"kind": "TEXT_BOX", "text": "출처 가나다라마", "bbox": [443, 362, 307, 31], "depth": 0})
+    s["text"] += "\n출처 가나다라마"
+    # the real deck repeats that line on every slide, so it is dropped as boilerplate before the
+    # rules see it — the slide still classifies, and the box is still on it
+    from broadcast_ppt.rules.fields import compact
+    ctx = DeckContext(boilerplate={compact("출처 가나다라마")})
+    d = classify_slide(s, ctx)
+    assert d.kind == K.SHAPES_LAYOUT and "review:text_dropped" in d.flags
+    # without it nothing is left behind
+    assert "review:text_dropped" not in classify_slide(_shape_slide(17), DeckContext()).flags
+
+
 def test_free_floating_short_boxes_are_not_a_shape_layout():
     s = _shape_slide(15)
     s["shapes"][2]["bbox"] = [700, 10, 200, 30]  # a label outside every drawn shape
