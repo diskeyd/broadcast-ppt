@@ -58,10 +58,12 @@ slides:
        shrink: {bar: 6, body: 5}}  # no 2-line caption variant: a 2-line sentence drops one line off the bar
   # 찬송 자막: 박스가 가사 길이를 따라 늘어난다(fit_backing). 곡 제목은 구간 첫 장에만 들어가고,
   # 나머지 장에서는 제목 상자가 숨는다(hide_when_empty).
+  # 뒤 띠(6)는 고정 폭이 아니라 가사 길이를 따라간다: pad_pt는 템플릿에서 잰 좌우 여백,
+  # max_width_pt는 템플릿에 그려진 띠 폭이라 그보다 넓어지지 않는다.
   92: {role: hymn_1, family: hymn,
-       shapes: {3: {slots: [body], single_segment: true, fit_backing: {pad_pt: 14, max_width_pt: 800, min_pt: 30}},
+       shapes: {3: {slots: [body], single_segment: true, fit_backing: {pad_pt: 7, max_width_pt: 700, min_pt: 30}},
                 4: {slots: [ref], single_segment: true, hide_when_empty: true}},
-       backing: {3: [2]}}
+       backing: {3: [6]}}
   58: {role: scripture_2, family: scripture,
        shapes: {4: {slots: [body], single_segment: true}}, backing: {4: [2]}}
   59: {role: scripture_3, family: scripture,

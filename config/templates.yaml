@@ -1,7 +1,7 @@
 version: 1
 source:
   file: 24.상반기.pptx
-  sha256: c56b8c7e4e929dfc185b6e2ac4a918c2c6a6f23b887cf4f951cb382aad8d76ad
+  sha256: 8f1ed489cee6615c953bb3fd966f77f19846850d5e50448973ada38f4e5ed814
   slide_size:
   - 12192000
   - 6858000
@@ -1569,9 +1569,9 @@ slides:
         id: 3
         name: 가사
         bbox:
-        - 1096000
+        - 1733267
         - 5920747
-        - 10000000
+        - 8725466
         - 769441
         in_group: false
         bodyPr:
@@ -1599,26 +1599,26 @@ slides:
         slot_map:
         - body
         fit_backing:
-          pad_pt: 14
-          max_width_pt: 800
+          pad_pt: 7
+          max_width_pt: 700
           min_pt: 30
         backing:
-        - id: 2
+        - id: 6
           order: 1
           bbox:
-          - 996000
-          - 5990467
-          - 10200000
-          - 630000
+          - 1647542
+          - 5837631
+          - 8901395
+          - 935672
           in_group: false
       4:
         id: 4
         name: 곡 제목
         bbox:
-        - 1096000
-        - 5520637
-        - 10000000
-        - 400110
+        - 853113
+        - 5375966
+        - 4176088
+        - 461665
         in_group: false
         bodyPr:
           lIns: 91440
@@ -1631,13 +1631,13 @@ slides:
         paragraphs:
         - align: ctr
           segments:
-          - sz: 20.0
+          - sz: 24.0
             color: FFFF00
             font: 나눔스퀘어 ExtraBold
             bold: true
             sample_len: 14
             sample_sha1: 4decb15bcd8daa92b9ebb8ada3e7318e0d2c673c
-        line_emu: 307848
+        line_emu: 369417
         max_lines: 1
         order: 3
         mode: fill
