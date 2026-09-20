@@ -174,7 +174,9 @@ uv run broadcast-ppt run "local\input\주일오전예배ppt(YYMMDD).pptx"
 
 결과는 `local\work\<원본 파일 이름(.pptx 뺀 것)>\broadcast.pptx`에 생깁니다. 실행 끝의 `built … slides -> <경로>` 줄에 전체 경로가 나옵니다.
 
-찬송 구간을 찾으면 같은 폴더에 **`hymn.pptx`**(찬송 가사 자막만)도 생기고 `찬송 자막 N장 -> <경로>` 줄이 함께 나옵니다. 방송본에는 원본 악보 장이 그대로 들어가니, 찬송 때는 이 파일을 따로 띄워 한 줄씩 넘깁니다. 처음 한 번은 `uv run broadcast-ppt hymns`로 `local\hymns`의 곡 색인을 만들어 둡니다(곡 파일을 추가한 뒤에도).
+찬송 곡을 찾으면 같은 폴더에 **`hymn.pptx`**(찬송 가사 자막만)도 생기고 `찬송 자막 N장 -> <경로>` 줄이 함께 나옵니다. 방송본에는 원본 악보 장이 그대로 들어가니, 찬송 때는 이 파일을 따로 띄워 한 줄씩 넘깁니다. 처음 한 번은 `uv run broadcast-ppt hymns`로 `local\hymns`의 곡 색인을 만들어 둡니다(곡 파일을 추가한 뒤에도).
+
+곡을 못 찾으면 `찬송 구간 N개 중 M개만 곡을 찾았습니다`와 이유가 한 줄 나옵니다. **악보에서 곡 이름을 읽는 것은 Mac에서만 됩니다.** 방송 PC(Windows)는 이미 짝지어 둔 악보 그림만 알아보므로, 처음 나오는 곡은 Mac에서 같은 원본으로 `plan`을 한 번 돌린 뒤 `local\hymns\index.json`을 방송 PC로 복사하거나, Mac에서 만든 `hymn.pptx`를 그대로 가져가 씁니다.
 
 ### 2. 검증 결과 보기
 

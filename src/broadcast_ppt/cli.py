@@ -140,6 +140,26 @@ def _print_plan(plan: dict) -> None:
         ai = f"  ai:{row['ai']['kind']}@{row['ai']['confidence']:.2f}" if row.get("ai") else ""
         print(f"{row['src']:>3} {row['kind']:<20} {row['rule']:<5} {desc or 'skip'}" + (f"  [{', '.join(flags)}]" if flags else "") + ai)
     print("stats:", plan["stats"])
+    _print_hymn_note(plan.get("hymn") or {})
+
+
+def _print_hymn_note(why: dict) -> None:
+    """A hymn run nobody could identify would otherwise leave no trace at all in the output."""
+    runs, matched = why.get("runs", 0), why.get("matched", 0)
+    if not runs or matched == runs:
+        return
+    head = f"찬송 구간 {runs}개 중 {matched}개만 곡을 찾았습니다."
+    if not why.get("template"):
+        print(f"{head} 템플릿에 찬송 자막 슬라이드가 없습니다 (catalog를 다시 만드세요).")
+    elif not why.get("index"):
+        print(f"{head} 곡 색인이 없습니다: local/hymns/index.json을 복사하거나 `broadcast-ppt hymns`를 실행하세요.")
+    elif not why.get("songs"):
+        print(f"{head} 색인에 곡이 없습니다: local/hymns에 곡 파일을 넣고 `broadcast-ppt hymns`를 실행하세요.")
+    elif not why.get("reader"):
+        print(f"{head} 이 PC에서는 악보에서 곡 이름을 읽을 수 없습니다(맥 전용). "
+              f"맥에서 같은 원본으로 plan을 한 번 돌린 뒤 local/hymns/index.json을 복사하세요.")
+    else:
+        print(f"{head} 나머지는 라이브러리에 없는 곡이거나 악보를 읽지 못했습니다 (검수 표시 deferred:hymn 확인).")
 
 
 def cmd_plan(args) -> int:

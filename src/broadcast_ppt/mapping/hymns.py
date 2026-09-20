@@ -150,10 +150,15 @@ def save_index(data: dict, path: Path = INDEX) -> Path:
 
 # --- identifying a score image -------------------------------------------------------------------
 
+def ocr_available() -> bool:
+    """The score reader is macOS only; elsewhere only pages already in the index can be identified."""
+    return sys.platform == "darwin" and OCR_SCRIPT.exists()
+
+
 def ocr(image: Path) -> list[str]:
     """Text lines on the picture, read by the macOS recogniser. Empty anywhere else — the index is
     built on the Mac and the cached sha1 map is what the Windows PC uses."""
-    if sys.platform != "darwin" or not OCR_SCRIPT.exists():
+    if not ocr_available():
         return []
     r = subprocess.run(["osascript", "-l", "JavaScript", str(OCR_SCRIPT), str(image)],
                        capture_output=True, encoding="utf-8", errors="replace")

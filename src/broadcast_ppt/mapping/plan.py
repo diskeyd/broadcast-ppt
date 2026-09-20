@@ -288,24 +288,26 @@ def _hymn_runs(slides: list[dict], decisions: list, skip: set[int]) -> list[list
 
 
 def _hymn_plan(src: Path, slides: list[dict], decisions: list, mapper: Mapper,
-               overridden: set[int]) -> tuple[dict[int, tuple], set[int]]:
+               overridden: set[int]) -> tuple[dict[int, tuple], set[int], dict]:
     """({first slide of a run: (match, run)} for the runs the library knows, first slides of the score
-    runs it does not)."""
-    if "hymn" not in mapper.fam or not hymns.INDEX.exists():
-        return {}, set()
-    index = hymns.load_index()
-    if not index["songs"]:
-        return {}, set()
-    found, missing, runs = {}, set(), _hymn_runs(slides, decisions, overridden)
+    runs it does not, and why — a run nobody could identify must not pass unnoticed)."""
+    runs = _hymn_runs(slides, decisions, overridden)
+    index = hymns.load_index() if hymns.INDEX.exists() else {"songs": [], "images": {}}
+    why = {"runs": len(runs), "matched": 0, "songs": len(index["songs"]),
+           "index": hymns.INDEX.exists(), "reader": hymns.ocr_available(),
+           "template": "hymn" in mapper.fam}
+    if not runs or not why["template"] or not index["songs"]:
+        return {}, set(), why
+    found, missing = {}, set()
     for run in runs:
         res = hymns.match_run(src, run, index, hymns.LIBRARY / "scores")
         if res.match is not None:
             found[run[0]] = (res.match, run)
         elif res.readable:
             missing.add(run[0])
-    if runs:
-        hymns.save_index(index)
-    return found, missing
+    hymns.save_index(index)
+    why["matched"] = len(found)
+    return found, missing, why
 
 
 def _jsonable(o):
@@ -332,7 +334,7 @@ def build_plan(src: Path, catalog_path: Path, widths_path: Path, opts: PlanOptio
     scale = tw / sw if opts.slide_size == "template" else 1.0
     rows, ops = [], []
     slides = [s for s in doc["slides"] if "error" not in s]
-    hymn_at, hymn_missing = _hymn_plan(src, slides, decisions, mapper, set(slide_over))
+    hymn_at, hymn_missing, hymn_why = _hymn_plan(src, slides, decisions, mapper, set(slide_over))
     hymn_rest = {i for m, run in hymn_at.values() for i in run[1:]}
     hymn_ops = []
     for first, (m, _run) in sorted(hymn_at.items()):
@@ -407,6 +409,7 @@ def build_plan(src: Path, catalog_path: Path, widths_path: Path, opts: PlanOptio
         "ops": ops,
         # the lyric captions are built as a separate deck: the broadcast deck keeps the original score pages
         "hymn_ops": hymn_ops,
+        "hymn": hymn_why,
         "stats": {"out_slides": len(ops), "copy": sum(o["op"] == "copy" for o in ops),
                   "template": sum(o["op"] == "template" for o in ops), "hymn_slides": len(hymn_ops),
                   "flagged": sum(1 for o in ops if o["flags"]), "unknown": sum(r["kind"] == K.UNKNOWN for r in rows)},
