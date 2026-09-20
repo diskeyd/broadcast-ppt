@@ -8,7 +8,6 @@
 # Geometry: `clamp_to` keeps a body box inside that bar (same margin both sides); `nudge_y_pt` moves the
 # box down; `shrink` (slide level) lets bar, tag and body lose unused lines from the top;
 # `fit_one_line` lowers the font size so the value stays on one line.
-version: 1
 # Visual gap (pt) between the drawn text of stacked card rows. Glyph offsets below are [top, bottom] of the
 # drawn text (shadow included) measured from the box top in a Keynote render with rows 30pt apart
 # (local calibration script; 0.5pt reproduces the scripture card approved on 2026-09-15); rows are listed top to

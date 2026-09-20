@@ -16,12 +16,12 @@ from ..rules import ai
 from ..rules import kinds as K
 from ..rules.classify import DeckContext, classify_deck, view_of
 from ..rules.fields import ScriptureRef, compact, norm, scripture_ref, verse_chunks
-from ..rules.version import RULES_VERSION
 from . import hymns
 from .catalog import families, load_catalog
 from .split import pack
 from .textfit import WidthModel, load_model, strict_model
 
+RULES_VERSION = "c2"  # stamped into plan.json and the built deck's comments, so a deck can be traced to its rules
 TEMPLATE = {"call_to_worship": 3, "prayer": 4, "scripture": 6, "sermon": 7, "meditation": 8, "generic": 17,
             "announcement_title": 20, "announcement_first": 21, "announcement_item": 23, "offertory": 31}
 REF_FLAGS = {"review:reference_unknown", "review:inherited_reference", "review:no_reference"}

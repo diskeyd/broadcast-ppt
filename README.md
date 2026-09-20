@@ -1,17 +1,64 @@
 # broadcast-ppt
 
-현장 예배용 PowerPoint 원본을 방송용(크로마키) PPT로 바꾸는 명령줄 프로그램입니다. 방송 템플릿의 슬라이드를 복제한 뒤 글자만 원본 내용으로 바꿔 넣습니다. 글꼴과 색은 템플릿을 따르고, 글자 길이에 맞춰 상자 폭·위치와 자막 띠 높이만 조금 조정합니다.
+현장 예배용 PowerPoint 원본을 방송용(크로마키) PPT로 바꾸는 프로그램입니다. 방송 템플릿의 슬라이드를 복제한 뒤 글자만 원본 내용으로 바꿔 넣습니다. 글꼴과 색은 템플릿을 따르고, 글자 길이에 맞춰 상자 폭·위치와 자막 띠 높이만 조금 조정합니다.
 
-- 실행 환경: Mac, Windows(x64). 파이썬 3.12를 쓰지만 따로 설치하지 않습니다. `uv`가 알아서 내려받습니다.
-- 입력: 원본 PowerPoint 파일(**.pptx**) 한 개. 옛 형식 `.ppt`는 PowerPoint에서 `.pptx`로 다시 저장해서 넣습니다.
-- 출력: 방송용 PPT, 찬송 가사 자막 PPT(`hymn.pptx`), 변환 계획(`plan.json`), 검증 결과(`validation.json`).
-- 슬라이드 종류는 규칙으로 판정합니다. AI(Gemini)는 선택 사항이고 기본은 꺼져 있습니다.
+- **입력**: 원본 PowerPoint 파일(`.pptx`) 한 개. 옛 형식 `.ppt`는 PowerPoint에서 `.pptx`로 다시 저장해서 넣습니다.
+- **출력**: 방송용 PPT, 찬송 가사 자막 PPT(`hymn.pptx`), 변환 계획(`plan.json`), 검증 결과(`validation.json`).
+- **실행 환경**: Mac, Windows(x64). 파이썬 3.12를 쓰지만 따로 설치하지 않습니다. `uv`가 알아서 내려받습니다.
+- **판정 방식**: 슬라이드 종류는 규칙으로 정합니다. AI(Gemini)는 선택 사항이고 기본은 꺼져 있습니다.
 
-용어: **템플릿**은 방송용 양식 슬라이드가 모두 들어 있는 `24.상반기.pptx`입니다. **크로마키**는 녹색 부분을 방송 장비가 투명하게 합성하는 방식입니다. **카드**는 예배로의 부름·기도·성경봉독·설교처럼 제목을 크게 보여 주는 장, **하단 자막(띠)**은 화면 아래 녹색 띠에 글자를 넣은 장입니다. **원본 장 번호**와 **방송본 장 번호**는 서로 다릅니다(원본 한 장이 방송본 여러 장이 되기도 함).
+## 이 파일 어디를 보면 되나
 
-> **처음 쓰는 Windows PC라면** [Windows 설치](#windows-설치-처음-한-번-약-10분) 1~6단계를 한 번 해 둡니다. 그다음부터 매주 쓰는 사람은 바탕 화면 바로 가기를 더블클릭하기만 하면 됩니다([더블클릭으로 변환](#0-더블클릭으로-변환-컴퓨터를-잘-몰라도-됩니다)). 명령으로 쓰려면 [매주 사용법](#매주-사용법) 1~3단계를 봅니다. 막히면 [문제 해결](#문제-해결)을 봅니다.
+- **매주 PPT를 바꾸는 분**: [매주 쓰는 사람용](#매주-쓰는-사람용)만 보면 됩니다. 바탕 화면 바로 가기를 더블클릭하고, 뜨는 안내 창을 읽는 것이 전부입니다.
+- **담당자**: [담당자용](#담당자용)에 설치, 명령, 수정 파일, 검증, 설정이 모두 들어 있습니다. 처음 쓰는 Windows PC라면 [Windows 설치](#windows-설치-처음-한-번-약-10분) 1~6단계를 한 번 해 둡니다.
 
-**목차**: [한눈에 보기](#한눈에-보기) · [설치](#설치) · [매주 사용법](#매주-사용법) · [고치고 싶을 때](#고치고-싶을-때-수정-파일) · [문제 해결](#문제-해결) · [명령과 옵션](#명령과-옵션) · [동작 원리](#동작-원리) · [설정 파일](#설정-파일) · [아직 안 되는 것](#아직-안-되는-것) · [데이터 보관](#데이터-보관-원칙) · [백업과 복구](#백업과-복구)
+**용어**: **템플릿**은 방송용 양식 슬라이드가 모두 들어 있는 `24.상반기.pptx`입니다. **크로마키**는 녹색 부분을 방송 장비가 투명하게 합성하는 방식입니다. **카드**는 예배로의 부름·기도·성경봉독·설교처럼 제목을 크게 보여 주는 장, **하단 자막(띠)**은 화면 아래 녹색 띠에 글자를 넣은 장입니다. **원본 장 번호**와 **방송본 장 번호**는 서로 다릅니다(원본 한 장이 방송본 여러 장이 되기도 함).
+
+**목차**
+
+- 매주 쓰는 사람용: [더블클릭으로 변환](#더블클릭으로-변환) · [안내 창 읽기](#안내-창-읽기) · [이럴 때는](#이럴-때는)
+- 담당자용: [한눈에 보기](#한눈에-보기) · [설치](#설치) · [매주 사용법](#매주-사용법-명령) · [수정 파일](#수정-파일) · [명령과 옵션](#명령과-옵션) · [검수 표시](#검수-표시) · [문제 해결](#문제-해결) · [동작 원리](#동작-원리) · [설정 파일](#설정-파일) · [아직 안 되는 것](#아직-안-되는-것) · [데이터 보관 원칙](#데이터-보관-원칙) · [백업과 복구](#백업과-복구)
+
+---
+
+# 매주 쓰는 사람용
+
+Windows 바탕 화면 바로 가기가 이미 있다면 아래 세 항목이 전부입니다(더블클릭 실행은 Windows에서만 씁니다). 바로 가기가 없으면 담당자에게 [설치 6단계](#windows-설치-처음-한-번-약-10분)를 부탁하세요.
+
+## 더블클릭으로 변환
+
+1. 바탕 화면의 **바로 가기**를 더블클릭합니다. 검은 창이 하나 뜨는데 닫지 말고 둡니다.
+2. 잠시 뒤 **파일 선택 창**이 뜹니다. 변환할 예배 PPT를 고릅니다. USB에 있는 파일을 그대로 골라도 됩니다.
+3. 몇 분 기다립니다(검은 창에 글자가 올라갑니다). 끝나면 안내 창이 뜹니다.
+4. 결과는 **고른 파일과 같은 폴더**에 `원래이름_방송용.pptx`로 생깁니다. 찬송 자막이 만들어지면 `원래이름_찬송자막.pptx`도 같이 생깁니다. 같은 이름이 이미 있으면 덮어씁니다.
+
+검은 창은 잘 끝나면 저절로 닫히고, 실패하면 "계속하려면 아무 키나 누르십시오"가 뜬 채로 남습니다. 그 내용이 담당자에게 필요합니다.
+
+> **다시 변환하기 전에 PowerPoint에서 지난번 결과 파일을 닫으세요.** 열려 있으면 새 파일을 저장하지 못합니다.
+
+## 안내 창 읽기
+
+| 창 | 뜻 | 할 일 |
+|---|---|---|
+| **변환 완료** | 파일이 만들어졌습니다. `확인할 장 8, 61`처럼 번호가 있으면 자막 줄이 빠듯한 장입니다 | PowerPoint로 열어 그 장만 눈으로 확인 |
+| **확인 필요** | 방송에 쓰면 안 되는 장이 있습니다(창에 장 번호가 나옵니다) | 그대로 방송에 쓰지 말고 담당자에게 연락. 급하면 그 주는 원본 PPT로 방송 |
+| **변환하지 못했습니다** | 파일을 아예 만들지 못했습니다 | 창에 나온 내용을 담당자에게 전달 |
+
+자세한 결과(`plan.json`, `validation.json`, 실행 기록 `gui.log`)는 저장소의 `local\work\<원본 이름>\` 폴더에 남습니다. 담당자가 그 폴더를 보고 고칩니다. 담당자가 그 폴더에 `overrides.yaml`(수정 파일)을 넣어 두면, 다음에 같은 원본으로 다시 더블클릭할 때 자동으로 적용됩니다.
+
+## 이럴 때는
+
+| 증상 | 원인 | 해결 |
+|---|---|---|
+| 바로 가기를 눌러도 파일 선택 창이 안 뜨고 검은 창만 남음 | 창의 마지막 줄에 이유가 나옴(`uv`를 못 찾거나 저장소 폴더가 옮겨짐) | 창 내용을 담당자에게 전달. 바로 가기를 다시 만들면 됩니다([설치 6단계](#windows-설치-처음-한-번-약-10분)) |
+| **저장하지 못했습니다** 창이 뜸 | 같은 이름의 결과 파일이 PowerPoint에 열려 있음 | PowerPoint에서 그 파일을 닫고 다시 더블클릭 |
+| **변환하지 못했습니다** 창이 뜸 | 창에 나온 그대로(템플릿 없음·원본 손상 등) | 창 내용을 담당자에게 전달 |
+
+담당자용 증상별 표는 [문제 해결](#문제-해결)에 있습니다.
+
+---
+
+# 담당자용
 
 ## 한눈에 보기
 
@@ -22,7 +69,9 @@
                                     무엇을 넣을지  글자 바꾸기      글자 등 점검
 ```
 
-`run` 명령 하나가 ①~⑤를 모두 합니다(더블클릭 실행도 같은 일을 하고, 결과 PPT만 고른 원본 옆에 둡니다). 폴더는 이렇게 씁니다. `local/`은 교회 자료라서 git에 올라가지 않습니다.
+`run` 명령 하나가 ①~⑤를 모두 합니다. 더블클릭 실행(`gui`)도 같은 일을 하고, 결과 PPT만 고른 원본 옆에 둡니다.
+
+폴더는 이렇게 씁니다. `local/`은 교회 자료라서 git에 올라가지 않습니다.
 
 ```
 broadcast-ppt/
@@ -81,17 +130,19 @@ powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | ie
 
 설치가 끝나면 **PowerShell 창을 완전히 닫고**(Windows 터미널이면 탭이 아니라 창 전체) 새로 엽니다. 새 창에서 `uv --version`이 버전을 출력하면 됩니다. Git을 설치했다면 `git --version`도 확인합니다. 그래도 찾을 수 없다고 나오면 Windows에서 로그아웃했다가 다시 로그인합니다.
 
-**3. 코드 받기.** 바탕 화면에 둡니다. 탐색기에서 바로 보여 파일 넣기가 편합니다. 단 바탕 화면이 OneDrive로 동기화되는 PC(탐색기 주소에 `OneDrive`가 들어감)라면 `C:\broadcast-ppt`처럼 동기화 밖 짧은 경로에 두고, 아래 명령의 경로도 그에 맞춰 바꿉니다. 교회 PPT가 들어가는 `local` 폴더가 클라우드로 올라가면 안 됩니다.
+**3. 코드 받기**
 
 ```powershell
 git clone https://github.com/diskeyd/broadcast-ppt.git $HOME\Desktop\broadcast-ppt
 ```
 
-처음이면 GitHub 로그인 창이 뜹니다. **Sign in with your browser**를 눌러 저장소 권한이 있는 계정으로 로그인합니다(2단계 인증을 쓰면 휴대폰이 필요합니다). 로그인 정보는 이 PC에 저장되어 다음 `git pull`부터는 묻지 않습니다.
+- 바탕 화면에 둡니다. 탐색기에서 바로 보여 파일 넣기가 편합니다.
+- 단 바탕 화면이 OneDrive로 동기화되는 PC(탐색기 주소에 `OneDrive`가 들어감)라면 `C:\broadcast-ppt`처럼 동기화 밖 짧은 경로에 두고, 위 명령과 이후 단계의 경로도 그에 맞춰 바꿉니다. 교회 PPT가 들어가는 `local` 폴더가 클라우드로 올라가면 안 됩니다.
+- 처음이면 GitHub 로그인 창이 뜹니다. **Sign in with your browser**를 눌러 저장소 권한이 있는 계정으로 로그인합니다(2단계 인증을 쓰면 휴대폰이 필요합니다). 로그인 정보는 이 PC에 저장되어 다음 `git pull`부터는 묻지 않습니다.
+- Git이 없으면 브라우저에서 GitHub에 로그인한 뒤 저장소 페이지의 **Code → Download ZIP**으로 받습니다. 압축을 풀면 `broadcast-ppt-main` 폴더 안에 같은 이름의 폴더가 한 겹 더 있을 수 있습니다. `pyproject.toml`이 바로 보이는 폴더를 바탕 화면으로 옮기고 이름을 `broadcast-ppt`로 바꿉니다. `바탕 화면\broadcast-ppt\pyproject.toml`이 있으면 맞습니다.
+- 여러 사람이 쓰는 PC라면 받은 뒤 브라우저에서 GitHub 로그아웃합니다.
 
-Git이 없으면 브라우저에서 GitHub에 로그인한 뒤 저장소 페이지의 **Code → Download ZIP**으로 받습니다. 압축을 풀면 `broadcast-ppt-main` 폴더 안에 같은 이름의 폴더가 한 겹 더 있을 수 있습니다. `pyproject.toml`이 바로 보이는 폴더를 바탕 화면으로 옮기고 이름을 `broadcast-ppt`로 바꿉니다. `바탕 화면\broadcast-ppt\pyproject.toml`이 있으면 맞습니다. 여러 사람이 쓰는 PC라면 받은 뒤 브라우저에서 GitHub 로그아웃합니다.
-
-**4. 파이썬과 라이브러리 설치.** 처음에는 파이썬 3.12까지 내려받아서 몇 분 걸립니다. 멈춘 것처럼 보여도 기다립니다.
+**4. 파이썬과 라이브러리 설치**
 
 ```powershell
 cd $HOME\Desktop\broadcast-ppt
@@ -99,7 +150,7 @@ uv sync
 uv run broadcast-ppt --help
 ```
 
-마지막 명령이 `usage: broadcast-ppt`로 시작하는 영어 안내를 출력하면 설치가 된 것입니다.
+처음에는 파이썬 3.12까지 내려받아서 몇 분 걸립니다. 멈춘 것처럼 보여도 기다립니다. 마지막 명령이 `usage: broadcast-ppt`로 시작하는 영어 안내를 출력하면 설치가 된 것입니다.
 
 **5. 템플릿 넣기**
 
@@ -110,10 +161,11 @@ ii local\templates
 
 두 번째 명령이 탐색기로 `local\templates` 폴더를 엽니다. USB(또는 Mac·Drive)에 있는 템플릿 원본을 이 폴더에 **그대로** 복사합니다.
 
-- 파일 이름은 정확히 `24.상반기.pptx`여야 합니다. `24.상반기 (1).pptx`처럼 바뀌면 "템플릿이 없습니다"가 나옵니다.
-- PowerPoint로 열어서 다시 저장하면 안 됩니다. 한 바이트라도 다르면 변환할 때 "템플릿이 원본과 다릅니다"가 나오고 멈춥니다.
-- 미리 확인하려면 아래 명령의 `Hash`가 `EBC589F5`로 시작하는지 봅니다(전체 값은 `config\templates.yaml`의 `sha256`, 크기는 28,279,381바이트).
-- 기준이 되는 판은 **Drive에 올려 둔 사본**입니다. 송출 PC에서 계속 쓰는 파일은 PowerPoint로 다시 저장되면서 값이 달라져 있을 수 있으니, 그 파일 말고 Drive 사본을 받아 넣습니다. 템플릿 자체를 고쳤다면 `catalog`로 `config\templates.yaml`을 다시 만들고 그 파일을 Drive에 올려 기준을 바꿉니다.
+> **템플릿은 한 바이트도 달라지면 안 됩니다.** PowerPoint로 열어서 다시 저장하면 변환할 때 "템플릿이 원본과 다릅니다"가 나오고 멈춥니다. 파일 이름도 정확히 `24.상반기.pptx`여야 합니다(`24.상반기 (1).pptx`처럼 바뀌면 "템플릿이 없습니다").
+
+- 미리 확인하려면 아래 명령이 찍는 `Hash`를 `config\templates.yaml`의 `sha256` 값과 대조합니다(대소문자만 다름). 지금 기준 판은 `4443E2BB`로 시작하고 크기는 25,493,040바이트입니다. 템플릿을 새로 만들면 `sha256` 값이 바뀌니 항상 그 파일을 기준으로 봅니다.
+- 기준이 되는 판은 **Drive에 올려 둔 사본**입니다. 송출 PC에서 계속 쓰는 파일은 PowerPoint로 다시 저장되면서 값이 달라져 있을 수 있으니, 그 파일 말고 Drive 사본을 받아 넣습니다.
+- 템플릿 자체를 고쳤다면 `catalog`로 `config\templates.yaml`을 다시 만들고 그 파일을 Drive에 올려 기준을 바꿉니다.
 
 ```powershell
 Get-FileHash local\templates\*.pptx -Algorithm SHA256 | Format-List
@@ -125,7 +177,7 @@ Get-FileHash local\templates\*.pptx -Algorithm SHA256 | Format-List
 ii .
 ```
 
-탐색기가 저장소 폴더를 엽니다. 그 안의 **`broadcast-ppt.bat`**를 오른쪽 클릭 → **보내기 → 바탕 화면(바로 가기 만들기)**. Windows 11이면 오른쪽 클릭 메뉴에서 **더 많은 옵션 표시**를 먼저 눌러야 **보내기**가 보입니다. 바탕 화면에 생긴 바로 가기는 오른쪽 클릭 → 이름 바꾸기로 `방송용 PPT 만들기`처럼 바꿔도 됩니다. 사용법은 [더블클릭으로 변환](#0-더블클릭으로-변환-컴퓨터를-잘-몰라도-됩니다)을 보세요.
+탐색기가 저장소 폴더를 엽니다. 그 안의 **`broadcast-ppt.bat`**를 오른쪽 클릭 → **보내기 → 바탕 화면(바로 가기 만들기)**. Windows 11이면 오른쪽 클릭 메뉴에서 **더 많은 옵션 표시**를 먼저 눌러야 **보내기**가 보입니다. 바탕 화면에 생긴 바로 가기는 오른쪽 클릭 → 이름 바꾸기로 `방송용 PPT 만들기`처럼 바꿔도 됩니다. 쓰는 법은 [더블클릭으로 변환](#더블클릭으로-변환)을 보세요.
 
 **7. (선택) 동작 확인**
 
@@ -138,12 +190,14 @@ uv run python -c "import tkinter"
 
 ### Mac 설치
 
+`brew`가 없으면 `curl -LsSf https://astral.sh/uv/install.sh | sh`로 uv를 설치합니다. 마지막 줄 다음에 템플릿 원본을 `local/templates/`에 복사합니다.
+
 ```bash
-brew install uv                       # 또는 curl -LsSf https://astral.sh/uv/install.sh | sh
+brew install uv
 git clone https://github.com/diskeyd/broadcast-ppt.git
 cd broadcast-ppt
 uv sync
-mkdir -p local/templates local/input  # 그다음 템플릿을 local/templates/에 복사
+mkdir -p local/templates local/input
 uv run pytest
 ```
 
@@ -155,7 +209,7 @@ git pull
 uv sync
 ```
 
-ZIP으로 받았다면 새 ZIP을 받아 코드 폴더만 바꾸고 `local` 폴더는 그대로 옮깁니다. `.venv` 폴더는 복사하지 않습니다. `uv sync`가 다시 만듭니다.
+Mac도 같은 세 명령입니다(`cd ~/broadcast-ppt`). ZIP으로 받았다면 새 ZIP을 받아 코드 폴더만 바꾸고 `local` 폴더는 그대로 옮깁니다. `.venv` 폴더는 복사하지 않습니다. `uv sync`가 다시 만듭니다.
 
 ### 글꼴
 
@@ -166,32 +220,13 @@ ZIP으로 받았다면 새 ZIP을 받아 코드 폴더만 바꾸고 `local` 폴�
 
 PowerPoint의 **홈 → 바꾸기 → 글꼴 바꾸기** 목록에서 PC에 없는 글꼴을 확인할 수 있습니다.
 
-## 매주 사용법
+## 매주 사용법 (명령)
 
-두 가지 방법이 있습니다. 둘 다 결과는 같습니다.
+더블클릭 실행과 결과는 같습니다. 수정 파일 지정 등 옵션을 쓰려면 이쪽입니다.
 
-- **더블클릭**(Windows): 아래 0단계. 컴퓨터를 잘 몰라도 됩니다.
-- **명령으로**(Windows·Mac): 1단계부터. 수정 파일 지정 등 옵션을 쓰려면 이쪽입니다.
+모든 명령은 저장소 폴더에서 실행합니다. 새 PowerShell 창을 열었으면 먼저 `cd $HOME\Desktop\broadcast-ppt`를 합니다. Mac은 터미널에서 같은 명령을 쓰되 경로 구분만 `/`입니다(`cd ~/broadcast-ppt`).
 
-### 0. 더블클릭으로 변환 (컴퓨터를 잘 몰라도 됩니다)
-
-1. 바탕 화면의 **바로 가기**를 더블클릭합니다([만드는 법](#windows-설치-처음-한-번-약-10분) 6단계). 검은 창이 하나 뜨는데 닫지 말고 둡니다. 잘 끝나면 저절로 닫히고, 실패하면 "계속하려면 아무 키나 누르십시오"가 뜬 채로 남습니다(그 내용이 담당자에게 필요합니다).
-2. 잠시 뒤 **파일 선택 창**이 뜹니다. 변환할 예배 PPT를 고릅니다. USB에 있는 파일을 그대로 골라도 됩니다.
-3. 몇 분 기다립니다(검은 창에 글자가 올라갑니다). 끝나면 안내 창이 뜹니다.
-4. 결과는 **고른 파일과 같은 폴더**에 `원래이름_방송용.pptx`로 생깁니다. 찬송 자막이 만들어지면 `원래이름_찬송자막.pptx`도 같이 생깁니다. 같은 이름이 이미 있으면 덮어씁니다.
-
-안내 창은 두 가지입니다.
-
-| 창 | 뜻 | 할 일 |
-|---|---|---|
-| **변환 완료** | 파일이 만들어졌습니다. `확인할 장 8, 61`처럼 번호가 있으면 자막 줄이 빠듯한 장입니다 | PowerPoint로 열어 그 장만 눈으로 확인 |
-| **확인 필요** / **변환하지 못했습니다** | 방송에 쓰면 안 되는 문제가 있거나 아예 만들지 못했습니다 | 그대로 방송에 쓰지 말고 담당자에게 연락. 급하면 그 주는 원본 PPT로 방송 |
-
-그 외 자세한 결과(`plan.json`, `validation.json`, 실행 기록 `gui.log`)는 저장소의 `local\work\<원본 이름>\` 폴더에 남습니다. 담당자가 그 폴더를 보고 고칩니다. 담당자가 그 폴더에 `overrides.yaml`(수정 파일)을 넣어 두면, 다음에 같은 원본으로 다시 더블클릭할 때 자동으로 적용됩니다.
-
-### 1. 원본 넣고 변환 (명령)
-
-아래부터는 명령으로 실행하는 방법입니다. 모든 명령은 저장소 폴더(`$HOME\Desktop\broadcast-ppt`)에서 실행합니다. 새 PowerShell 창을 열었으면 먼저 `cd $HOME\Desktop\broadcast-ppt`를 합니다. Mac은 터미널에서 같은 명령을 씁니다(`cd ~/broadcast-ppt`, 경로 구분은 `/`).
+### 1. 원본 넣고 변환
 
 USB의 원본 PPT를 `바탕 화면\broadcast-ppt\local\input\`에 복사합니다(`ii local\input`으로 폴더 열기). 하위 폴더 없이 바로 넣으면 입력이 쉽습니다.
 
@@ -206,7 +241,7 @@ uv run broadcast-ppt run "local\input\주일오전예배ppt(YYMMDD).pptx"
 
 결과는 `local\work\<원본 파일 이름(.pptx 뺀 것)>\broadcast.pptx`에 생깁니다. 실행 끝의 `built … slides -> <경로>` 줄에 전체 경로가 나옵니다.
 
-찬송 곡을 찾으면 같은 폴더에 **`hymn.pptx`**(찬송 가사 자막만)도 생기고 `찬송 자막 N장 -> <경로>` 줄이 함께 나옵니다. 방송본에는 원본 악보 장이 그대로 들어가니, 찬송 때는 이 파일을 따로 띄워 한 줄씩 넘깁니다. 처음 한 번은 `uv run broadcast-ppt hymns`로 `local\hymns`의 곡 색인을 만들어 둡니다(곡 파일을 추가한 뒤에도).
+**찬송 자막.** 찬송 곡을 찾으면 같은 폴더에 `hymn.pptx`(찬송 가사 자막만)도 생기고 `찬송 자막 N장 -> <경로>` 줄이 함께 나옵니다. 방송본에는 원본 악보 장이 그대로 들어가니, 찬송 때는 이 파일을 따로 띄워 한 줄씩 넘깁니다. 처음 한 번은 `uv run broadcast-ppt hymns`로 `local\hymns`의 곡 색인을 만들어 둡니다(곡 파일을 추가한 뒤에도).
 
 곡을 못 찾으면 `찬송 구간 N개 중 M개만 곡을 찾았습니다`와 이유가 한 줄 나옵니다. **악보에서 곡 이름을 읽는 것은 Mac에서만 됩니다.** 방송 PC(Windows)는 이미 짝지어 둔 악보 그림만 알아보므로, 처음 나오는 곡은 Mac에서 같은 원본으로 `plan`을 한 번 돌린 뒤 `local\hymns\index.json`을 방송 PC로 복사하거나, Mac에서 만든 `hymn.pptx`를 그대로 가져가 씁니다.
 
@@ -221,10 +256,10 @@ uv run broadcast-ppt run "local\input\주일오전예배ppt(YYMMDD).pptx"
 | 등급 | 뜻 | 할 일 |
 |---|---|---|
 | **critical** | 방송에 쓰면 안 되는 문제(빈 칸, 남은 견본 글자, 끊긴 연결 등) | 먼저 고침. 아래 참고 |
-| **warning** | 자막 줄 수·폭이 빠듯함 등 | 해당 장을 눈으로 확인 |
+| **warning** | 자막 줄 수·폭이 빠듯하거나, 자막 장이 절 중간에서 시작함 등 | 해당 장을 눈으로 확인 |
 | **info** | 검수 표시 | 화면에는 종류별 개수만 나옴. 어느 장인지는 plan 표에서 `[review:…]`가 붙은 줄로 확인. 뜻은 [검수 표시](#검수-표시) 표 |
 
-`slide 12`의 12는 **방송본** 장 번호입니다. [수정 파일](#고치고-싶을-때-수정-파일)에는 **원본** 장 번호를 써야 하므로 아래 명령으로 찾습니다(12 자리에 번호).
+`slide 12`의 12는 **방송본** 장 번호입니다. [수정 파일](#수정-파일)에는 **원본** 장 번호를 써야 하므로 아래 명령으로 찾습니다(12 자리에 번호).
 
 ```powershell
 (Get-Content "local\work\<원본 파일 이름>\plan.json" -Raw -Encoding UTF8 | ConvertFrom-Json).slides | Where-Object { $_.out -contains 12 } | Select-Object src, kind
@@ -250,7 +285,9 @@ critical이 있어도 `broadcast.pptx`는 만들어지지만 그대로 방송에
 
 ### 4. 필요하면 고치고 다시 실행
 
-[수정 파일](#고치고-싶을-때-수정-파일)을 적고 `--overrides`를 붙여 다시 실행합니다. **PowerPoint에서 `broadcast.pptx`를 먼저 닫습니다.** 열려 있으면 "파일을 열 수 없습니다 … PowerPoint에서 broadcast.pptx를 닫고 다시 실행하세요"가 나옵니다.
+[수정 파일](#수정-파일)을 적고 `--overrides`를 붙여 다시 실행합니다.
+
+> **다시 실행하기 전에 PowerPoint에서 `broadcast.pptx`를 닫으세요.** 열려 있으면 "파일을 열 수 없습니다 … PowerPoint에서 broadcast.pptx를 닫고 다시 실행하세요"가 나옵니다.
 
 ### 5. 테스트 결과 남기기
 
@@ -271,7 +308,7 @@ critical이 있어도 `broadcast.pptx`는 만들어지지만 그대로 방송에
 - 증상 예: 글자 넘침, 띠 아래 여백, 색·크기, 영문·한글 줄 겹침, 종류가 틀림, 참조가 틀림·빠짐, 장이 빠짐·중복.
 - 수정 파일로 해결되는 것은 그 주에 바로 고치고 표에 "예"로 남깁니다. **수정 파일로 안 되는 것만** 모아서 나중에 한 번에 코드 수정을 요청합니다.
 
-### Mac에서
+### Mac에서 확인
 
 같은 명령을 경로만 `/`로 써서 실행합니다(`uv run broadcast-ppt run "local/input/….pptx"`). 결과는 Keynote로 엽니다. Keynote 그림을 명령으로 뽑아 볼 수도 있습니다. 그림은 `local/work/keynote/check/png/`에 저장됩니다.
 
@@ -279,7 +316,7 @@ critical이 있어도 `broadcast.pptx`는 만들어지지만 그대로 방송에
 uv run python scripts/keynote_check.py render "local/work/<원본 파일 이름>/broadcast.pptx" --slides 2,4,12
 ```
 
-## 고치고 싶을 때 (수정 파일)
+## 수정 파일
 
 새 양식이 나와도 코드를 고치지 않습니다. 결과 폴더에 `overrides.yaml`을 만들고 **원본** 장 번호(plan 표의 `src`, 방송본 번호가 아님)별로 한 줄씩 적은 뒤 `--overrides`를 붙여 다시 실행합니다. 결과 폴더는 첫 실행 뒤에 생깁니다.
 
@@ -303,39 +340,18 @@ slides:
 uv run broadcast-ppt run "local\input\주일오전예배ppt(YYMMDD).pptx" --overrides "local\work\주일오전예배ppt(YYMMDD)\overrides.yaml"
 ```
 
+**쓰는 법**
+
 - 다시 실행할 때마다 `--overrides`를 붙입니다. 빼면 수정 없이 다시 만들어집니다. **↑** 키로 앞 명령을 불러와 끝에 붙이면 한글 경로를 다시 칠 필요가 없습니다.
-- 들여쓰기는 **공백 2칸**만 씁니다(Tab 키 금지). `17:`처럼 콜론 뒤에 공백이 한 칸 있어야 합니다.
-- 메모장 '다른 이름으로 저장'을 쓸 때는 파일 형식을 **모든 파일(\*.\*)**로 바꿔야 `.txt`가 붙지 않습니다. 인코딩은 **UTF-8**(Windows 10 1903 이후 기본).
+- 바꾸고 싶은 장만 적으면 됩니다. 처음 보는 양식은 원본 그대로 복사되고 `review:unclassified`가 붙습니다.
 - `op`에는 `copy`, `quote`, `caption`, `scripture`만 씁니다. `skip: true`는 그 장을 뺍니다.
 - `ref`는 참조 칸이 있는 슬라이드(성경 본문·성경봉독·설교)나 `op: scripture`와 함께 씁니다. `copy`·`quote`·`caption`과는 같이 못 씁니다.
+
+**저장할 때**
+
+- 들여쓰기는 **공백 2칸**만 씁니다(Tab 키 금지). `17:`처럼 콜론 뒤에 공백이 한 칸 있어야 합니다.
+- 메모장 '다른 이름으로 저장'을 쓸 때는 파일 형식을 **모든 파일(\*.\*)**로 바꿔야 `.txt`가 붙지 않습니다. 인코딩은 **UTF-8**(Windows 10 1903 이후 기본).
 - 규칙에 안 맞는 줄(모르는 `op`, 틀린 참조 형식, 글자 없는 장에 `quote`·`caption`·`scripture`)이 있으면 `plan refused: override slide N: …`가 나오고 멈춥니다.
-- 처음 보는 양식은 원본 그대로 복사되고 `review:unclassified`가 붙습니다. 바꾸고 싶은 장만 적으면 됩니다.
-
-## 문제 해결
-
-오류가 나면 PowerShell 창의 마지막 몇 줄(특히 `오류:`로 시작하는 줄)을 그대로 복사해 전달합니다. 창 내용에는 슬라이드 글자가 나오지 않습니다.
-
-| 증상 | 원인 | 해결 |
-|---|---|---|
-| `uv`(또는 `git`)를 찾을 수 없음 | 설치 직후 창에 경로가 반영 안 됨 | PowerShell 창 전체를 닫고 새로 열기. 그래도 안 되면 로그아웃 후 다시 로그인 |
-| `winget`을 찾을 수 없음 | winget이 없는 Windows 10 | uv는 2단계의 대체 명령으로 설치, 코드는 ZIP으로 받기 |
-| `git clone`이 `Repository not found` | 저장소 권한이 없는 계정으로 로그인됨 | 제어판 → 자격 증명 관리자 → Windows 자격 증명에서 `git:https://github.com`을 지우고 다시 시도, 또는 ZIP |
-| `Failed to spawn: broadcast-ppt` 또는 `No pyproject.toml found` | 저장소 폴더 밖에서 실행했거나 ZIP이 한 겹 더 풀림 | `cd $HOME\Desktop\broadcast-ppt` 후 다시 실행. `바탕 화면\broadcast-ppt\pyproject.toml`이 있는지 확인 |
-| `uv sync`가 `error sending request`·시간 초과로 실패 | 인터넷 차단·방화벽·프록시 | 다시 실행(받은 것은 캐시에 남음). 교회 망이 막혀 있으면 휴대폰 핫스팟으로 설치. ARM PC는 지원 안 함 |
-| 처음 `uv sync`가 몇 분간 멈춘 듯함, 또는 `액세스가 거부되었습니다` | 파이썬 내려받는 중이거나 백신이 새 파일을 검사 중 | 5~10분 기다림. 오류면 다시 실행. 계속되면 백신 검사 예외에 `C:\Users\<사용자 이름>\Desktop\broadcast-ppt`와 `%LOCALAPPDATA%\uv` 추가 |
-| "템플릿이 없습니다" | `local\templates\24.상반기.pptx`가 없거나 이름이 다름 | 템플릿을 그 이름으로 복사, 또는 `--template <경로>`로 지정 |
-| "템플릿이 원본과 다릅니다" | PowerPoint로 다시 저장했거나 다른 판 | 원본 파일을 그대로 다시 복사. 안내에 나온 SHA256과 비교 |
-| `plan refused: … .pptx로 읽을 수 없습니다` | 원본이 `.ppt`, Mac이 만든 `._` 파일, 또는 손상된 파일 | `.ppt`는 PowerPoint에서 `.pptx`로 다시 저장. `._` 파일이면 진짜 파일을 고름 |
-| `오류: [Errno 2] …` / `지정된 파일을 찾을 수 없습니다` | 원본 경로·이름 오타 | Tab으로 이름 채우기. `$HOME\Desktop\broadcast-ppt`에서 실행했는지 확인 |
-| "파일을 열 수 없습니다 … PowerPoint에서 닫고" | 결과 파일이 PowerPoint에 열려 있음 | PowerPoint에서 닫고 다시 실행 |
-| `overrides file not found: …` | 수정 파일 경로가 틀림(메모장이 `.txt`를 붙였거나 폴더 이름이 다름) | 탐색기 **보기 → 파일 확장명** 켜고 이름 확인, 경로는 Tab으로 채우기 |
-| "UTF-8로 저장해 주세요" | 수정 파일이 ANSI(cp949)로 저장됨 | 메모장 → 다른 이름으로 저장 → 인코딩 UTF-8 |
-| `plan refused: override slide N: …` | 수정 파일 N번 줄 값이 틀림 | 메시지대로 고치고 다시 실행 |
-| `오류:` 뒤에 `while scanning`·`found character '\t'` | 수정 파일 문법(Tab 들여쓰기, 콜론 뒤 공백 없음) | 공백 2칸 들여쓰기, `  17: {skip: true}` 형식 그대로 |
-| critical이 1개 이상 | 방송에 쓰면 안 되는 장이 있음 | [2. 검증 결과 보기](#2-검증-결과-보기)대로 원본 장 번호를 찾아 수정 파일에 적기. 시간이 없으면 그 주는 원본 PPT |
-| 바로 가기를 눌러도 파일 선택 창이 안 뜨고 검은 창만 남음 | 창의 마지막 줄을 읽음. `uv`를 못 찾거나(위 첫 줄) 저장소 폴더가 옮겨짐 | 바로 가기를 지우고 `broadcast-ppt.bat`에서 다시 만들기(설치 6단계) |
-| 더블클릭했는데 "변환하지 못했습니다" | 창에 나온 그대로(템플릿 없음·원본 손상 등) | 창 내용을 담당자에게 전달. 원인별 해결은 이 표의 다른 줄 |
-| Mac과 Windows 결과가 다름 | 한쪽에만 `GEMINI_API_KEY`가 있음(실행할 때 `ai fallback: …` 줄이 나오면 켜진 것) | 두 곳을 똑같이. PowerShell 확인 `$env:GEMINI_API_KEY`, 끄기 `Remove-Item Env:GEMINI_API_KEY`. Mac은 `echo $GEMINI_API_KEY` / `unset GEMINI_API_KEY` |
 
 ## 명령과 옵션
 
@@ -343,28 +359,37 @@ uv run broadcast-ppt run "local\input\주일오전예배ppt(YYMMDD).pptx" --over
 
 | 명령 | 하는 일 |
 |---|---|
-| `gui` | 파일 선택 창을 띄워 원본을 고르고, 결과를 **그 원본과 같은 폴더**에 `원래이름_방송용.pptx`로 저장. 더블클릭 바로 가기(`broadcast-ppt.bat`)가 실행하는 명령. `plan.json`·`validation.json`은 평소처럼 `local/work/<이름>/`에 남고, 그 폴더에 `overrides.yaml`이 있으면 자동으로 적용 |
 | `run <원본.pptx>` | 계획 + 생성 + 검증을 한 번에. 매주 쓰는 명령 |
+| `gui` | 파일 선택 창으로 원본을 고르고, 결과를 **그 원본과 같은 폴더**에 `원래이름_방송용.pptx`로 저장. 더블클릭 바로 가기(`broadcast-ppt.bat`)가 실행하는 명령 |
 | `plan <원본.pptx>` | plan 표를 출력하고 `plan.json` 저장 |
 | `build <plan.json>` | `plan.json`으로 방송본 생성 + 검증 |
-| `validate <방송본.pptx> --plan <plan.json>` | 이미 만든 방송본만 다시 검증(`--report 파일`로 결과 위치 지정) |
+| `validate <방송본.pptx> --plan <plan.json>` | 이미 만든 방송본만 다시 검증 |
 | `analyze <파일 또는 폴더>` | 샘플 PPT 구조 분석(관리용). 실패한 파일이 있으면 종료 코드 1 |
-| `summarize`, `catalog`, `calibrate`, `hymns` | 관리용. 아래 [관리용 명령](#관리용-명령) |
+| `summarize`, `catalog`, `hymns`, `calibrate` | 관리용. [관리용 명령](#관리용-명령) 참고 |
 
-| 명령 | 옵션 | 효과 |
+`gui`도 `plan.json`·`validation.json`은 평소처럼 `local/work/<이름>/`에 남기고, 그 폴더에 `overrides.yaml`이 있으면 자동으로 적용합니다.
+
+| 명령 | 옵션 | 하는 일 |
 |---|---|---|
-| `plan`, `run` | `--overrides 파일` | [수정 파일](#고치고-싶을-때-수정-파일) 적용 |
-| `plan`, `run` | `--slide-size template` 또는 `source` | 그대로 복사하는 원본 장의 크기 맞춤. `template`(기본)은 방송본 폭(13.33인치)에 맞게 키움(4:3 원본이면 4/3배), `source`는 키우지 않음. 방송본 크기는 어느 쪽이든 템플릿 크기 |
+| `plan`, `run` | `--overrides 파일` | [수정 파일](#수정-파일) 적용 |
+| `plan`, `run` | `--slide-size template`\|`source` | 그대로 복사하는 원본 장의 크기 맞춤. `template`(기본)은 방송본 폭(13.33인치)에 맞게 키움(4:3 원본이면 4/3배), `source`는 키우지 않음. 방송본 크기는 어느 쪽이든 템플릿 크기 |
 | `plan`, `run` | `--no-scripture-both` | 성경 본문·교리문답·짧은 문장 장에서 원본(화면 전체용) 장을 빼고 자막만 만듦 |
-| `plan`, `run` | `--sermon-material lower-third` 또는 `passthrough` | 짧은 문장 장(설교 문장, 수정 파일의 `op: caption` 포함)을 자막으로 만들지(기본), 원본 그대로 복사할지 |
+| `plan`, `run` | `--sermon-material lower-third`\|`passthrough` | 짧은 문장 장(설교 문장, 수정 파일의 `op: caption` 포함)을 자막으로 만들지(기본), 원본 그대로 복사할지 |
 | `plan`, `run`, `gui` | `--work 폴더` | 결과 폴더의 상위 위치(기본 `local/work`) |
 | `plan` / `run`, `build` | `--out 파일` | plan: `plan.json` 저장 위치 / run·build: 방송본 저장 위치(기본은 결과 폴더의 `broadcast.pptx`) |
 | `build`, `run` | `--template 파일` | 템플릿 파일을 직접 지정 |
 | `build`, `run` | `--force` | 계획 뒤에 템플릿이나 원본이 바뀌어도 생성 |
 | `build` | `--no-validate` | 생성 후 검증을 건너뜀 |
-| `analyze` | `--workers N`, `--force`, `--scope 파일` | 병렬 작업 수, 이미 분석한 파일도 다시 분석, 요약 범위 |
+| `validate` | `--plan 파일`(필수), `--report 파일` | 대조할 계획, 검증 결과 저장 위치(기본은 방송본 옆 `validation.json`) |
+| `plan`, `run`, `build`, `validate` | `--catalog 파일`, `--widths 파일` | 템플릿 목록·글자 폭 파일 직접 지정(기본 `config/templates.yaml`, `config/widths.yaml`) |
+| `analyze` | `--out 폴더`, `--workers N`, `--force`, `--scope 파일` | 분석 JSON 저장 위치(기본 `local/analysis`), 병렬 작업 수, 이미 분석한 파일도 다시 분석, 요약 범위 |
+| `summarize` | `--out 폴더`, `--scope 파일` | 분석 JSON 위치, 요약 범위 |
+| `catalog` | `[템플릿]`, `--roles 파일`, `--out 파일` | 읽을 템플릿(기본 `local/templates/24.상반기.pptx`), 역할 표, `templates.yaml` 저장 위치 |
 | `hymns` | `--library 폴더`, `--out 파일`, `--forget` | 찬송 라이브러리 위치(기본 `local/hymns`), 색인 저장 위치, 악보 이미지로 익혀 둔 곡 짝짓기까지 지우기 |
+| `calibrate` | `--out 파일` | 보정값 저장 위치(기본 `config/widths.yaml`) |
 | `plan`, `run` | 환경변수 `GEMINI_API_KEY` (선택 `GEMINI_MODEL`) | 키가 있으면 규칙으로 못 정한 장을 Gemini에 물어봄. 기본 모델 `gemini-3.5-flash`. 확신도 0.8 미만이면 그대로 복사하고 `plan.json`의 `ai`에 제안만 남김 |
+
+> **`GEMINI_API_KEY`가 있으면 결과가 달라집니다.** 실행할 때 `ai fallback: …` 줄이 나오면 켜진 것입니다. Mac과 Windows 결과를 맞추려면 두 곳의 키 상태를 똑같이 두세요.
 
 ### 검수 표시
 
@@ -392,6 +417,42 @@ uv run broadcast-ppt run "local\input\주일오전예배ppt(YYMMDD).pptx" --over
 | `review:hymn_range_guess` | 찬송 구간의 마지막 악보 장을 못 읽어서 그 곡 끝까지 넣음. 남는 절이 없는지 확인 |
 | `deferred:hymn` | 악보는 읽었지만 라이브러리에 없는 곡이라 그대로 복사함. 그 곡을 `local/hymns`에 넣고 `hymns`를 다시 실행하면 다음부터 자동 |
 
+## 문제 해결
+
+오류가 나면 PowerShell 창의 마지막 몇 줄(특히 `오류:`로 시작하는 줄)을 그대로 복사해 전달합니다. 창 내용에는 슬라이드 글자가 나오지 않습니다. 더블클릭으로 쓰다 생긴 증상은 [이럴 때는](#이럴-때는)에 있습니다.
+
+**설치할 때**
+
+| 증상 | 원인 | 해결 |
+|---|---|---|
+| `uv`(또는 `git`)를 찾을 수 없음 | 설치 직후 창에 경로가 반영 안 됨 | PowerShell 창 전체를 닫고 새로 열기. 그래도 안 되면 로그아웃 후 다시 로그인 |
+| `winget`을 찾을 수 없음 | winget이 없는 Windows 10 | uv는 2단계의 대체 명령으로 설치, 코드는 ZIP으로 받기 |
+| `git clone`이 `Repository not found` | 저장소 권한이 없는 계정으로 로그인됨 | 제어판 → 자격 증명 관리자 → Windows 자격 증명에서 `git:https://github.com`을 지우고 다시 시도, 또는 ZIP |
+| `uv sync`가 `error sending request`·시간 초과로 실패 | 인터넷 차단·방화벽·프록시 | 다시 실행(받은 것은 캐시에 남음). 교회 망이 막혀 있으면 휴대폰 핫스팟으로 설치. ARM PC는 지원 안 함 |
+| 처음 `uv sync`가 몇 분간 멈춘 듯함, 또는 `액세스가 거부되었습니다` | 파이썬 내려받는 중이거나 백신이 새 파일을 검사 중 | 5~10분 기다림. 오류면 다시 실행. 계속되면 백신 검사 예외에 `C:\Users\<사용자 이름>\Desktop\broadcast-ppt`와 `%LOCALAPPDATA%\uv` 추가 |
+
+**변환할 때**
+
+| 증상 | 원인 | 해결 |
+|---|---|---|
+| `Failed to spawn: broadcast-ppt` 또는 `No pyproject.toml found` | 저장소 폴더 밖에서 실행했거나 ZIP이 한 겹 더 풀림 | `cd $HOME\Desktop\broadcast-ppt` 후 다시 실행. `바탕 화면\broadcast-ppt\pyproject.toml`이 있는지 확인 |
+| "템플릿이 없습니다" | `local\templates\24.상반기.pptx`가 없거나 이름이 다름 | 템플릿을 그 이름으로 복사, 또는 `--template <경로>`로 지정 |
+| "템플릿이 원본과 다릅니다" | PowerPoint로 다시 저장했거나 다른 판 | 원본 파일을 그대로 다시 복사. 안내에 나온 SHA256과 비교 |
+| `plan refused: … .pptx로 읽을 수 없습니다` | 원본이 `.ppt`, Mac이 만든 `._` 파일, 또는 손상된 파일 | `.ppt`는 PowerPoint에서 `.pptx`로 다시 저장. `._` 파일이면 진짜 파일을 고름 |
+| `오류: [Errno 2] …` / `지정된 파일을 찾을 수 없습니다` | 원본 경로·이름 오타 | Tab으로 이름 채우기. `$HOME\Desktop\broadcast-ppt`에서 실행했는지 확인 |
+| "파일을 열 수 없습니다 … PowerPoint에서 닫고" | 결과 파일이 PowerPoint에 열려 있음 | PowerPoint에서 닫고 다시 실행 |
+| critical이 1개 이상 | 방송에 쓰면 안 되는 장이 있음 | [2. 검증 결과 보기](#2-검증-결과-보기)대로 원본 장 번호를 찾아 수정 파일에 적기. 시간이 없으면 그 주는 원본 PPT |
+| Mac과 Windows 결과가 다름 | 한쪽에만 `GEMINI_API_KEY`가 있음 | 두 곳을 똑같이. PowerShell 확인 `$env:GEMINI_API_KEY`, 끄기 `Remove-Item Env:GEMINI_API_KEY`. Mac은 `echo $GEMINI_API_KEY` / `unset GEMINI_API_KEY` |
+
+**수정 파일 때문에**
+
+| 증상 | 원인 | 해결 |
+|---|---|---|
+| `overrides file not found: …` | 수정 파일 경로가 틀림(메모장이 `.txt`를 붙였거나 폴더 이름이 다름) | 탐색기 **보기 → 파일 확장명** 켜고 이름 확인, 경로는 Tab으로 채우기 |
+| "UTF-8로 저장해 주세요" | 수정 파일이 ANSI(cp949)로 저장됨 | 메모장 → 다른 이름으로 저장 → 인코딩 UTF-8 |
+| `plan refused: override slide N: …` | 수정 파일 N번 줄 값이 틀림 | 메시지대로 고치고 다시 실행 |
+| `오류:` 뒤에 `while scanning`·`found character '\t'` | 수정 파일 문법(Tab 들여쓰기, 콜론 뒤 공백 없음) | 공백 2칸 들여쓰기, `  17: {skip: true}` 형식 그대로 |
+
 ## 동작 원리
 
 - **분류**: 원본 장마다 규칙(`rules/classify.py`, R010~R900)으로 종류를 정합니다. 예배로의 부름, 기도, 성경봉독, 설교, 묵상, 교리문답(제N문), 교회소식, 성경 본문, 핵심 문장 같은 종류입니다. 어느 규칙에도 안 맞으면 R900(미분류)이 되고 원본 그대로 복사합니다.
@@ -400,7 +461,7 @@ uv run broadcast-ppt run "local\input\주일오전예배ppt(YYMMDD).pptx" --over
 - **두 번 만드는 장**: 성경 본문, 설교 인용, 짧은 문장(핵심 문장)은 원본(화면 전체용) 한 장 뒤에 녹색 하단 자막을 넣습니다. 교리문답은 원본, 문답 자막, 함께 적힌 말씀의 참조 자막을 따로 넣습니다.
 - **찬송 장**: 글자 없는 악보 그림이 3장 이상 이어지면 한 곡으로 봅니다. 첫 장과 끝 장의 그림에서 제목·가사를 읽어(맥 내장 문자 인식) `local/hymns`의 곡과 짝지은 뒤, 그 구간에 해당하는 가사를 한 줄에 한 장씩 초록 자막으로 만들어 **`hymn.pptx`에 따로** 담습니다(곡 제목은 곡의 첫 장에만). 방송본(`broadcast.pptx`)에는 원본 악보 장이 그대로 들어갑니다. 한 번 짝지은 악보 그림은 `local/hymns/index.json`에 남아 다음부터는 바로 찾습니다. 못 찾은 곡은 `deferred:hymn`만 붙습니다.
 - **그대로 복사하는 장**: 사진·영상·명단 장은 원본을 그대로 복사합니다(검수 표시 없음). 라이브러리에 없는 찬송, 도표·질문지, 규칙에 안 맞는 장도 그대로 복사하되 검수 표시(`deferred:hymn`, `review:graphic`, `review:unclassified`)를 붙입니다.
-- **검증**: 만든 방송본을 다시 열어 점검합니다. critical은 장 수가 계획과 다름, 그림·영상 연결이 끊김, 채워야 할 칸이 비었거나 템플릿 견본 글자가 남음입니다. warning은 자막 줄 수·폭이 빠듯함, 녹색 배경이 아님, 도형 번호 중복입니다. info는 검수 표시입니다.
+- **검증**: 만든 방송본을 다시 열어 점검합니다. critical은 장 수가 계획과 다름, 그림·영상 연결이 끊김, 채워야 할 칸이 비었거나 템플릿 견본 글자가 남음입니다. warning은 자막 줄 수·폭이 빠듯함, 자막 장이 절 중간에서 시작함, 녹색 배경이 아님, 도형 번호 중복입니다. info는 검수 표시입니다.
 
 ## 설정 파일
 
@@ -412,19 +473,20 @@ uv run broadcast-ppt run "local\input\주일오전예배ppt(YYMMDD).pptx" --over
 
 ### 관리용 명령
 
-```bash
-uv run broadcast-ppt catalog                                          # roles.yaml이나 템플릿을 고친 뒤 templates.yaml 다시 만들기
-uv run broadcast-ppt hymns                                            # local/hymns의 곡 가사 색인 다시 만들기(곡 파일을 넣거나 고친 뒤)
-uv run broadcast-ppt calibrate <방송본 PPT 또는 폴더>                    # 글자 폭 보정값 다시 계산
-uv run broadcast-ppt analyze local/input --out local/analysis         # 샘플 PPT 구조 분석
-uv run broadcast-ppt summarize                                        # 이미 만든 분석 JSON으로 summary.csv, clusters.md 다시 만들기
-uv run python scripts/pull_drive.py <Drive 폴더 ID>                     # Google Drive 폴더를 local/input으로 내려받기(gws 필요)
-uv run python scripts/keynote_check.py calibrate-cards                # 카드 줄 위치를 Keynote로 다시 재기(Mac 전용, 가짜 이름 사용, local/input/미편집/에 주일오전예배ppt(…) 원본 하나 필요)
-uv run python scripts/keynote_check.py bands <그림.png> ...             # 그림에서 글자가 그려진 세로 위치 재기
-uv run python scripts/add_hymn_slide.py                               # 템플릿에 찬송 자막 슬라이드(92장) 넣기(한 번만, 이후 PowerPoint에서 직접 수정)
-```
+| 명령 | 하는 일 |
+|---|---|
+| `uv run broadcast-ppt catalog` | `roles.yaml`이나 템플릿을 고친 뒤 `templates.yaml` 다시 만들기 |
+| `uv run broadcast-ppt hymns` | `local/hymns`의 곡 가사 색인 다시 만들기(곡 파일을 넣거나 고친 뒤) |
+| `uv run broadcast-ppt calibrate <방송본 PPT 또는 폴더>` | 글자 폭 보정값 다시 계산 |
+| `uv run broadcast-ppt analyze local/input --out local/analysis` | 샘플 PPT 구조 분석 |
+| `uv run broadcast-ppt summarize` | 이미 만든 분석 JSON으로 `summary.csv`, `clusters.md` 다시 만들기 |
+| `uv run python scripts/pull_drive.py <Drive 폴더 ID>` | Google Drive 폴더를 `local/input`으로 내려받기(gws 필요) |
+| `uv run python scripts/keynote_check.py calibrate-cards` | 카드 줄 위치를 Keynote로 다시 재기(Mac 전용, 가짜 이름 사용, `local/input/미편집/`에 주일오전예배ppt(…) 원본 하나 필요) |
+| `uv run python scripts/keynote_check.py bands <그림.png> ...` | 그림에서 글자가 그려진 세로 위치 재기 |
 
-테스트는 `uv run pytest`입니다. `main`에 push하거나 PR을 열면 Windows에서도 같은 테스트가 자동으로 돕니다(GitHub Actions, `.github/workflows/tests.yml`).
+테스트는 `uv run pytest`, 코드 검사는 `uv run ruff check .`입니다. `main`에 push하거나 PR을 열면 Windows에서 이 둘이 자동으로 돕니다(GitHub Actions, `.github/workflows/tests.yml`).
+
+`scripts/ocr_vision.js`는 직접 실행하는 스크립트가 아닙니다. 찬송 악보에서 글자를 읽을 때 프로그램이 Mac에서 내부적으로 부릅니다.
 
 ## 아직 안 되는 것
 
@@ -435,19 +497,26 @@ uv run python scripts/add_hymn_slide.py                               # 템플�
 
 ## 데이터 보관 원칙
 
-PPT에는 이름, 직분, 교회 정보가 들어 있습니다. 원본, 템플릿, 분석 결과, 계획, 수정 파일, 검증 결과, 확인용 그림, 방송본은 모두 `local/`에 두고 GitHub에 올리지 않습니다. 더블클릭(`gui`)으로 만든 방송본만 고른 원본 옆(USB·바탕 화면 등)에 생기니, 그 폴더도 교회 자료로 다룹니다. 저장소에는 코드, 일반 설정, 문서만 올립니다. `config/templates.yaml`에는 위치, 서식, 글자 수, 템플릿 샘플 글자의 SHA-1 요약값만 저장하고 글자 자체는 저장하지 않습니다. 명령 출력과 검증 결과(`validation.json`)에는 글자 수 같은 통계만 나오고 슬라이드 글자는 나오지 않습니다. `plan.json`에는 슬라이드 글자(이름 포함)가 그대로 들어 있으니 전달하지 마세요.
+PPT에는 이름, 직분, 교회 정보가 들어 있습니다. 원본, 템플릿, 분석 결과, 계획, 수정 파일, 검증 결과, 확인용 그림, 방송본은 모두 `local/`에 두고 GitHub에 올리지 않습니다. 더블클릭(`gui`)으로 만든 방송본만 고른 원본 옆(USB·바탕 화면 등)에 생기니, 그 폴더도 교회 자료로 다룹니다. 저장소에는 코드, 일반 설정, 문서만 올립니다.
+
+딱 하나 예외가 `local/hymns/index.json`(찬송 곡 색인)입니다. 악보 그림에서 곡 이름을 읽는 것은 Mac에서만 되기 때문에, 방송 PC(Windows)가 곡을 알아보려면 이 색인이 필요해서 일부러 git에 넣어 둡니다. 들어 있는 것은 찬송 곡의 제목·번호·가사와, 이미 짝지어 둔 악보 그림 표시뿐입니다.
+
+- `config/templates.yaml`에는 위치, 서식, 글자 수, 템플릿 샘플 글자의 SHA-1 요약값만 저장하고 글자 자체는 저장하지 않습니다.
+- 명령 출력과 검증 결과(`validation.json`)에는 글자 수 같은 통계만 나오고 슬라이드 글자는 나오지 않습니다.
+- `plan.json`에는 슬라이드 글자(이름 포함)가 그대로 들어 있으니 전달하지 마세요.
 
 `GEMINI_API_KEY`가 있으면 규칙으로 분류 못 한 장의 글자 줄, 도형 종류별 개수, 글상자 수, 전체 화면 사진 여부(사진 자체는 아님)만 Google Gemini로 나갑니다. 직분 앞 이름(`홍길동 집사`, `홍길동 장로님` → `[이름] 집사`, `[이름] 장로님`)은 가리고 보내지만, 직분 없이 쓴 이름이나 명단은 가려지지 않습니다. 슬라이드 노트, 표, 파일 자체와 수정 파일에 적은 장은 보내지 않습니다. 보내고 싶지 않은 주에는 키를 빼고 실행하세요.
 
 ## 백업과 복구
 
-GitHub에는 코드, 설정, 문서만 있습니다. 아래 파일은 git에 없어서 프로젝트 폴더를 지우면 같이 사라집니다. 다시 쓸 파일은 교회 자료를 두는 비공개 위치(예: Google Drive)에 따로 보관하세요. 지우기 전에 커밋이 GitHub에 push됐는지(`git status`에 `ahead`가 없는지)도 확인하세요.
+GitHub에는 코드, 설정, 문서와 찬송 곡 색인만 있습니다. 아래 파일은 색인을 뺀 나머지가 git에 없어서 프로젝트 폴더를 지우면 같이 사라집니다. 다시 쓸 파일은 교회 자료를 두는 비공개 위치(예: Google Drive)에 따로 보관하세요. 지우기 전에 커밋이 GitHub에 push됐는지(`git status`에 `ahead`가 없는지)도 확인하세요.
 
 | 경로 | 내용 | 다시 쓸 때 |
 |---|---|---|
 | `local/templates/24.상반기.pptx` | 방송 템플릿 원본 | 변환에 필수 |
 | `local/work/<원본 이름>/overrides.yaml` | 주마다 적은 수정 파일 | 그 주를 다시 만들 때만 |
-| `local/pii-patterns.txt` | 커밋 전에 이름·개인정보를 막는 검사의 패턴 목록(검사 스크립트는 저장소에 없음) | 코드를 고칠 때 필수 |
+| `local/hymns/index.json` | 찬송 곡 색인. **이 파일만 git에 있음** | git으로 같이 받아짐. 곡을 추가하면 `hymns`로 다시 만듦 |
+| `local/pii-patterns.txt` | 커밋 전에 이름·개인정보를 막는 검사의 패턴 목록. 검사는 저장소가 아니라 담당자 PC에 설정된 것이 돌림 | 코드를 고칠 때 필수 |
 | `local/input/`, `local/analysis/`, `local/work/`, `local/requirements/` | 원본 PPT(Drive에 원본 있음), 분석, 결과물, 요구사항 원문(따로 보관) | 보통 필요 없음 |
 
 복구 순서: [설치](#설치) 순서대로 다시 설치 → 템플릿을 `local/templates/`에 복사 → `uv run pytest` → 코드를 고칠 계획이면 검사 패턴 파일도 제자리에 복사.

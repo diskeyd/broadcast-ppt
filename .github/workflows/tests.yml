@@ -20,6 +20,8 @@ jobs:
           version: "0.12.17"
       - name: Install
         run: uv sync --locked
+      - name: Lint
+        run: uv run ruff check .
       - name: Entry point
         run: uv run broadcast-ppt --help
       - name: Tests
