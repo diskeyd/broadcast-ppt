@@ -19,6 +19,15 @@ def test_pack_breaks_an_oversized_unit():
     assert all(len(c) <= 10 for c in chunks) and len(chunks) >= 3
 
 
+def test_pack_moves_a_whole_unit_to_balance_the_last_chunk():
+    # the shape that split a verse across two caption pages: three verses fill a chunk, the fourth
+    # is small enough to trigger the rebalance, and the rebalance used to move two *words* back
+    units = [f"{n} " + "가" * c for n, c in ((8, 31), (9, 31), (10, 36), (11, 34))]
+    chunks = pack(units, lambda t: len(t) <= 110)
+    assert [c.split(" ")[0] for c in chunks] == ["8", "10"]   # every page starts on a verse
+    assert " ".join(chunks) == " ".join(units)
+
+
 def test_pack_keeps_each_unit_on_its_own_line():
     units = ["1 가나다 라마바 사아자", "2 차카타 파하가 나다라", "3 짧다"]
     chunks = pack(units, lambda t: len(t) <= 30, sep="\n")

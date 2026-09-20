@@ -27,31 +27,31 @@ def _pieces(unit: str, fits: Callable[[str], bool]) -> list[str]:
 
 
 def pack(units: list[str], fits: Callable[[str], bool], sep: str = " ") -> list[str]:
-    """`sep` joins units inside a chunk: "\\n" keeps each unit (a verse) on its own line."""
-    chunks: list[str] = []
-    cur = ""
+    """Group units into chunks that fit, keeping every unit whole and in order.
+
+    Chunks are carried as lists of units, not as joined strings, so nothing downstream can cut
+    through a unit: a verse split across two caption pages reads as a broken sentence on air.
+    `sep` joins them at the end — "\\n" puts each unit on its own line."""
+    chunks: list[list[str]] = []
+    cur: list[str] = []
     for unit in (u.strip() for u in units):
         if not unit:
             continue
-        cand = f"{cur}{sep}{unit}" if cur else unit
-        if fits(cand):
-            cur = cand
+        if fits(sep.join(cur + [unit])):
+            cur.append(unit)
             continue
         if cur:
             chunks.append(cur)
-            cur = ""
-        pieces = _pieces(unit, fits)
-        chunks.extend(pieces[:-1])
-        cur = pieces[-1] if pieces else ""
+            cur = []
+        pieces = _pieces(unit, fits)  # one unit too long for a chunk of its own: the only place a
+        chunks.extend([p] for p in pieces[:-1])  # unit is broken, and then at a sentence or a word
+        cur = [pieces[-1]] if pieces else []
     if cur:
         chunks.append(cur)
-    # avoid a tiny last chunk: move the last piece of the previous chunk forward when both still fit.
-    # Splitting on `sep` keeps whole units together, so a verse is never cut in half here.
-    if len(chunks) >= 2 and len(chunks[-1]) < 0.35 * max(len(c) for c in chunks[:-1]):
-        prev = chunks[-2].split(sep)
-        take = 1 if sep != " " else 2
-        if len(prev) > take + 1:
-            new_prev, new_last = sep.join(prev[:-take]), f"{sep.join(prev[-take:])}{sep}{chunks[-1]}"
-            if fits(new_last) and fits(new_prev):
+    # avoid a tiny last chunk by moving one whole unit forward, when both still fit
+    if len(chunks) >= 2 and len(sep.join(chunks[-1])) < 0.35 * max(len(sep.join(c)) for c in chunks[:-1]):
+        if len(chunks[-2]) > 1:
+            new_prev, new_last = chunks[-2][:-1], chunks[-2][-1:] + chunks[-1]
+            if fits(sep.join(new_last)) and fits(sep.join(new_prev)):
                 chunks[-2], chunks[-1] = new_prev, new_last
-    return chunks
+    return [sep.join(c) for c in chunks]
