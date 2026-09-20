@@ -223,8 +223,9 @@ def test_scripture_caption_puts_each_verse_on_its_own_line_and_uses_the_heading(
 
     # a reading with its own reference gets no line breaks: the tag already carries the range
     plain = prs.slides.add_slide(prs.slide_layouts[6])
+    # the hard line break is how the original slide was laid out; the bar is a different width
     plain.shapes.add_textbox(Inches(1), Inches(1), Inches(8), Inches(3)).text_frame.text = (
-        "시편 73:18-20 18 가나다라마바사 아자차카타파하 19 하나다라마바사 아자차카타파하 20 마나다라마바사")
+        "시편 73:18-20 18 가나다라마바사 아자차카타파하\n19 하나다라마바사 아자차카타파하 20 마나다라마바사")
     src2 = tmp_path / "reading.pptx"
     prs.save(str(src2))
     plan = build_plan(src2, Path(CATALOG), Path(WIDTHS), PlanOptions())

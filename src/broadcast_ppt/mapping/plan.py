@@ -100,6 +100,11 @@ class Mapper:
     def scripture_captions(self, src: int, ref: ScriptureRef | None, body: str, heading: str | None = None,
                            division: bool = False) -> list[dict]:
         units = [t for _, t in verse_chunks(body, ref)]
+        if not division:
+            # line breaks inside a verse are how the original slide was laid out, not content: the bar
+            # is a different width and rewraps anyway, and keeping them makes it a line taller than
+            # the text needs. A book-division caption is the exception — see below.
+            units = [re.sub(r"\s*\n\s*", " ", t) for t in units]
         big = self.fam["scripture_ref"][-1][0]
         # a caption tagged with a book division has nothing but the verse numbers to tell the verses
         # apart, so there each one starts its own line; everywhere else the tag carries the range
