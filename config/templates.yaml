@@ -1645,4 +1645,5 @@ slides:
         slot_map:
         - ref
         hide_when_empty: true
+        align_left_to_backing: true
     line_capacity: 1

@@ -136,6 +136,8 @@ def build_catalog(template: Path, roles_path: Path) -> dict:
                 desc["fit_one_line"] = dict(sspec["fit_one_line"])
             if sspec.get("fit_backing"):  # the box behind the text grows and shrinks with it
                 desc["fit_backing"] = dict(sspec["fit_backing"])
+            if sspec.get("align_left_to_backing"):  # follows the resized bar's left edge
+                desc["align_left_to_backing"] = True
             backing = (spec.get("backing") or {}).get(sid) or (spec.get("backing") or {}).get(int(sid))
             if backing:
                 desc["backing"] = []

@@ -62,7 +62,7 @@ slides:
   # max_width_pt는 템플릿에 그려진 띠 폭이라 그보다 넓어지지 않는다.
   92: {role: hymn_1, family: hymn,
        shapes: {3: {slots: [body], single_segment: true, fit_backing: {pad_pt: 7, max_width_pt: 700, min_pt: 30}},
-                4: {slots: [ref], single_segment: true, hide_when_empty: true}},
+                4: {slots: [ref], single_segment: true, hide_when_empty: true, align_left_to_backing: true}},
        backing: {3: [6]}}
   58: {role: scripture_2, family: scripture,
        shapes: {4: {slots: [body], single_segment: true}}, backing: {4: [2]}}

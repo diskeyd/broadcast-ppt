@@ -56,7 +56,7 @@ def fit_single_line_width(sp, default_sz: float, model: WidthModel) -> None:
     set_width(sp, int(width * SINGLE_LINE_SLACK + ins["lIns"] + ins["rIns"]), keep_center=text_align(sp) == "ctr")
 
 
-def fit_boxed_line(slide, spec: dict, model: WidthModel) -> list[str]:
+def fit_boxed_line(slide, entry: dict, spec: dict, model: WidthModel) -> list[str]:
     """Hymn caption: the rounded box behind the lyric is sized to the lyric, so every line keeps the same
     margin around its text. A line too long for the box loses font size instead of pushing the box off
     the slide; if it is still too wide the validator's text_wider_than_bar warning picks it up."""
@@ -81,8 +81,19 @@ def fit_boxed_line(slide, spec: dict, model: WidthModel) -> list[str]:
     box = box_of(sp)
     if box is None:
         return flags
+    left = None
     for b in spec.get("backing", []):
-        set_width(shape_by_order(slide, b["order"]), min(box[2] + 2 * pad, limit), keep_center=True)
+        bar = shape_by_order(slide, b["order"])
+        set_width(bar, min(box[2] + 2 * pad, limit), keep_center=True)
+        bar_box = box_of(bar)
+        left = bar_box[0] if left is None else min(left, bar_box[0])
+    # a label over the bar keeps the lyric's left margin, so it lines up with the text under it
+    for sib in entry["shapes"].values():
+        if left is not None and sib.get("align_left_to_backing"):
+            el = shape_by_order(slide, sib["order"])
+            here = box_of(el)
+            if here is not None:
+                translate(el, left + pad - here[0], 0)
     return flags
 
 
@@ -255,7 +266,7 @@ def build_deck(plan: dict, template: Path, catalog_path: Path, out: Path, force:
                 rec["flags"] += adjust_filled_shape(sp, spec, op, res.filled, model)
             for spec in entry["shapes"].values():
                 if spec.get("fit_backing"):
-                    rec["flags"] += fit_boxed_line(slide, spec, model)
+                    rec["flags"] += fit_boxed_line(slide, entry, spec, model)
             if entry.get("stack"):
                 layout_stack(slide, entry, model)
             if entry.get("shrink") and op.get("shrink_lines"):
