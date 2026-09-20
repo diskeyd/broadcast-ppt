@@ -3,10 +3,13 @@
 from __future__ import annotations
 
 import argparse
+import contextlib
 from collections import Counter
+import io
 import json
 import os
 import re
+import shutil
 import sys
 import time
 import traceback
@@ -304,6 +307,78 @@ def cmd_run(args) -> int:
     return cmd_build(args)
 
 
+def _gui_message(reports: list[tuple[str, dict]], outs: list[Path]) -> tuple[bool, str]:
+    """The operator reads only this box: where the file went, and which slides to look at.
+
+    info findings are the owner's review flags (dozens a week) and stay in validation.json; the box lists
+    only what the operator can act on by opening the deck.
+    """
+    lines, bad = [], False
+    for name, rep in reports:
+        crit = sorted({f["out_slide"] for f in rep["findings"] if f["level"] == "critical" and f["out_slide"]})
+        rest = sorted({f["out_slide"] for f in rep["findings"] if f["level"] == "warning" and f["out_slide"]})
+        if crit:
+            bad = True
+            lines.append(f"{name}: 방송에 쓰면 안 되는 장 {', '.join(map(str, crit))}")
+        if rest:
+            lines.append(f"{name}: 확인할 장 {', '.join(map(str, rest))}")
+    head = "만들었지만 방송에 쓰면 안 됩니다. 담당자에게 연락하세요." if bad else "변환이 끝났습니다."
+    saved = "\n".join(f"  {p.name}" for p in outs)
+    tail = "\n\n" + "\n".join(lines) if lines else ""
+    return bad, f"{head}\n\n원본과 같은 폴더에 저장했습니다:\n{saved}{tail}"
+
+
+def cmd_gui(args) -> int:
+    """Double-click entry point: pick a deck, leave the result beside it, keep the JSON in the work folder."""
+    import tkinter as tk
+    from tkinter import filedialog, messagebox
+
+    root = tk.Tk()
+    root.withdraw()
+    picked = filedialog.askopenfilename(title="변환할 예배 PPT를 고르세요", filetypes=[("PowerPoint", "*.pptx")])
+    if not picked:
+        return 0
+    src = Path(picked)
+    work = Path(args.work) / _stem(src)
+    work.mkdir(parents=True, exist_ok=True)
+    for name in ("broadcast.pptx", "hymn.pptx", "validation.json", "validation-hymn.json"):
+        (work / name).unlink(missing_ok=True)  # a failed run must not hand out last week's deck or report
+    overrides = work / "overrides.yaml"  # no place to type --overrides, so the work folder decides
+    run_args = argparse.Namespace(source=str(src), work=args.work, catalog=CATALOG, widths=WIDTHS,
+                                  slide_size="template", no_scripture_both=False, sermon_material="lower-third",
+                                  overrides=str(overrides) if overrides.is_file() else None,
+                                  out=None, template=None, force=False, validate=True)
+    log = io.StringIO()
+    try:
+        with contextlib.redirect_stderr(log):
+            cmd_run(run_args)
+    except Exception as exc:
+        traceback.print_exc(file=log)
+        log.write(f"{exc}\n")
+    sys.stderr.write(log.getvalue())  # the console window behind the dialog stays the full log
+    (work / "gui.log").write_text(log.getvalue(), encoding="utf-8")  # the console is gone by the time anyone asks
+    if not (work / "validation.json").is_file():
+        messagebox.showerror("변환하지 못했습니다", f"{log.getvalue().strip()}\n\n담당자에게 연락하세요.")
+        return 1
+    outs, reports = [], []
+    for built, tag, rep in (("broadcast.pptx", "방송용", "validation.json"), ("hymn.pptx", "찬송자막", "validation-hymn.json")):
+        if not (work / built).is_file():
+            continue
+        dest = src.with_name(f"{src.stem}_{tag}.pptx")
+        try:
+            dest.unlink(missing_ok=True)  # Windows rename refuses an existing target
+            shutil.move(work / built, dest)
+        except OSError:
+            messagebox.showerror("저장하지 못했습니다", f"PowerPoint에서 {dest.name}을(를) 닫고 다시 해 주세요.")
+            return 1
+        outs.append(dest)
+        if (work / rep).is_file():
+            reports.append((dest.name, json.loads((work / rep).read_text(encoding="utf-8"))))
+    bad, text = _gui_message(reports, outs)
+    (messagebox.showerror if bad else messagebox.showinfo)("확인 필요" if bad else "변환 완료", text)
+    return 1 if bad else 0
+
+
 def _utf8_console() -> None:
     """Redirected output on Korean Windows is cp949, which cannot print every character (same guard as dongdongs)."""
     for stream in (sys.stdout, sys.stderr):
@@ -362,6 +437,9 @@ def main(argv: list[str] | None = None) -> int:
     r.add_argument("--template")
     r.add_argument("--force", action="store_true")
     r.set_defaults(func=cmd_run, validate=True)
+    g = sub.add_parser("gui", help="pick a deck in a file dialog; the result lands next to it (double-click launcher)")
+    g.add_argument("--work", default=str(REPO_ROOT / "local/work"))
+    g.set_defaults(func=cmd_gui)
     c = sub.add_parser("catalog", help="rebuild config/templates.yaml from the template and config/roles.yaml")
     c.add_argument("template", nargs="?", default=str(REPO_ROOT / "local/templates/24.상반기.pptx"))
     c.add_argument("--roles", default=str(REPO_ROOT / "config/roles.yaml"))

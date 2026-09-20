@@ -4,6 +4,7 @@ import subprocess
 import sys
 from pathlib import Path
 
+import pytest
 from pptx import Presentation
 from pptx.util import Inches
 
@@ -82,3 +83,39 @@ def test_plan_of_a_non_pptx_file_is_a_message(tmp_path, monkeypatch, capsys):
     f.write_bytes(b"\x00\x05\x16\x07 not a zip")
     assert cli.main(["plan", str(f), "--out", str(tmp_path / "p.json")]) == 2
     assert ".pptx로 읽을 수 없습니다" in capsys.readouterr().err
+
+
+CRITICAL = {"counts": {"critical": 1, "warning": 0, "info": 1},
+            "findings": [{"level": "critical", "out_slide": 12, "check": "empty_fill", "message": "x"},
+                         {"level": "info", "out_slide": 27, "check": "review", "message": "review:graphic"}]}
+
+
+def test_gui_message_lists_the_slides_to_look_at():
+    bad, text = cli._gui_message([("a_방송용.pptx", CRITICAL)], [Path("a_방송용.pptx")])
+    assert bad and "방송에 쓰면 안 되는 장 12" in text
+    assert "27" not in text  # review flags are the owner's, not the operator's
+    ok, text = cli._gui_message([("a_방송용.pptx", WARNING)], [Path("a_방송용.pptx")])
+    assert not ok and "확인할 장 3" in text
+    ok, text = cli._gui_message([("a_방송용.pptx", {"findings": []})], [Path("a_방송용.pptx")])
+    assert not ok and "장" not in text.split("저장했습니다")[1]
+
+
+def _fake_tk(monkeypatch, picked: Path, boxes: dict):
+    tk = pytest.importorskip("tkinter")
+    filedialog = pytest.importorskip("tkinter.filedialog")
+    messagebox = pytest.importorskip("tkinter.messagebox")
+    monkeypatch.setattr(tk, "Tk", lambda: type("R", (), {"withdraw": lambda self: None})())
+    monkeypatch.setattr(filedialog, "askopenfilename", lambda **kw: str(picked))
+    for kind in ("showerror", "showinfo"):
+        monkeypatch.setattr(messagebox, kind, lambda title, text, k=kind: boxes.setdefault(k, text))
+
+
+def test_gui_without_a_template_says_so_and_writes_nothing_next_to_the_source(tmp_path, monkeypatch):
+    monkeypatch.delenv("GEMINI_API_KEY", raising=False)
+    monkeypatch.setattr(cli, "_default_template", lambda: tmp_path / "없음.pptx")
+    src = _deck(tmp_path / "입력" / "주일.pptx")
+    boxes = {}
+    _fake_tk(monkeypatch, src, boxes)
+    assert cli.main(["gui", "--work", str(tmp_path / "work")]) == 1
+    assert "템플릿" in boxes["showerror"] and "담당자" in boxes["showerror"]
+    assert list(src.parent.iterdir()) == [src]
