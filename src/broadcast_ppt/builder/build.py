@@ -19,6 +19,9 @@ from .package import current_slide_ids, drop_section_list, remove_slides
 from .scale import scale_tree
 
 SINGLE_LINE_SLACK = 1.06  # room for renderers whose glyphs run a little wider than PowerPoint's
+# smallest gap left between two shape clusters on the caption band, about one caption line of text:
+# less than this and neighbouring shapes read as one
+SHAPES_MIN_GAP = int(24 * EMU_PER_PT)
 
 
 def adjust_filled_shape(sp, spec: dict, op: dict, filled: dict, model: WidthModel) -> list[str]:
@@ -139,22 +142,37 @@ def _union(cluster) -> tuple[int, int, int, int]:
     return min(xs), min(ys), max(xs) - min(xs), max(ys) - min(ys)
 
 
-def layout_bottom_row(slide, band: tuple[int, int, int, int]) -> int:
+def _drawn(el) -> bool:
+    """A drawn shape rather than a text box: PowerPoint marks its own text boxes with txBox="1"."""
+    cnv = el.find(f"{{{P}}}nvSpPr/{{{P}}}cNvSpPr")
+    return cnv is None or cnv.get("txBox") != "1"
+
+
+def layout_bottom_row(slide, band: tuple[int, int, int, int]) -> tuple[int, list]:
     """Spread the slide's shape clusters along the bottom band, equally spaced, bottom aligned.
 
     `band` is (x, y, cx, cy) in EMU — the lower-third caption box, so these slides sit where every
-    other caption sits. Clusters only ever shrink; the gaps carry whatever width is left over."""
-    groups = [c for c in _clusters(slide) if c]
-    if not groups:
-        return 0
-    groups.sort(key=lambda c: _union(c)[0])  # left to right, as they were read on the original
+    other caption sits. Clusters only ever shrink; the gaps carry whatever width is left over.
+
+    Returns the number of clusters placed and the elements of the clusters that were not: a box with
+    no drawn shape around it is a caption or a credit line, not one of the labelled shapes this
+    layout is about, and putting it in the row eats the space between the shapes. R410 needs two
+    drawn shapes to claim a slide, so the placed count can never come back zero."""
+    placed, dropped = [], []
+    for c in _clusters(slide):
+        (placed if any(_drawn(el) for el, _ in c) else dropped).append(c)
+    if not placed:
+        return 0, [el for c in dropped for el, _ in c]
+    groups = sorted(placed, key=lambda c: _union(c)[0])  # left to right, as they were read
     bx, by, bcx, bcy = band
     boxes = [_union(c) for c in groups]
     k = min([1.0] + [bcy / h for *_, h in boxes if h > 0])
     total = sum(w for *_, w, _ in boxes) * k
-    if total > bcx:  # too wide even at the band height: shrink until the row fits with no gap
-        k *= bcx / total
-        total = bcx
+    # the gap comes out of the scale, not out of the spacing: shapes shrink, they never touch
+    room = bcx - SHAPES_MIN_GAP * (len(groups) - 1)
+    if total > room:
+        k *= room / total
+        total = room
     # the outer clusters sit at the band's edges (bottom left and bottom right) with equal gaps
     # between them, so two shapes land in the corners and three or four space out evenly
     gap = (bcx - total) / (len(groups) - 1) if len(groups) > 1 else 0.0
@@ -167,7 +185,7 @@ def layout_bottom_row(slide, band: tuple[int, int, int, int]) -> int:
         for el, _ in cluster:
             translate(el, dx, dy)
         x += ucx * k + gap
-    return len(groups)
+    return len(groups), [el for c in dropped for el, _ in c]
 
 
 def layout_stack(slide, entry: dict, model: WidthModel) -> None:
@@ -279,8 +297,10 @@ def build_deck(plan: dict, template: Path, catalog_path: Path, out: Path, force:
             slide, rep = copy_foreign_slide(prs, src.slides[op["src"] - 1], scale=scale, keep_bg=keep_bg)
             rec["flags"] += rep.flags
             if op["op"] == "shapes":
-                n = layout_bottom_row(slide, caption_band(catalog))
-                rec["flags"] += [] if n else ["missing:shapes"]
+                n, dropped = layout_bottom_row(slide, caption_band(catalog))
+                for el in dropped:  # a box with no shape around it: off the air, but never unannounced
+                    hide_shape(el)
+                rec["flags"] += ([] if n else ["missing:shapes"]) + (["review:text_dropped"] if dropped else [])
         results.append(rec)
     remove_slides(prs, base_ids)
     drop_section_list(prs)

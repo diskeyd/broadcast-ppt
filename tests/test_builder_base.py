@@ -133,25 +133,52 @@ def test_stack_offset_moves_one_row_after_the_bottom_clamp():
 
 
 def test_shape_clusters_are_spread_along_the_bottom_band():
+    from pptx.enum.shapes import MSO_SHAPE
     from pptx.util import Emu
 
-    from broadcast_ppt.builder.build import layout_bottom_row
+    from broadcast_ppt.builder.build import SHAPES_MIN_GAP, layout_bottom_row
     from broadcast_ppt.builder.geometry import box_of
 
     prs = Presentation()
     s = prs.slides.add_slide(prs.slide_layouts[6])
-    # two boxes near the top, each with a smaller label drawn inside it
+    # two ellipses near the top, each with a label drawn inside it, plus a credit line of its own
     for left, top in ((Inches(1), Inches(1)), (Inches(1), Inches(3))):
-        s.shapes.add_textbox(left, top, Inches(3), Inches(1.5)).text_frame.text = "host"
+        s.shapes.add_shape(MSO_SHAPE.OVAL, left, top, Inches(3), Inches(1.5))
         s.shapes.add_textbox(left + Inches(0.5), top + Inches(0.5), Inches(2), Inches(0.5)).text_frame.text = "label"
+    credit = s.shapes.add_textbox(Inches(6), Inches(5), Inches(3), Inches(0.4))
+    credit.text_frame.text = "credit"
     band = (Emu(Inches(0.5)), Emu(Inches(6)), Emu(Inches(9)), Emu(Inches(1)))
 
-    assert layout_bottom_row(s, band) == 2  # the labels travel with their hosts, not on their own
-    boxes = [box_of(el) for el in s.shapes._spTree if box_of(el) is not None]
+    n, dropped = layout_bottom_row(s, band)
+    # the labels travel with their ellipses; the credit line has no shape around it and is left out
+    assert n == 2 and [el for el in dropped] == [credit._element]
+    boxes = [box_of(el) for el in s.shapes._spTree if box_of(el) is not None and el is not credit._element]
     widest = max(b[2] for b in boxes)
     hosts = sorted((b for b in boxes if b[2] == widest), key=lambda b: b[0])
     assert hosts[0][0] == band[0]                                  # first cluster at the left edge
     assert hosts[-1][0] + hosts[-1][2] == band[0] + band[2]        # last at the right edge
     assert all(b[1] + b[3] <= band[1] + band[3] for b in boxes)    # nothing hangs below the band
+    assert hosts[1][0] - (hosts[0][0] + hosts[0][2]) >= SHAPES_MIN_GAP
     for h in hosts:                                                # each label still inside its host
         assert any(h[0] <= b[0] and b[0] + b[2] <= h[0] + h[2] for b in boxes if b is not h)
+
+
+def test_shape_clusters_shrink_rather_than_touch():
+    from pptx.enum.shapes import MSO_SHAPE
+    from pptx.util import Emu
+
+    from broadcast_ppt.builder.build import SHAPES_MIN_GAP, layout_bottom_row
+    from broadcast_ppt.builder.geometry import box_of
+
+    prs = Presentation()
+    s = prs.slides.add_slide(prs.slide_layouts[6])
+    for i in range(4):  # four shapes already as wide as the band: the gap has to come out of the scale
+        s.shapes.add_shape(MSO_SHAPE.RECTANGLE, Inches(0.5 + i * 2.3), Inches(1), Inches(2.25), Inches(1))
+    band = (Emu(Inches(0.5)), Emu(Inches(6)), Emu(Inches(9)), Emu(Inches(1)))
+
+    n, dropped = layout_bottom_row(s, band)
+    assert n == 4 and not dropped
+    boxes = sorted((box_of(el) for el in s.shapes._spTree if box_of(el) is not None), key=lambda b: b[0])
+    for a, b in zip(boxes, boxes[1:]):
+        assert b[0] - (a[0] + a[2]) >= SHAPES_MIN_GAP - 1  # -1: the placement rounds to whole EMU
+    assert boxes[-1][0] + boxes[-1][2] <= band[0] + band[2]
