@@ -1,11 +1,11 @@
 version: 1
 source:
   file: 24.상반기.pptx
-  sha256: ebc589f5efa223dc61f86d97560aabbfd15592845f3aa4a926c6a74cb42fd339
+  sha256: c56b8c7e4e929dfc185b6e2ac4a918c2c6a6f23b887cf4f951cb382aad8d76ad
   slide_size:
   - 12192000
   - 6858000
-  slides: 91
+  slides: 92
   master_bg: 00FF00
 slides:
   3:
@@ -1560,3 +1560,89 @@ slides:
       body: 2
       line_emu: 492556
     line_capacity: 3
+  92:
+    role: hymn_1
+    family: hymn
+    layout: 빈 화면
+    shapes:
+      3:
+        id: 3
+        name: 가사
+        bbox:
+        - 1096000
+        - 5920747
+        - 10000000
+        - 769441
+        in_group: false
+        bodyPr:
+          lIns: 91440
+          rIns: 91440
+          tIns: 45720
+          bIns: 45720
+          wrap: none
+          anchor: ctr
+          autofit: spAutoFit
+        paragraphs:
+        - align: ctr
+          segments:
+          - sz: 44.0
+            color: FFFFFF
+            font: 나눔스퀘어 ExtraBold
+            bold: true
+            sample_len: 21
+            sample_sha1: 858436aea8d5f7149777f2910cd2dddb9ab46e91
+        line_emu: 677265
+        max_lines: 1
+        order: 2
+        mode: fill
+        single_segment: true
+        slot_map:
+        - body
+        fit_backing:
+          pad_pt: 14
+          max_width_pt: 800
+          min_pt: 30
+        backing:
+        - id: 2
+          order: 1
+          bbox:
+          - 996000
+          - 5990467
+          - 10200000
+          - 630000
+          in_group: false
+      4:
+        id: 4
+        name: 곡 제목
+        bbox:
+        - 1096000
+        - 5520637
+        - 10000000
+        - 400110
+        in_group: false
+        bodyPr:
+          lIns: 91440
+          rIns: 91440
+          tIns: 45720
+          bIns: 45720
+          wrap: none
+          anchor: ctr
+          autofit: spAutoFit
+        paragraphs:
+        - align: ctr
+          segments:
+          - sz: 20.0
+            color: FFFF00
+            font: 나눔스퀘어 ExtraBold
+            bold: true
+            sample_len: 14
+            sample_sha1: 4decb15bcd8daa92b9ebb8ada3e7318e0d2c673c
+        line_emu: 307848
+        max_lines: 1
+        order: 3
+        mode: fill
+        single_segment: true
+        slot_map:
+        - ref
+        hide_when_empty: true
+    line_capacity: 1

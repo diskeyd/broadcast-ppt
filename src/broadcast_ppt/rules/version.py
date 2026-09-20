@@ -1,1 +1,1 @@
-RULES_VERSION = "c1"
+RULES_VERSION = "c2"

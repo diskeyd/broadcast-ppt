@@ -4,7 +4,7 @@
 
 - 실행 환경: Mac, Windows(x64). 파이썬 3.12를 쓰지만 따로 설치하지 않습니다. `uv`가 알아서 내려받습니다.
 - 입력: 원본 PowerPoint 파일(**.pptx**) 한 개. 옛 형식 `.ppt`는 PowerPoint에서 `.pptx`로 다시 저장해서 넣습니다.
-- 출력: 방송용 PPT, 변환 계획(`plan.json`), 검증 결과(`validation.json`).
+- 출력: 방송용 PPT, 찬송 가사 자막 PPT(`hymn.pptx`), 변환 계획(`plan.json`), 검증 결과(`validation.json`).
 - 슬라이드 종류는 규칙으로 판정합니다. AI(Gemini)는 선택 사항이고 기본은 꺼져 있습니다.
 
 용어: **템플릿**은 방송용 양식 슬라이드가 모두 들어 있는 `24.상반기.pptx`입니다. **크로마키**는 녹색 부분을 방송 장비가 투명하게 합성하는 방식입니다. **카드**는 예배로의 부름·기도·성경봉독·설교처럼 제목을 크게 보여 주는 장, **하단 자막(띠)**은 화면 아래 녹색 띠에 글자를 넣은 장입니다. **원본 장 번호**와 **방송본 장 번호**는 서로 다릅니다(원본 한 장이 방송본 여러 장이 되기도 함).
@@ -31,9 +31,10 @@ broadcast-ppt/
     ├── templates/24.상반기.pptx   방송 템플릿 원본 (필수, 직접 복사)
     ├── input/                    원본 PPT를 넣는 곳
     └── work/<원본 파일 이름>/      결과가 생기는 곳 (.pptx를 뺀 이름)
-        ├── broadcast.pptx        방송용 PPT
+        ├── broadcast.pptx        방송용 PPT (찬송 장은 원본 악보 그대로)
+        ├── hymn.pptx             찬송 가사 자막만 모은 PPT (찬송 구간을 찾았을 때만 생김)
         ├── plan.json             원본 장마다 어떤 템플릿으로 바꿨는지 (슬라이드 글자 포함)
-        ├── validation.json       검증 결과
+        ├── validation.json       검증 결과 (찬송 파일은 validation-hymn.json)
         └── overrides.yaml        (선택) 그 주의 수정 파일
 ```
 
@@ -173,12 +174,14 @@ uv run broadcast-ppt run "local\input\주일오전예배ppt(YYMMDD).pptx"
 
 결과는 `local\work\<원본 파일 이름(.pptx 뺀 것)>\broadcast.pptx`에 생깁니다. 실행 끝의 `built … slides -> <경로>` 줄에 전체 경로가 나옵니다.
 
+찬송 구간을 찾으면 같은 폴더에 **`hymn.pptx`**(찬송 가사 자막만)도 생기고 `찬송 자막 N장 -> <경로>` 줄이 함께 나옵니다. 방송본에는 원본 악보 장이 그대로 들어가니, 찬송 때는 이 파일을 따로 띄워 한 줄씩 넘깁니다. 처음 한 번은 `uv run broadcast-ppt hymns`로 `local\hymns`의 곡 색인을 만들어 둡니다(곡 파일을 추가한 뒤에도).
+
 ### 2. 검증 결과 보기
 
 화면에는 이 순서로 나옵니다.
 
 1. **plan 표**: 원본 장마다 한 줄. `src`=원본 장 번호, `kind`=판정한 종류, `rule`=쓴 규칙, `ops`=만든 장(`T23`=템플릿 23번 슬라이드, `copy`=원본 그대로), `[ ]`=검수 표시.
-2. `built … slides -> <broadcast.pptx 경로>`
+2. `built … slides -> <broadcast.pptx 경로>` (찬송 구간이 있으면 `찬송 자막 N장 -> <hymn.pptx 경로>`도 함께)
 3. `validation: critical … · warning … · info …`와, critical·warning이 있으면 `critical  slide 12: …`처럼 한 줄씩.
 
 | 등급 | 뜻 | 할 일 |
@@ -202,6 +205,7 @@ critical이 있어도 `broadcast.pptx`는 만들어지지만 그대로 방송에
 - 카드: 예배로의 부름, 기도, 성경봉독, 설교
 - 성경 자막 한 장, 묵상, 교회소식
 - 교리문답 자막(주황 질문·28pt 답), 참조 박스를 숨긴 성경 자막, 줄여진 3줄 자막 띠
+- `hymn.pptx`: 곡과 절 순서가 그 주 악보와 같은지, 빠지거나 남는 줄이 없는지, 검정 박스가 가사 길이에 맞게 붙는지
 
 **송출 PC에서 처음 열 때** (첫 몇 주):
 
@@ -308,7 +312,7 @@ uv run broadcast-ppt run "local\input\주일오전예배ppt(YYMMDD).pptx" --over
 | `build <plan.json>` | `plan.json`으로 방송본 생성 + 검증 |
 | `validate <방송본.pptx> --plan <plan.json>` | 이미 만든 방송본만 다시 검증(`--report 파일`로 결과 위치 지정) |
 | `analyze <파일 또는 폴더>` | 샘플 PPT 구조 분석(관리용). 실패한 파일이 있으면 종료 코드 1 |
-| `summarize`, `catalog`, `calibrate` | 관리용. 아래 [관리용 명령](#관리용-명령) |
+| `summarize`, `catalog`, `calibrate`, `hymns` | 관리용. 아래 [관리용 명령](#관리용-명령) |
 
 | 명령 | 옵션 | 효과 |
 |---|---|---|
@@ -322,6 +326,7 @@ uv run broadcast-ppt run "local\input\주일오전예배ppt(YYMMDD).pptx" --over
 | `build`, `run` | `--force` | 계획 뒤에 템플릿이나 원본이 바뀌어도 생성 |
 | `build` | `--no-validate` | 생성 후 검증을 건너뜀 |
 | `analyze` | `--workers N`, `--force`, `--scope 파일` | 병렬 작업 수, 이미 분석한 파일도 다시 분석, 요약 범위 |
+| `hymns` | `--library 폴더`, `--out 파일`, `--forget` | 찬송 라이브러리 위치(기본 `local/hymns`), 색인 저장 위치, 악보 이미지로 익혀 둔 곡 짝짓기까지 지우기 |
 | `plan`, `run` | 환경변수 `GEMINI_API_KEY` (선택 `GEMINI_MODEL`) | 키가 있으면 규칙으로 못 정한 장을 Gemini에 물어봄. 기본 모델 `gemini-3.5-flash`. 확신도 0.8 미만이면 그대로 복사하고 `plan.json`의 `ai`에 제안만 남김 |
 
 ### 검수 표시
@@ -346,7 +351,9 @@ uv run broadcast-ppt run "local\input\주일오전예배ppt(YYMMDD).pptx" --over
 | `review:text_dropped` | 성경 장에서 자막에도 참조 상자에도 넣지 못한 글상자가 있음(제목 줄, 쪽수 줄 등). 빠진 글자가 없는지 원본과 대조 |
 | `review:shapes_layout` | 글자가 든 도형 2~4개짜리 장이라서 도형을 하단 띠 자리로 옮기고 배경을 크로마로 바꿈. 위치와 크기를 눈으로 확인하고, 원본 그대로가 나으면 수정 파일에 `N: {op: copy}` |
 | `review:ai_classified` | 규칙으로 못 정한 장을 Gemini가 분류함(확신도 0.8 이상). 종류가 맞는지 확인. 글자는 원본 그대로 |
-| `deferred:hymn` | 찬송가 악보·가사 그림을 그대로 복사함. 크로마 처리는 나중에 |
+| `review:hymn_matched` | 찬송 구간의 가사 자막을 `hymn.pptx`에 따로 만듦(방송본에는 원본 악보 그대로). 곡과 구간이 맞는지 한 번 확인 |
+| `review:hymn_range_guess` | 찬송 구간의 마지막 악보 장을 못 읽어서 그 곡 끝까지 넣음. 남는 절이 없는지 확인 |
+| `deferred:hymn` | 악보는 읽었지만 라이브러리에 없는 곡이라 그대로 복사함. 그 곡을 `local/hymns`에 넣고 `hymns`를 다시 실행하면 다음부터 자동 |
 
 ## 동작 원리
 
@@ -354,7 +361,8 @@ uv run broadcast-ppt run "local\input\주일오전예배ppt(YYMMDD).pptx" --over
 - **AI(선택)**: `GEMINI_API_KEY` 환경변수가 있을 때만, R900 장에 한해 Gemini에게 종류와 자막에 쓸 줄 번호만 묻습니다. 글자는 원본에서 다시 가져오고 좌표는 건드리지 않습니다. 호출이 실패하면 한 줄 안내만 출력하고 그 장은 그대로 복사합니다. 키가 없으면 아무것도 보내지 않습니다.
 - **생성**: 템플릿 슬라이드를 복제하고 글자 상자 안의 글자만 바꿉니다. 긴 글은 줄 수에 맞는 높이의 템플릿(1·2·3줄)으로 나눠 여러 장에 담습니다.
 - **두 번 만드는 장**: 성경 본문, 설교 인용, 짧은 문장(핵심 문장)은 원본(화면 전체용) 한 장 뒤에 녹색 하단 자막을 넣습니다. 교리문답은 원본, 문답 자막, 함께 적힌 말씀의 참조 자막을 따로 넣습니다.
-- **그대로 복사하는 장**: 사진·영상·명단 장은 원본을 그대로 복사합니다(검수 표시 없음). 찬송가 악보, 도표·질문지, 규칙에 안 맞는 장도 그대로 복사하되 검수 표시(`deferred:hymn`, `review:graphic`, `review:unclassified`)를 붙입니다.
+- **찬송 장**: 글자 없는 악보 그림이 3장 이상 이어지면 한 곡으로 봅니다. 첫 장과 끝 장의 그림에서 제목·가사를 읽어(맥 내장 문자 인식) `local/hymns`의 곡과 짝지은 뒤, 그 구간에 해당하는 가사를 한 줄에 한 장씩 초록 자막으로 만들어 **`hymn.pptx`에 따로** 담습니다(곡 제목은 곡의 첫 장에만). 방송본(`broadcast.pptx`)에는 원본 악보 장이 그대로 들어갑니다. 한 번 짝지은 악보 그림은 `local/hymns/index.json`에 남아 다음부터는 바로 찾습니다. 못 찾은 곡은 `deferred:hymn`만 붙습니다.
+- **그대로 복사하는 장**: 사진·영상·명단 장은 원본을 그대로 복사합니다(검수 표시 없음). 라이브러리에 없는 찬송, 도표·질문지, 규칙에 안 맞는 장도 그대로 복사하되 검수 표시(`deferred:hymn`, `review:graphic`, `review:unclassified`)를 붙입니다.
 - **검증**: 만든 방송본을 다시 열어 점검합니다. critical은 장 수가 계획과 다름, 그림·영상 연결이 끊김, 채워야 할 칸이 비었거나 템플릿 견본 글자가 남음입니다. warning은 자막 줄 수·폭이 빠듯함, 녹색 배경이 아님, 도형 번호 중복입니다. info는 검수 표시입니다.
 
 ## 설정 파일
@@ -363,17 +371,20 @@ uv run broadcast-ppt run "local\input\주일오전예배ppt(YYMMDD).pptx" --over
 - `config/roles.yaml`: 템플릿 슬라이드마다 역할, 글자 칸에 넣을 값, 배치 규칙(`clamp_to`, `shrink`, `stack`, `hide_when_empty` 등)을 손으로 적은 표. 각 키의 뜻은 파일 맨 위 주석에 있습니다. 카드 간격 값(`card_gap_pt`, `glyph`)은 Keynote에서 잰 값이라 템플릿을 고치면 `scripts/keynote_check.py calibrate-cards`로 다시 잽니다.
 - `config/templates.yaml`: 템플릿과 `roles.yaml`로 자동 생성하는 파일입니다. 직접 고치지 말고 `catalog` 명령으로 다시 만듭니다.
 - `config/widths.yaml`: 글자 폭 보정값. PowerPoint가 저장한 자동 맞춤 상자 크기로 계산했습니다.
+- `local/hymns/`: 크로마키 찬송 파일(곡별 PPTX)을 넣는 곳. 가사만 읽어 쓰고 파일 자체는 건드리지 않습니다. 자막 모양(글자 크기·색·박스)은 템플릿 92장을 PowerPoint에서 고치면 되고, 박스 여백과 최대 폭은 `roles.yaml`의 `fit_backing`에 있습니다. `.ppt`(구형식)는 못 읽으니 `.pptx`로 저장해 주세요.
 
 ### 관리용 명령
 
 ```bash
 uv run broadcast-ppt catalog                                          # roles.yaml이나 템플릿을 고친 뒤 templates.yaml 다시 만들기
+uv run broadcast-ppt hymns                                            # local/hymns의 곡 가사 색인 다시 만들기(곡 파일을 넣거나 고친 뒤)
 uv run broadcast-ppt calibrate <방송본 PPT 또는 폴더>                    # 글자 폭 보정값 다시 계산
 uv run broadcast-ppt analyze local/input --out local/analysis         # 샘플 PPT 구조 분석
 uv run broadcast-ppt summarize                                        # 이미 만든 분석 JSON으로 summary.csv, clusters.md 다시 만들기
 uv run python scripts/pull_drive.py <Drive 폴더 ID>                     # Google Drive 폴더를 local/input으로 내려받기(gws 필요)
 uv run python scripts/keynote_check.py calibrate-cards                # 카드 줄 위치를 Keynote로 다시 재기(Mac 전용, 가짜 이름 사용, local/input/미편집/에 주일오전예배ppt(…) 원본 하나 필요)
 uv run python scripts/keynote_check.py bands <그림.png> ...             # 그림에서 글자가 그려진 세로 위치 재기
+uv run python scripts/add_hymn_slide.py                               # 템플릿에 찬송 자막 슬라이드(92장) 넣기(한 번만, 이후 PowerPoint에서 직접 수정)
 ```
 
 테스트는 `uv run pytest`입니다. `main`에 push하거나 PR을 열면 Windows에서도 같은 테스트가 자동으로 돕니다(GitHub Actions, `.github/workflows/tests.yml`).

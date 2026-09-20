@@ -309,9 +309,8 @@ def _classify(v: SlideView, c: str, pics: int, groups: int, media: int, ctx: Dec
         if body_units:
             return _scripture_decision(body_units, other)
 
-    # hymn before graphic: score pages also carry several drawn shapes
-    if groups >= 2 and pics >= 1 and v.clen <= 120:
-        return Decision(K.HYMN_IMAGE, "R400", "picture + grouped lyric boxes", flags=["passthrough", "deferred:hymn"])
+    # no hymn rule here: a score page carries no text, so it is picture_only (R600) and the run of them
+    # is recognised in mapping/plan.py, where the neighbouring slides can be seen
     drawn = v.kinds.get("AUTO_SHAPE", 0) + v.kinds.get("FREEFORM", 0) + v.kinds.get("CHART", 0) + v.kinds.get("LINE", 0)
     # before R420, which would pass a 3-shape slide straight through: a few drawn shapes each holding
     # one short label is a layout to rearrange, not a diagram to copy

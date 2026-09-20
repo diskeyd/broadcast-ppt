@@ -134,6 +134,8 @@ def build_catalog(template: Path, roles_path: Path) -> dict:
                 desc["hide_when_empty"] = True
             if sspec.get("fit_one_line"):
                 desc["fit_one_line"] = dict(sspec["fit_one_line"])
+            if sspec.get("fit_backing"):  # the box behind the text grows and shrinks with it
+                desc["fit_backing"] = dict(sspec["fit_backing"])
             backing = (spec.get("backing") or {}).get(sid) or (spec.get("backing") or {}).get(int(sid))
             if backing:
                 desc["backing"] = []

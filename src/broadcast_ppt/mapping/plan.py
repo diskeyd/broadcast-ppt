@@ -17,6 +17,7 @@ from ..rules import kinds as K
 from ..rules.classify import DeckContext, classify_deck, view_of
 from ..rules.fields import ScriptureRef, compact, norm, scripture_ref, verse_chunks
 from ..rules.version import RULES_VERSION
+from . import hymns
 from .catalog import families, load_catalog
 from .split import pack
 from .textfit import WidthModel, load_model, strict_model
@@ -26,6 +27,7 @@ TEMPLATE = {"call_to_worship": 3, "prayer": 4, "scripture": 6, "sermon": 7, "med
 REF_FLAGS = {"review:reference_unknown", "review:inherited_reference", "review:no_reference"}
 QUESTION_COLOR, ANSWER_PT = "FF9300", 28.0  # catechism caption: template emphasis orange; answer at the scripture caption size
 OVERRIDE_OPS = (None, "copy", "quote", "caption", "scripture")
+HYMN_MIN_RUN = 3  # two score images in a row are a pair of photos; three are a song
 
 
 @dataclass
@@ -129,6 +131,16 @@ class Mapper:
             tpl = self.smallest_variant("caption", chunk) or big
             op = self.card(src, tpl, {"body": chunk}, "caption")
             self._fit(op, tpl, chunk)
+            ops.append(op)
+        return ops
+
+    def hymn(self, src: int, m: hymns.HymnMatch) -> list[dict]:
+        """One caption per lyric line of the stretch the score run covers; the label only on the first."""
+        tpl = self.fam["hymn"][-1][0]
+        ops = []
+        for i, line in enumerate(m.lines[m.start:m.end + 1]):
+            op = self.card(src, tpl, {"body": line, "ref": m.label if i == 0 else ""}, f"hymn caption ({m.title})")
+            self._fit(op, tpl, line)
             ops.append(op)
         return ops
 
@@ -259,6 +271,43 @@ class Mapper:
         return [self.copy(src, f"unmapped kind {d.kind}")]
 
 
+def _hymn_runs(slides: list[dict], decisions: list, skip: set[int]) -> list[list[int]]:
+    """Consecutive score slides: picture-only with exactly one picture. A run is what tells a hymn
+    from a photo — one score page on its own looks like any other picture."""
+    runs, cur = [], []
+    for s, d in zip(slides, decisions):
+        if d.kind == K.PICTURE_ONLY and s.get("kinds", {}).get("PICTURE", 0) == 1 and s["index"] not in skip:
+            cur.append(s["index"])
+            continue
+        if len(cur) >= HYMN_MIN_RUN:
+            runs.append(cur)
+        cur = []
+    if len(cur) >= HYMN_MIN_RUN:
+        runs.append(cur)
+    return runs
+
+
+def _hymn_plan(src: Path, slides: list[dict], decisions: list, mapper: Mapper,
+               overridden: set[int]) -> tuple[dict[int, tuple], set[int]]:
+    """({first slide of a run: (match, run)} for the runs the library knows, first slides of the score
+    runs it does not)."""
+    if "hymn" not in mapper.fam or not hymns.INDEX.exists():
+        return {}, set()
+    index = hymns.load_index()
+    if not index["songs"]:
+        return {}, set()
+    found, missing, runs = {}, set(), _hymn_runs(slides, decisions, overridden)
+    for run in runs:
+        res = hymns.match_run(src, run, index, hymns.LIBRARY / "scores")
+        if res.match is not None:
+            found[run[0]] = (res.match, run)
+        elif res.readable:
+            missing.add(run[0])
+    if runs:
+        hymns.save_index(index)
+    return found, missing
+
+
 def _jsonable(o):
     if isinstance(o, ScriptureRef):
         return {"book": o.book, "chapter": o.chapter, "verses": [o.verse_start, o.verse_end], "testament": o.testament}
@@ -283,6 +332,15 @@ def build_plan(src: Path, catalog_path: Path, widths_path: Path, opts: PlanOptio
     scale = tw / sw if opts.slide_size == "template" else 1.0
     rows, ops = [], []
     slides = [s for s in doc["slides"] if "error" not in s]
+    hymn_at, hymn_missing = _hymn_plan(src, slides, decisions, mapper, set(slide_over))
+    hymn_rest = {i for m, run in hymn_at.values() for i in run[1:]}
+    hymn_ops = []
+    for first, (m, _run) in sorted(hymn_at.items()):
+        for op in mapper.hymn(first, m):
+            op["out_index"] = len(hymn_ops) + 1
+            op["kind"], op["rule"] = K.HYMN_IMAGE, "H400"
+            op["flags"] = ["review:hymn_matched"] + (["review:hymn_range_guess"] if m.guessed_end else [])
+            hymn_ops.append(op)
     ctx = DeckContext.from_deck(doc)  # override text drops the same boilerplate lines the rules drop
     for s, d in zip(slides, decisions):
         o = slide_over.get(s["index"]) or {}
@@ -300,7 +358,19 @@ def build_plan(src: Path, catalog_path: Path, widths_path: Path, opts: PlanOptio
         text = " ".join(ln.strip() for ln in norm(view_of(s, ctx).text).splitlines() if compact(ln)) if op in OVERRIDE_OPS[2:] else ""
         if op in OVERRIDE_OPS[2:] and not text:
             raise ValueError(f"override slide {s['index']}: op {op} needs slide text")
-        if o.get("skip"):
+        if s["index"] in hymn_rest:  # the score pages stay in the broadcast deck; the lyrics are a file of their own
+            d = replace(d, kind=K.HYMN_IMAGE, rule_id="H400", reason="hymn run in the lyric file", flags=[])
+            mapped = mapper.map(s["index"], d)
+        elif s["index"] in hymn_at:
+            m, run = hymn_at[s["index"]]
+            d = replace(d, kind=K.HYMN_IMAGE, rule_id="H400", reason=f"hymn run of {len(run)} slides: {m.title}",
+                        flags=["review:hymn_matched"] + (["review:hymn_range_guess"] if m.guessed_end else []))
+            mapped = mapper.map(s["index"], d)
+        elif s["index"] in hymn_missing:  # a score we could read but the library has no song for
+            d = replace(d, kind=K.HYMN_IMAGE, rule_id="H401", reason="hymn run, not in the library",
+                        flags=["deferred:hymn"])
+            mapped = mapper.map(s["index"], d)
+        elif o.get("skip"):
             mapped = []
         elif op == "copy":
             mapped = [mapper.copy(s["index"], "override: copy")]
@@ -335,8 +405,10 @@ def build_plan(src: Path, catalog_path: Path, widths_path: Path, opts: PlanOptio
         "options": {**asdict(opts), "scale": scale},
         "slides": rows,
         "ops": ops,
+        # the lyric captions are built as a separate deck: the broadcast deck keeps the original score pages
+        "hymn_ops": hymn_ops,
         "stats": {"out_slides": len(ops), "copy": sum(o["op"] == "copy" for o in ops),
-                  "template": sum(o["op"] == "template" for o in ops),
+                  "template": sum(o["op"] == "template" for o in ops), "hymn_slides": len(hymn_ops),
                   "flagged": sum(1 for o in ops if o["flags"]), "unknown": sum(r["kind"] == K.UNKNOWN for r in rows)},
     }
 

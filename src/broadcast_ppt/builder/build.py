@@ -41,7 +41,7 @@ def adjust_filled_shape(sp, spec: dict, op: dict, filled: dict, model: WidthMode
     if spec.get("drop_empty_paragraphs"):
         drop_blank_paragraphs(sp)
     bp = spec.get("bodyPr", {})
-    if filled and bp.get("wrap") == "none" and not spec.get("backing") and not in_group(sp):
+    if filled and bp.get("wrap") == "none" and not in_group(sp) and (not spec.get("backing") or spec.get("fit_backing")):
         default = max((s["sz"] or 0) for s in segs) if segs else 18
         fit_single_line_width(sp, default, model)
     return flags
@@ -54,6 +54,36 @@ def fit_single_line_width(sp, default_sz: float, model: WidthModel) -> None:
     ins = insets(sp)
     width = sum(model.width_emu(t, sz) for t, sz in runs_with_size(sp, default_sz))
     set_width(sp, int(width * SINGLE_LINE_SLACK + ins["lIns"] + ins["rIns"]), keep_center=text_align(sp) == "ctr")
+
+
+def fit_boxed_line(slide, spec: dict, model: WidthModel) -> list[str]:
+    """Hymn caption: the rounded box behind the lyric is sized to the lyric, so every line keeps the same
+    margin around its text. A line too long for the box loses font size instead of pushing the box off
+    the slide; if it is still too wide the validator's text_wider_than_bar warning picks it up."""
+    cfg = spec["fit_backing"]
+    pad = int(float(cfg.get("pad_pt", 12)) * EMU_PER_PT)
+    limit = int(float(cfg["max_width_pt"]) * EMU_PER_PT)
+    floor = float(cfg.get("min_pt", 0))
+    sp = shape_by_order(slide, spec["order"])
+    segs = [s for p in spec.get("paragraphs", []) for s in p["segments"] if s["sample_len"] or s["sz"]]
+    base = max((s["sz"] or 0) for s in segs) or 44.0
+    flags = []
+    ins = insets(sp)
+    # what the text may measure so that the box (text box + slack + insets + padding) still fits
+    room = (limit - 2 * pad - ins["lIns"] - ins["rIns"]) / SINGLE_LINE_SLACK
+    width = sum(model.width_emu(t, sz) for t, sz in runs_with_size(sp, base))
+    if floor and width and width > room:
+        pt = max(floor, base * room / width)
+        if set_font_size(sp, int(round(base * 100)), int(round(pt * 100))):
+            flags.append("font_size:body")
+        base = pt
+    fit_single_line_width(sp, base, model)
+    box = box_of(sp)
+    if box is None:
+        return flags
+    for b in spec.get("backing", []):
+        set_width(shape_by_order(slide, b["order"]), min(box[2] + 2 * pad, limit), keep_center=True)
+    return flags
 
 
 def caption_band(catalog: dict) -> tuple[int, int, int, int]:
@@ -223,6 +253,9 @@ def build_deck(plan: dict, template: Path, catalog_path: Path, out: Path, force:
                 res = fill_shape(sp, spec, op.get("fill", {}))
                 rec["flags"] += res.flags + [f"missing:{m}" for m in res.missing]
                 rec["flags"] += adjust_filled_shape(sp, spec, op, res.filled, model)
+            for spec in entry["shapes"].values():
+                if spec.get("fit_backing"):
+                    rec["flags"] += fit_boxed_line(slide, spec, model)
             if entry.get("stack"):
                 layout_stack(slide, entry, model)
             if entry.get("shrink") and op.get("shrink_lines"):

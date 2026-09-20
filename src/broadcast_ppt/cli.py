@@ -125,12 +125,18 @@ def _print_plan(plan: dict) -> None:
     by_src = {}
     for op in plan["ops"]:
         by_src.setdefault(op["src"], []).append(op)
+    hymn_by_src = {}
+    for op in plan.get("hymn_ops", []):
+        hymn_by_src.setdefault(op["src"], []).append(op)
     print(f"{'src':>3} {'kind':<20} {'rule':<5} ops")
     for row in plan["slides"]:
         ops = by_src.get(row["src"], [])
         desc = " ".join(("copy" if o["op"] == "copy" else "shapes" if o["op"] == "shapes" else f"T{o['template_slide']}")
                         + _fit_text(o.get("fit")) for o in ops)
-        flags = sorted({f for o in ops for f in o.get("flags", [])})
+        lyrics = hymn_by_src.get(row["src"], [])
+        if lyrics:
+            desc += f"  +찬송 자막 {len(lyrics)}장"
+        flags = sorted({f for o in ops for f in o.get("flags", [])} | {f for o in lyrics for f in o.get("flags", [])})
         ai = f"  ai:{row['ai']['kind']}@{row['ai']['confidence']:.2f}" if row.get("ai") else ""
         print(f"{row['src']:>3} {row['kind']:<20} {row['rule']:<5} {desc or 'skip'}" + (f"  [{', '.join(flags)}]" if flags else "") + ai)
     print("stats:", plan["stats"])
@@ -187,11 +193,27 @@ def cmd_build(args) -> int:
         return 1
     flagged = [r for r in res["ops"] if r["flags"]]
     print(f"built {res['slides']} slides -> {res['out']} ({len(flagged)} with flags)")
+    hymn_plan = {**plan, "ops": plan.get("hymn_ops") or []}
+    hymn_out = out.with_name("hymn.pptx")
+    if hymn_plan["ops"]:  # the lyric captions are a deck of their own; the broadcast deck keeps the score pages
+        try:
+            hres = build_deck(hymn_plan, template, Path(args.catalog), hymn_out, force=args.force, widths_path=Path(args.widths))
+        except PermissionError as exc:
+            print(f"파일을 열 수 없습니다: {exc.filename}\nPowerPoint에서 {hymn_out.name}를 닫고 다시 실행하세요.", file=sys.stderr)
+            return 1
+        print(f"찬송 자막 {hres['slides']}장 -> {hres['out']}")
     if args.validate:
         from .validator.check import validate_deck
         rep = validate_deck(out, plan, Path(args.catalog), Path(args.widths))
+        if hymn_plan["ops"]:
+            hrep = validate_deck(hymn_out, hymn_plan, Path(args.catalog), Path(args.widths))
+            hymn_out.with_name("validation-hymn.json").write_text(json.dumps(hrep, ensure_ascii=False, indent=1), encoding="utf-8")
         out.with_name("validation.json").write_text(json.dumps(rep, ensure_ascii=False, indent=1), encoding="utf-8")
         _report_validation(rep)
+        if hymn_plan["ops"]:
+            print("찬송 자막 파일:", end=" ")
+            _report_validation(hrep)
+            return 0 if rep["ok"] and hrep["ok"] else 1
         return 0 if rep["ok"] else 1
     return 0
 
@@ -221,6 +243,25 @@ def cmd_catalog(args) -> int:
     from .mapping.catalog import build_catalog, dump_catalog
     cat = build_catalog(Path(args.template), Path(args.roles))
     print(f"{len(cat['slides'])} template slides catalogued -> {dump_catalog(cat, Path(args.out))}")
+    return 0
+
+
+def cmd_hymns(args) -> int:
+    from .mapping.hymns import build_library, load_index, save_index
+    lib = Path(args.library)
+    if not lib.exists():
+        print(f"찬송 라이브러리 폴더가 없습니다: {lib}", file=sys.stderr)
+        return 1
+    index = load_index(Path(args.out))
+    songs, skipped = build_library(lib)
+    index["songs"] = songs
+    if args.forget:
+        index["images"] = {}
+    known = sum(1 for v in index["images"].values() if v)
+    print(f"{len(songs)}곡 색인 -> {save_index(index, Path(args.out))}"
+          f" (악보 이미지 {known}장 확인됨, 미매칭 {len(index['images']) - known}장)")
+    for line in skipped:
+        print(f"  건너뜀: {line}")
     return 0
 
 
@@ -306,6 +347,11 @@ def main(argv: list[str] | None = None) -> int:
     c.add_argument("--roles", default=str(REPO_ROOT / "config/roles.yaml"))
     c.add_argument("--out", default=CATALOG)
     c.set_defaults(func=cmd_catalog)
+    hy = sub.add_parser("hymns", help="rebuild the hymn lyric index from local/hymns")
+    hy.add_argument("--library", default=str(REPO_ROOT / "local/hymns"))
+    hy.add_argument("--out", default=str(REPO_ROOT / "local/hymns/index.json"))
+    hy.add_argument("--forget", action="store_true", help="drop the learned score-image map as well")
+    hy.set_defaults(func=cmd_hymns)
     cal = sub.add_parser("calibrate", help="refit character widths (config/widths.yaml) from broadcast decks")
     cal.add_argument("paths", nargs="+", help=".pptx files or folders")
     cal.add_argument("--out", default=WIDTHS)
