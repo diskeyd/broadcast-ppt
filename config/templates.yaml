@@ -1,7 +1,7 @@
 version: 1
 source:
   file: 24.상반기.pptx
-  sha256: 727aba399172251cca3c62a1b351a18c286032402e8a832eb66454f3120b4efb
+  sha256: 4443e2bb1bfc4b7bbc9175aa6c3266fe00d6cba0e49edb55f7f0a716d4d4809a
   slide_size:
   - 12192000
   - 6858000
@@ -1583,7 +1583,7 @@ slides:
           anchor: ctr
           autofit: spAutoFit
         paragraphs:
-        - align: l
+        - align: ctr
           segments:
           - sz: 44.0
             color: FFFFFF
