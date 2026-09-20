@@ -64,15 +64,18 @@ class Mapper:
         return seg["sz"] or max(s["sz"] or 0 for s in flat)
 
     def lines(self, tpl: int, text: str, slot: str = "body") -> int:
-        """Lines this text can take. The strict model has the last word: the calibrated width factor
-        never under-estimated on its own corpus, but that corpus is an average over fonts, and a
-        caption cut to the optimistic count puts its last line under the bar on the broadcast PC."""
+        """Lines this text takes, by the width factor calibrated from PowerPoint's own autofit boxes.
+
+        Taking the stricter model's answer instead was tried and reverted: it is a guard against
+        renderers whose glyphs run wider, but PowerPoint on the broadcast PC fits *more* per line
+        than that, so it left a caption in a bar a line taller than the text. The strict model still
+        warns from the validator, where a borderline chunk is a note to a person rather than an
+        extra line of green on air."""
         spec = self._body_spec(tpl, slot)
         bp = spec["bodyPr"]
         if bp["wrap"] == "none":
             return 1 if self.model.width_emu(text, self._sz(spec, slot)) <= spec["bbox"][2] * 1.0 else 2
-        sz = self._sz(spec, slot)
-        return max(m.estimate_lines(text, spec["bbox"][2], sz, bp["lIns"], bp["rIns"]) for m in (self.model, self.strict))
+        return self.model.estimate_lines(text, spec["bbox"][2], self._sz(spec, slot), bp["lIns"], bp["rIns"])
 
     def fits(self, tpl: int, text: str, slot: str = "body", max_lines: int | None = None) -> bool:
         spec = self._body_spec(tpl, slot)
