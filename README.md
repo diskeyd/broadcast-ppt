@@ -78,20 +78,20 @@ powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | ie
 
 설치가 끝나면 **PowerShell 창을 완전히 닫고**(Windows 터미널이면 탭이 아니라 창 전체) 새로 엽니다. 새 창에서 `uv --version`이 버전을 출력하면 됩니다. Git을 설치했다면 `git --version`도 확인합니다. 그래도 찾을 수 없다고 나오면 Windows에서 로그아웃했다가 다시 로그인합니다.
 
-**3. 코드 받기.** 짧은 경로에 둡니다. 바탕 화면이나 문서 폴더처럼 OneDrive가 동기화하는 곳은 피합니다.
+**3. 코드 받기.** 바탕 화면에 둡니다. 탐색기에서 바로 보여 파일 넣기가 편합니다. 단 바탕 화면이 OneDrive로 동기화되는 PC(탐색기 주소에 `OneDrive`가 들어감)라면 `C:\broadcast-ppt`처럼 동기화 밖 짧은 경로에 두고, 아래 명령의 경로도 그에 맞춰 바꿉니다. 교회 PPT가 들어가는 `local` 폴더가 클라우드로 올라가면 안 됩니다.
 
 ```powershell
-git clone https://github.com/diskeyd/broadcast-ppt.git C:\broadcast-ppt
+git clone https://github.com/diskeyd/broadcast-ppt.git $HOME\Desktop\broadcast-ppt
 ```
 
 처음이면 GitHub 로그인 창이 뜹니다. **Sign in with your browser**를 눌러 저장소 권한이 있는 계정으로 로그인합니다(2단계 인증을 쓰면 휴대폰이 필요합니다). 로그인 정보는 이 PC에 저장되어 다음 `git pull`부터는 묻지 않습니다.
 
-Git이 없으면 브라우저에서 GitHub에 로그인한 뒤 저장소 페이지의 **Code → Download ZIP**으로 받습니다. 압축을 풀면 `broadcast-ppt-main` 폴더 안에 같은 이름의 폴더가 한 겹 더 있을 수 있습니다. `pyproject.toml`이 바로 보이는 폴더를 `C:\`로 옮기고 이름을 `broadcast-ppt`로 바꿉니다. `C:\broadcast-ppt\pyproject.toml`이 있으면 맞습니다. 여러 사람이 쓰는 PC라면 받은 뒤 브라우저에서 GitHub 로그아웃합니다.
+Git이 없으면 브라우저에서 GitHub에 로그인한 뒤 저장소 페이지의 **Code → Download ZIP**으로 받습니다. 압축을 풀면 `broadcast-ppt-main` 폴더 안에 같은 이름의 폴더가 한 겹 더 있을 수 있습니다. `pyproject.toml`이 바로 보이는 폴더를 바탕 화면으로 옮기고 이름을 `broadcast-ppt`로 바꿉니다. `바탕 화면\broadcast-ppt\pyproject.toml`이 있으면 맞습니다. 여러 사람이 쓰는 PC라면 받은 뒤 브라우저에서 GitHub 로그아웃합니다.
 
 **4. 파이썬과 라이브러리 설치.** 처음에는 파이썬 3.12까지 내려받아서 몇 분 걸립니다. 멈춘 것처럼 보여도 기다립니다.
 
 ```powershell
-cd C:\broadcast-ppt
+cd $HOME\Desktop\broadcast-ppt
 uv sync
 uv run broadcast-ppt --help
 ```
@@ -110,6 +110,7 @@ ii local\templates
 - 파일 이름은 정확히 `24.상반기.pptx`여야 합니다. `24.상반기 (1).pptx`처럼 바뀌면 "템플릿이 없습니다"가 나옵니다.
 - PowerPoint로 열어서 다시 저장하면 안 됩니다. 한 바이트라도 다르면 변환할 때 "템플릿이 원본과 다릅니다"가 나오고 멈춥니다.
 - 미리 확인하려면 아래 명령의 `Hash`가 `EBC589F5`로 시작하는지 봅니다(전체 값은 `config\templates.yaml`의 `sha256`, 크기는 28,279,381바이트).
+- 기준이 되는 판은 **Drive에 올려 둔 사본**입니다. 송출 PC에서 계속 쓰는 파일은 PowerPoint로 다시 저장되면서 값이 달라져 있을 수 있으니, 그 파일 말고 Drive 사본을 받아 넣습니다. 템플릿 자체를 고쳤다면 `catalog`로 `config\templates.yaml`을 다시 만들고 그 파일을 Drive에 올려 기준을 바꿉니다.
 
 ```powershell
 Get-FileHash local\templates\*.pptx -Algorithm SHA256 | Format-List
@@ -137,7 +138,7 @@ uv run pytest
 ### 업데이트
 
 ```powershell
-cd C:\broadcast-ppt
+cd $HOME\Desktop\broadcast-ppt
 git pull
 uv sync
 ```
@@ -155,14 +156,14 @@ PowerPoint의 **홈 → 바꾸기 → 글꼴 바꾸기** 목록에서 PC에 없�
 
 ## 매주 사용법
 
-모든 명령은 저장소 폴더(`C:\broadcast-ppt`)에서 실행합니다. 새 PowerShell 창을 열었으면 먼저 `cd C:\broadcast-ppt`를 합니다.
+모든 명령은 저장소 폴더(`$HOME\Desktop\broadcast-ppt`)에서 실행합니다. 새 PowerShell 창을 열었으면 먼저 `cd $HOME\Desktop\broadcast-ppt`를 합니다.
 
 ### 1. 원본 넣고 변환
 
-USB의 원본 PPT를 `C:\broadcast-ppt\local\input\`에 복사합니다(`ii local\input`으로 폴더 열기). 하위 폴더 없이 바로 넣으면 입력이 쉽습니다.
+USB의 원본 PPT를 `바탕 화면\broadcast-ppt\local\input\`에 복사합니다(`ii local\input`으로 폴더 열기). 하위 폴더 없이 바로 넣으면 입력이 쉽습니다.
 
 ```powershell
-cd C:\broadcast-ppt
+cd $HOME\Desktop\broadcast-ppt
 uv run broadcast-ppt run "local\input\주일오전예배ppt(YYMMDD).pptx"
 ```
 
@@ -281,13 +282,13 @@ uv run broadcast-ppt run "local\input\주일오전예배ppt(YYMMDD).pptx" --over
 | `uv`(또는 `git`)를 찾을 수 없음 | 설치 직후 창에 경로가 반영 안 됨 | PowerShell 창 전체를 닫고 새로 열기. 그래도 안 되면 로그아웃 후 다시 로그인 |
 | `winget`을 찾을 수 없음 | winget이 없는 Windows 10 | uv는 2단계의 대체 명령으로 설치, 코드는 ZIP으로 받기 |
 | `git clone`이 `Repository not found` | 저장소 권한이 없는 계정으로 로그인됨 | 제어판 → 자격 증명 관리자 → Windows 자격 증명에서 `git:https://github.com`을 지우고 다시 시도, 또는 ZIP |
-| `Failed to spawn: broadcast-ppt` 또는 `No pyproject.toml found` | 저장소 폴더 밖에서 실행했거나 ZIP이 한 겹 더 풀림 | `cd C:\broadcast-ppt` 후 다시 실행. `C:\broadcast-ppt\pyproject.toml`이 있는지 확인 |
+| `Failed to spawn: broadcast-ppt` 또는 `No pyproject.toml found` | 저장소 폴더 밖에서 실행했거나 ZIP이 한 겹 더 풀림 | `cd $HOME\Desktop\broadcast-ppt` 후 다시 실행. `바탕 화면\broadcast-ppt\pyproject.toml`이 있는지 확인 |
 | `uv sync`가 `error sending request`·시간 초과로 실패 | 인터넷 차단·방화벽·프록시 | 다시 실행(받은 것은 캐시에 남음). 교회 망이 막혀 있으면 휴대폰 핫스팟으로 설치. ARM PC는 지원 안 함 |
-| 처음 `uv sync`가 몇 분간 멈춘 듯함, 또는 `액세스가 거부되었습니다` | 파이썬 내려받는 중이거나 백신이 새 파일을 검사 중 | 5~10분 기다림. 오류면 다시 실행. 계속되면 백신 검사 예외에 `C:\broadcast-ppt`와 `%LOCALAPPDATA%\uv` 추가 |
+| 처음 `uv sync`가 몇 분간 멈춘 듯함, 또는 `액세스가 거부되었습니다` | 파이썬 내려받는 중이거나 백신이 새 파일을 검사 중 | 5~10분 기다림. 오류면 다시 실행. 계속되면 백신 검사 예외에 `C:\Users\<사용자 이름>\Desktop\broadcast-ppt`와 `%LOCALAPPDATA%\uv` 추가 |
 | "템플릿이 없습니다" | `local\templates\24.상반기.pptx`가 없거나 이름이 다름 | 템플릿을 그 이름으로 복사, 또는 `--template <경로>`로 지정 |
 | "템플릿이 원본과 다릅니다" | PowerPoint로 다시 저장했거나 다른 판 | 원본 파일을 그대로 다시 복사. 안내에 나온 SHA256과 비교 |
 | `plan refused: … .pptx로 읽을 수 없습니다` | 원본이 `.ppt`, Mac이 만든 `._` 파일, 또는 손상된 파일 | `.ppt`는 PowerPoint에서 `.pptx`로 다시 저장. `._` 파일이면 진짜 파일을 고름 |
-| `오류: [Errno 2] …` / `지정된 파일을 찾을 수 없습니다` | 원본 경로·이름 오타 | Tab으로 이름 채우기. `C:\broadcast-ppt`에서 실행했는지 확인 |
+| `오류: [Errno 2] …` / `지정된 파일을 찾을 수 없습니다` | 원본 경로·이름 오타 | Tab으로 이름 채우기. `$HOME\Desktop\broadcast-ppt`에서 실행했는지 확인 |
 | "파일을 열 수 없습니다 … PowerPoint에서 닫고" | 결과 파일이 PowerPoint에 열려 있음 | PowerPoint에서 닫고 다시 실행 |
 | `overrides file not found: …` | 수정 파일 경로가 틀림(메모장이 `.txt`를 붙였거나 폴더 이름이 다름) | 탐색기 **보기 → 파일 확장명** 켜고 이름 확인, 경로는 Tab으로 채우기 |
 | "UTF-8로 저장해 주세요" | 수정 파일이 ANSI(cp949)로 저장됨 | 메모장 → 다른 이름으로 저장 → 인코딩 UTF-8 |
