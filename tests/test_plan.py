@@ -221,6 +221,18 @@ def test_scripture_caption_puts_each_verse_on_its_own_line_and_uses_the_heading(
         assert o["fit"]["est_lines"] <= o["fit"]["max_lines"]
     assert sum(o["fill"]["body"].count("\n") + 1 for o in caps) == 3
 
+    # a reading with its own reference gets no line breaks: the tag already carries the range
+    plain = prs.slides.add_slide(prs.slide_layouts[6])
+    plain.shapes.add_textbox(Inches(1), Inches(1), Inches(8), Inches(3)).text_frame.text = (
+        "시편 73:18-20 18 가나다라마바사 아자차카타파하 19 하나다라마바사 아자차카타파하 20 마나다라마바사")
+    src2 = tmp_path / "reading.pptx"
+    prs.save(str(src2))
+    plan = build_plan(src2, Path(CATALOG), Path(WIDTHS), PlanOptions())
+    assert plan["slides"][2]["rule"] == "R200"
+    reading = [o for o in plan["ops"] if o["op"] == "template" and o["src"] == 3]
+    assert reading and all("\n" not in o["fill"]["body"] for o in reading)
+    assert all(o["fill"]["ref"].startswith("시편73:") for o in reading)
+
 
 def test_overrides_ref_and_quote_card(tmp_path):
     from pathlib import Path

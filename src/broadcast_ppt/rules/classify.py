@@ -185,12 +185,17 @@ def _scripture_decision(body_units: list[dict], other: list[str]) -> Decision:
     """Rule id and flags from the first unit; the rest ride along as `extra`, as they always have."""
     first = body_units[0]
     heading = next((t for t in other if page_ref(t) is None and compact(t)), None)
+    # a bracketed title box is a book division ([제 삼 권, 아삽의 시]); an unbracketed leftover is
+    # usually a reference this module failed to parse. Both can fill an empty tag, but only the
+    # division changes how the verses are laid out, so the caller needs to tell them apart.
+    division = False
     if heading is not None:
         m = _BRACKET_TITLE_RE.match(heading)
+        division = m is not None
         heading = m.group("t").strip() if m else heading
     flags, fields = [], {"ref": first["ref"], "body": first["body"], "quote": first["quote"],
                          "extra": [{"ref": u["ref"], "body": u["body"]} for u in body_units[1:]],
-                         "heading": heading}
+                         "heading": heading, "division": division}
     if any(u["origin"] in ("last", "title") for u in body_units):
         flags.append("review:inherited_reference")
     if any(u["ref"] is None for u in body_units):

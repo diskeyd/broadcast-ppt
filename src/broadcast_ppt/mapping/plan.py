@@ -97,11 +97,13 @@ class Mapper:
     def card(self, src: int, tpl: int, fill: dict, note: str) -> dict:
         return {"op": "template", "src": src, "template_slide": tpl, "fill": {k: v for k, v in fill.items() if v is not None}, "note": note}
 
-    def scripture_captions(self, src: int, ref: ScriptureRef | None, body: str, heading: str | None = None) -> list[dict]:
+    def scripture_captions(self, src: int, ref: ScriptureRef | None, body: str, heading: str | None = None,
+                           division: bool = False) -> list[dict]:
         units = [t for _, t in verse_chunks(body, ref)]
         big = self.fam["scripture_ref"][-1][0]
-        # verses are joined with a newline so each one starts its own line in the bar
-        chunks = pack(units, lambda t: self.fits(big, t), sep="\n")
+        # a caption tagged with a book division has nothing but the verse numbers to tell the verses
+        # apart, so there each one starts its own line; everywhere else the tag carries the range
+        chunks = pack(units, lambda t: self.fits(big, t), sep="\n" if division else " ")
         ops = []
         for i, chunk in enumerate(chunks, 1):
             tpl = self.smallest_variant("scripture_ref", chunk) or big
@@ -251,9 +253,10 @@ class Mapper:
             return self.announcements(src, f["items"])
         if d.kind == K.SCRIPTURE_BODY:
             ops = [self.copy(src, "scripture full screen")] if self.opts.scripture_both else []
-            ops += self.scripture_captions(src, f.get("ref"), f.get("body", ""), f.get("heading"))
+            div = bool(f.get("division"))
+            ops += self.scripture_captions(src, f.get("ref"), f.get("body", ""), f.get("heading"), div)
             for extra in f.get("extra") or []:  # further passages, in the order they are read
-                ops += self.scripture_captions(src, extra["ref"], extra["body"], f.get("heading"))
+                ops += self.scripture_captions(src, extra["ref"], extra["body"], f.get("heading"), div)
             return ops
         if d.kind == K.CATECHISM:
             ops = [self.copy(src, "catechism full screen")] if self.opts.scripture_both else []
