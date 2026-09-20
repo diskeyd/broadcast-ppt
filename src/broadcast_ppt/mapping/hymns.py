@@ -33,6 +33,9 @@ TITLE_RATIO = 0.8
 NUMBER_RE = re.compile(r"^\s*(\d{1,3})\s*[_장.]")
 # a lyric line as the recogniser reads it off a score: Korean, a few words long, dashes for held notes.
 # Two of them are what tells a score page from a photo of a banner or a sign.
+# a weekly deck runs the songs together with the rest of the service, so a song can be followed by the
+# slide naming who prays. That is a person, never a lyric: it ends the song and never enters the index.
+PERSON_ROLE = re.compile(r"[가-힣]{2,4}\s*(?:권사|집사|장로|목사|전도사|사모|성도)\s*$")
 LYRIC_LINE = re.compile(r"^[가-힣][가-힣0-9 .,!?~·\-–—()'\"]{3,29}$")
 
 
@@ -64,6 +67,7 @@ def _boxes(slide) -> list[tuple[float, str]]:
 def read_deck(path: Path, rel: str) -> list[Song]:
     """Songs in one library deck. A weekly deck holds several: each starts at the slide with a label box."""
     songs: list[Song] = []
+    cur: Song | None = None
     for slide in Presentation(path).slides:
         boxes = _boxes(slide)
         if not boxes:
@@ -75,13 +79,16 @@ def read_deck(path: Path, rel: str) -> list[Song]:
         label = [t for pt, t in boxes if pt < top and pt <= LABEL_MAX_PT]
         if label:
             m = NUMBER_RE.match(label[0]) or NUMBER_RE.match(Path(rel).name)
-            songs.append(Song(id=f"{rel}#{len(songs) + 1}", file=rel, title=label[0].strip(),
-                              number=int(m.group(1)) if m else None))
-        if not songs:
+            cur = Song(id=f"{rel}#{len(songs) + 1}", file=rel, title=label[0].strip(),
+                       number=int(m.group(1)) if m else None)
+            songs.append(cur)
+        if cur is None:
             continue  # an intro slide before the first song (weekly decks open with one)
-        for line in lyric[0].splitlines():
-            if line.strip():
-                songs[-1].lines.append(line.strip())
+        lines = [ln.strip() for ln in lyric[0].splitlines() if ln.strip()]
+        if any(PERSON_ROLE.match(ln) for ln in lines):
+            cur = None  # a name after the song: the song ended here and the name is not kept
+            continue
+        cur.lines += lines
     songs = [s for s in songs if len(s.lines) >= MIN_LINES]
     if not songs:  # a deck whose first slide carries no label: name it after the file
         return _from_filename(path, rel)

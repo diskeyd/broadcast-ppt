@@ -53,6 +53,17 @@ def test_weekly_deck_splits_at_each_label(tmp_path):
     assert [len(s["lines"]) for s in songs] == [3, 3]
 
 
+def test_a_name_after_the_song_is_not_a_lyric(tmp_path):
+    """A weekly deck runs songs together with the service: the slide naming who prays follows the song
+    in the same 44pt box. It must end the song, never be indexed — a name must not reach the screen."""
+    name_slide = ("찬양", ["주를 찬양합니다 온 맘 다해", "높이 들어 올립니다", "영광 받으소서 주님", "홍길동 권사"])
+    _song_deck(tmp_path / "0924 한 곡.pptx", [name_slide, OTHER])
+    songs, _ = hymns.build_library(tmp_path)
+    assert [s["title"] for s in songs] == ["찬양", OTHER[0]]
+    assert songs[0]["lines"] == name_slide[1][:3]           # the song stops at the name
+    assert not any("홍길동" in line for s in songs for line in s["lines"])
+
+
 def test_match_needs_two_lines_or_a_title(tmp_path):
     _song_deck(tmp_path / "108_그 어린 주 예수.pptx", [SONG])
     songs, _ = hymns.build_library(tmp_path)
