@@ -98,10 +98,11 @@ def load_model(path: Path | None) -> WidthModel:
     return WidthModel()
 
 
-# How much of the calibrated width bonus to give back when asking "could this overflow?". Two captions
-# measured against what PowerPoint drew on the broadcast PC put the true factor between 1.08 and 1.10,
-# so the margin is the width of that window: warn when a chunk would overflow at its pessimistic end.
-STRICT_WIDTH_MARGIN = 0.02
+# How much of the width factor to give back when asking "could this overflow?". Three captions checked
+# against what PowerPoint drew on the broadcast PC bracket the true factor to [1.09, 1.10], so the
+# margin is the width of that window: the planner uses the top of it and the validator warns whenever
+# the bottom of it disagrees. Widen this again if a caption ever overflows without a warning.
+STRICT_WIDTH_MARGIN = 0.01
 
 
 def strict_model(m: WidthModel) -> WidthModel:

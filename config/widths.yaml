@@ -1,10 +1,11 @@
 version: 1
 line_height: 1.212
 # Hand-set from what PowerPoint actually rendered on the broadcast PC, 2026-09-20. `calibrate` fitted
-# 1.12 from the source decks' autofit boxes, but at 1.12 an 88-character caption was estimated at two
-# lines and wrapped to three on air, and at the stricter 1.06 a 93-character one was estimated at
-# three and rendered in two. 1.08-1.10 is the only window that gets both right; 1.10 is the one that
-# leaves every other caption in this deck unchanged. Re-running `calibrate` overwrites this.
+# 1.12 from the source decks' autofit boxes; three captions checked against the screen bracket it to
+# [1.09, 1.10] instead — at 1.12 an 88-character caption estimated at two lines wrapped to three, and
+# below 1.09 a 93-character one estimated at three rendered in two and a 145-character one estimated
+# at four rendered in three. 1.10 is the top of that window; the validator warns from the bottom of it
+# (textfit.STRICT_WIDTH_MARGIN). Re-running `calibrate` overwrites this.
 width_scale: 1.10
 em:
   hangul: 0.9318
