@@ -86,11 +86,13 @@ slides:
         glyph:
         - 9.6
         - 64.6
+        offset_pt: 0.0
       - order: 2
         paragraph: null
         glyph:
         - 20.7
         - 59.7
+        offset_pt: 3.0
       gap_pt: 0.5
       max_bottom_pt: 527.0
     line_capacity: 1
@@ -179,11 +181,13 @@ slides:
         glyph:
         - 9.5
         - 64.5
+        offset_pt: 0.0
       - order: 2
         paragraph: null
         glyph:
         - 19.9
         - 70.9
+        offset_pt: 3.0
       gap_pt: 0.5
       max_bottom_pt: 527.0
     line_capacity: 1
@@ -274,16 +278,19 @@ slides:
         glyph:
         - 10.0
         - 65.0
+        offset_pt: 0.0
       - order: 2
         paragraph: 0
         glyph:
         - 6.4
         - 45.4
+        offset_pt: 0.0
       - order: 2
         paragraph: 1
         glyph:
         - 7.3
         - 40.3
+        offset_pt: 0.0
       gap_pt: 0.5
       max_bottom_pt: 527.0
     line_capacity: 1
@@ -405,16 +412,19 @@ slides:
         glyph:
         - 9.9
         - 64.9
+        offset_pt: 0.0
       - order: 3
         paragraph: null
         glyph:
         - 6.2
         - 40.2
+        offset_pt: 0.0
       - order: 2
         paragraph: null
         glyph:
         - 15.7
         - 47.7
+        offset_pt: 3.0
       gap_pt: 0.5
       max_bottom_pt: 527.0
     line_capacity: 1
@@ -633,11 +643,13 @@ slides:
         glyph:
         - 9.1
         - 65.1
+        offset_pt: 0.0
       - order: 2
         paragraph: null
         glyph:
         - 18.9
         - 63.9
+        offset_pt: 3.0
       gap_pt: 0.5
       max_bottom_pt: 527.0
     line_capacity: 1
@@ -719,11 +731,13 @@ slides:
         glyph:
         - 9.5
         - 64.5
+        offset_pt: 0.0
       - order: 2
         paragraph: null
         glyph:
         - 19.9
         - 53.9
+        offset_pt: 3.0
       gap_pt: 0.5
       max_bottom_pt: 527.0
     line_capacity: 1
@@ -973,11 +987,13 @@ slides:
         glyph:
         - 8.7
         - 65.7
+        offset_pt: 0.0
       - order: 2
         paragraph: null
         glyph:
         - 14.1
         - 52.1
+        offset_pt: 3.0
       gap_pt: 0.5
       max_bottom_pt: 527.0
     line_capacity: 1

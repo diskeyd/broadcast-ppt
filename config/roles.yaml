@@ -16,6 +16,10 @@ version: 1
 card_gap_pt: 0.5
 # Lowest drawn text of a card ends no lower than this (pt): the approved scripture card's bottom line.
 card_max_bottom_pt: 527
+# The English subtitle row of every card is moved down by this (pt), applied after the row chain and the
+# max_bottom clamp so the Korean line above it stays put. Checked on the broadcast PC, not in Keynote:
+# the font substitution there hides the difference. Per-row override: stack: {offset: {"4": 3}}.
+card_en_offset_pt: 3
 slides:
   3:  {role: card_call_to_worship, family: card.call_to_worship,
        shapes: {3: {slots: [label], mode: optional}, 4: {slots: [subtitle_en], mode: optional}},

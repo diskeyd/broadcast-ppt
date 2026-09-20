@@ -151,8 +151,13 @@ def build_catalog(template: Path, roles_path: Path) -> dict:
                 glyph = (spec["stack"].get("glyph") or {}).get(str(key))
                 if glyph is None:
                     raise ValueError(f"template slide {idx}: stack row {key} has no glyph offsets")
+                # the English subtitle sits a little high against the Korean line on the broadcast PC;
+                # one deck-level number moves that row on every card that has one
+                slots = (spec["shapes"].get(int(sid)) or {}).get("slots") or []
+                offset = spec["stack"].get("offset", {}).get(str(key),
+                                                             roles.get("card_en_offset_pt", 0) if "subtitle_en" in slots else 0)
                 rows.append({"order": order.index(int(sid)), "paragraph": int(para) if para else None,
-                             "glyph": [float(glyph[0]), float(glyph[1])]})
+                             "glyph": [float(glyph[0]), float(glyph[1])], "offset_pt": float(offset)})
             entry["stack"] = {"rows": rows, "gap_pt": float(spec["stack"].get("gap_pt", roles.get("card_gap_pt", 4)))}
             bottom = spec["stack"].get("max_bottom_pt", roles.get("card_max_bottom_pt"))
             if bottom is not None:

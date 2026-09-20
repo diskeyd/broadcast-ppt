@@ -102,3 +102,31 @@ def test_hide_shape_keeps_the_element_but_draws_nothing():
     assert "solidFill" not in tags and tags.index("prstGeom") < tags.index("noFill") < tags.index("ln") < tags.index("effectLst")
     assert tag._element.spPr.find("{http://schemas.openxmlformats.org/drawingml/2006/main}ln")[0].tag.endswith("noFill")
     assert len(slide.shapes) == n
+
+
+def _card_rows(offset, max_bottom):
+    """A two-row card: a label with an English subtitle under it, laid out bottom-up."""
+    from pptx.util import Emu
+
+    from broadcast_ppt.builder.build import layout_stack
+    from broadcast_ppt.builder.fill import shape_by_order
+    from broadcast_ppt.builder.geometry import y_of
+    from broadcast_ppt.mapping.textfit import WidthModel
+
+    prs = Presentation()
+    s = prs.slides.add_slide(prs.slide_layouts[6])
+    for top in (Inches(4), Inches(5)):
+        s.shapes.add_textbox(Inches(1), top, Inches(6), Inches(1)).text_frame.text = "x"
+    rows = [{"order": 1, "paragraph": None, "glyph": [10.0, 65.0], "offset_pt": 0.0},
+            {"order": 2, "paragraph": None, "glyph": [20.0, 60.0], "offset_pt": offset}]
+    entry = {"stack": {"rows": rows, "gap_pt": 0.5, "max_bottom_pt": max_bottom}}
+    layout_stack(s, entry, WidthModel())
+    return [Emu(y_of(shape_by_order(s, r["order"]))).pt for r in rows]
+
+
+def test_stack_offset_moves_one_row_after_the_bottom_clamp():
+    # the clamp binds here, which is what swallowed nudge_y_pt: the offset has to be applied after it
+    base = _card_rows(0.0, 380)
+    moved = _card_rows(3.0, 380)
+    assert round(moved[1] - base[1], 2) == 3.0
+    assert round(moved[0] - base[0], 2) == 0.0  # the Korean row above keeps its place

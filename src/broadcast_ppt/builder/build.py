@@ -101,6 +101,11 @@ def layout_stack(slide, entry: dict, model: WidthModel) -> None:
         glyph_top_below = int(below_row["glyph"][0] * EMU_PER_PT)
         glyph_bottom = int(row["glyph"][1] * EMU_PER_PT)
         set_y(el, y_of(below) + glyph_top_below - gap - glyph_bottom)
+    # last, so a row moves on its own: inside the chain the rows above would follow it, and before
+    # the max_bottom clamp the lowest row's offset would be clamped away (this is why nudge_y_pt fails here)
+    for el, row in rows:
+        if row.get("offset_pt"):
+            set_y(el, y_of(el) + int(float(row["offset_pt"]) * EMU_PER_PT))
 
 
 def shrink_variant(slide, entry: dict, lines: int) -> None:
