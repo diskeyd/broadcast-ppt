@@ -163,6 +163,31 @@ def test_scripture_extra_boxes_survive_without_a_reference_on_the_slide():
     assert d.fields["extra"][0]["ref"].chapter == 73
 
 
+def test_line_estimate_leaves_room_for_the_stricter_width_model():
+    from pathlib import Path
+
+    from broadcast_ppt.cli import CATALOG, WIDTHS
+    from broadcast_ppt.mapping.catalog import load_catalog
+    from broadcast_ppt.mapping.plan import Mapper, PlanOptions
+    from broadcast_ppt.mapping.textfit import load_model, strict_model
+
+    model = load_model(Path(WIDTHS))
+    m = Mapper(load_catalog(Path(CATALOG)), model, PlanOptions())
+    strict = strict_model(model)
+    assert strict.width_scale < model.width_scale
+    tpl = m.fam["scripture_ref"][-1][0]
+    spec = m._body_spec(tpl)
+    bp = spec["bodyPr"]
+    # the bar is cut to the estimate, so an estimate below the strict count puts a line under it
+    for n in range(1, 40):
+        text = "가나다라마바사 " * n
+        want = strict.estimate_lines(text, spec["bbox"][2], m._sz(spec, "body"), bp["lIns"], bp["rIns"])
+        assert m.lines(tpl, text) >= want
+    # and a chunk is never packed past what the template can hold
+    assert all(m.lines(tpl, c) <= spec["max_lines"]
+               for c in pack(["가나다라마바사 " * 12] * 4, lambda t: m.fits(tpl, t), sep="\n"))
+
+
 def test_scripture_caption_puts_each_verse_on_its_own_line_and_uses_the_heading(tmp_path):
     from pathlib import Path
 

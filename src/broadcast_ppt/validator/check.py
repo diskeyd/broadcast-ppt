@@ -13,7 +13,7 @@ from pptx import Presentation
 from ..analyzer.core import classify_rgb
 from ..builder.fill import flat_segments, shape_by_order
 from ..mapping.catalog import load_catalog, sha1
-from ..mapping.textfit import WidthModel, load_model
+from ..mapping.textfit import load_model, strict_model
 from ..ooxml import A, P, R
 
 
@@ -36,8 +36,7 @@ def validate_deck(deck: Path, plan: dict, catalog_path: Path, widths_path: Path 
     # stricter than the planner, but not blind: the planner uses the calibrated width factor (never
     # under-estimated on the calibration set); the validator removes most of that bonus so warnings mark
     # chunks that are close to overflowing, not every chunk.
-    planner_model = load_model(widths_path)
-    strict = WidthModel(em=planner_model.em, width_scale=max(1.0, planner_model.width_scale - 0.06))
+    strict = strict_model(load_model(widths_path))
     ops = plan["ops"]
     slides = list(prs.slides)
 
@@ -108,8 +107,10 @@ def validate_deck(deck: Path, plan: dict, catalog_path: Path, widths_path: Path 
                 text = "\n".join("".join(r.findtext(f"{{{A}}}t", "") for r in p.findall(f"{{{A}}}r")) for p in txBody.findall(f"{{{A}}}p"))
                 sz = max((s["sz"] or 0) for s in _catalog_segments(spec)) or 20
                 lines = strict.estimate_lines(text, spec["bbox"][2], sz, bp["lIns"], bp["rIns"])
-                if lines > spec["max_lines"]:
-                    findings.append(Finding("warning", "lines_fit", n, f"estimated {lines} lines in a {spec['max_lines']}-line box (strict width)"))
+                # the bar may have been cut to fewer lines than the template holds: compare with what is there
+                room = spec["max_lines"] - (op.get("shrink_lines", 0) if spec.get("slot_map") else 0)
+                if lines > room:
+                    findings.append(Finding("warning", "lines_fit", n, f"estimated {lines} lines in a {room}-line box (strict width)"))
             # single-line boxes: filled text wider than the bar it sits on
             if bp.get("wrap") == "none" and spec.get("backing"):
                 width = sum(strict.width_emu(seg["text"], int(seg["key"][0]) / 100 if seg["key"][0] else 28) for seg in segs)

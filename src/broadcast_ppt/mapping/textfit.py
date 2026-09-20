@@ -96,3 +96,14 @@ def load_model(path: Path | None) -> WidthModel:
         em.update({k: float(v) for k, v in (data.get("em") or {}).items()})
         return WidthModel(em=em, width_scale=float(data.get("width_scale", 1.0)))
     return WidthModel()
+
+
+# how much of the calibrated width bonus to give back when asking "could this overflow?"
+STRICT_WIDTH_MARGIN = 0.06
+
+
+def strict_model(m: WidthModel) -> WidthModel:
+    """The same metrics with most of the width bonus removed: what a renderer whose glyphs run a
+    little wider than PowerPoint's would fit. The planner keeps room for this, the validator warns
+    about it, and both read the margin from here so the two cannot drift apart."""
+    return WidthModel(em=m.em, width_scale=max(1.0, m.width_scale - STRICT_WIDTH_MARGIN))

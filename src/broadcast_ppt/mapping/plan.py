@@ -19,7 +19,7 @@ from ..rules.fields import ScriptureRef, compact, norm, scripture_ref, verse_chu
 from ..rules.version import RULES_VERSION
 from .catalog import families, load_catalog
 from .split import pack
-from .textfit import WidthModel, load_model
+from .textfit import WidthModel, load_model, strict_model
 
 TEMPLATE = {"call_to_worship": 3, "prayer": 4, "scripture": 6, "sermon": 7, "meditation": 8, "generic": 17,
             "announcement_title": 20, "announcement_first": 21, "announcement_item": 23, "offertory": 31}
@@ -44,6 +44,7 @@ class Mapper:
     def __init__(self, catalog: dict, model: WidthModel, opts: PlanOptions):
         self.cat = catalog
         self.model = model
+        self.strict = strict_model(model)
         self.opts = opts
         self.fam = families(catalog)
 
@@ -61,11 +62,15 @@ class Mapper:
         return seg["sz"] or max(s["sz"] or 0 for s in flat)
 
     def lines(self, tpl: int, text: str, slot: str = "body") -> int:
+        """Lines this text can take. The strict model has the last word: the calibrated width factor
+        never under-estimated on its own corpus, but that corpus is an average over fonts, and a
+        caption cut to the optimistic count puts its last line under the bar on the broadcast PC."""
         spec = self._body_spec(tpl, slot)
         bp = spec["bodyPr"]
         if bp["wrap"] == "none":
             return 1 if self.model.width_emu(text, self._sz(spec, slot)) <= spec["bbox"][2] * 1.0 else 2
-        return self.model.estimate_lines(text, spec["bbox"][2], self._sz(spec, slot), bp["lIns"], bp["rIns"])
+        sz = self._sz(spec, slot)
+        return max(m.estimate_lines(text, spec["bbox"][2], sz, bp["lIns"], bp["rIns"]) for m in (self.model, self.strict))
 
     def fits(self, tpl: int, text: str, slot: str = "body", max_lines: int | None = None) -> bool:
         spec = self._body_spec(tpl, slot)
