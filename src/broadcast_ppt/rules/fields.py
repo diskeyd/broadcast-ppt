@@ -13,9 +13,10 @@ _ROLE_RE = re.compile(r"([가-힣]{2,4})\s*(" + "|".join(ROLES) + r")(?![가-힣
 _BOOK_ALT = "|".join(re.escape(b) for b in BOOK_NAMES_BY_LENGTH)
 _REF_RE = re.compile(
     r"(?P<book>" + _BOOK_ALT + r")\s*"
-    r"(?P<ch>\d{1,3})\s*(?:[:：]|장\s*)\s*"
+    # 편 is how a Psalms chapter is usually written (시편 73편 1-3절)
+    r"(?P<ch>\d{1,3})\s*(?:[:：]|[장편]\s*)\s*"
     r"(?P<v1>\d{1,3})\s*절?"
-    r"(?:\s*(?:[-~–—]|부터)\s*(?:(?P<ch2>\d{1,3})\s*(?:[:：]|장\s*))?\s*(?P<v2>\d{1,3})\s*절?)?"
+    r"(?:\s*(?:[-~–—]|부터)\s*(?:(?P<ch2>\d{1,3})\s*(?:[:：]|[장편]\s*))?\s*(?P<v2>\d{1,3})\s*절?)?"
     r"(?P<more>(?:\s*,\s*\d{1,3}(?:\s*[-~–—]\s*\d{1,3})?)*)"
 )
 _PAGE_RE = re.compile(

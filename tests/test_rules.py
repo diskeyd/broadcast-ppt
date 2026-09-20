@@ -10,6 +10,9 @@ def test_scripture_ref_forms():
     assert (r.book, r.verse_end) == ("사무엘상", 12)
     r = scripture_ref("시편 62편")  # no verse -> not a reference
     assert r is None
+    r = scripture_ref("시편 73편 1-3절")  # 편 is how a Psalms chapter is usually written
+    assert (r.book, r.chapter, r.verse_start, r.verse_end) == ("시편", 73, 1, 3)
+    assert scripture_ref("시편 73편 1절").verse_end == 1
     r = scripture_ref("에베소서 4장 11절~16절")
     assert (r.book, r.chapter, r.verse_start, r.verse_end) == ("에베소서", 4, 11, 16)
     r = scripture_ref("[롬3:23-24,27-28] 23 모든 사람이")

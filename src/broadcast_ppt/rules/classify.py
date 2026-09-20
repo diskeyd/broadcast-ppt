@@ -12,7 +12,8 @@ from dataclasses import dataclass, field
 from ..analyzer.core import flatten
 from . import kinds as K
 from .fields import (
-    announcement_items, compact, english_line, name_role, norm, page_ref, quoted_title, scripture_ref,
+    _BRACKET_TITLE_RE, announcement_items, compact, english_line, name_role, norm, page_ref, quoted_title,
+    scripture_ref,
 )
 
 VERSE_START_RE = re.compile(r"^\s*\d{1,3}\s+\S")
@@ -81,34 +82,118 @@ def view_of(slide: dict, ctx: DeckContext) -> SlideView:
     return SlideView(slide["index"], text, boxes, Counter(slide.get("kinds", {})), slide.get("full_bleed_picture", False), slide)
 
 
-def _after_bracket(t: str, ref) -> str:
-    """The text after the closing bracket of a leading bracketed reference."""
-    close = min([i for i in (t.find("]"), t.find("］")) if i >= 0] or [len(ref.raw)])
-    return t[close + 1:].lstrip()
+def _reading_order(b: dict) -> list:
+    """Sort key for boxes as a person reads them: top, then left."""
+    return (b.get("bbox") or [0, 0])[1::-1]
 
 
-def _bracket_quote(text: str) -> dict | None:
-    """A box that starts with a bracketed reference: its own reference and body."""
+def _close_bracket(t: str) -> int:
+    return min([i for i in (t.find("]"), t.find("］")) if i >= 0] or [-1])
+
+
+def _unit(text: str) -> dict | None:
+    """One text box read as a scripture unit, or None when it is neither a reference nor verse-numbered.
+
+    A body may be empty: a slide sometimes prints the reference in a box of its own. Leading bracketed
+    headings ([제 삼 권, 아삽의 시]) are peeled one by one until a bracket holds a reference, so the
+    reference is read from that bracket rather than from a fixed-length slice of the box."""
     t = norm(text).lstrip()
-    if not t.startswith(("[", "［")):
-        return None
-    ref = scripture_ref(t[:40])
-    if ref is None:
-        return None
-    body = _after_bracket(t, ref)
-    return {"ref": ref, "body": body} if compact(body) else None
+    while t.startswith(("[", "［")):
+        close = _close_bracket(t)
+        if close < 0:
+            break
+        ref = scripture_ref(t[1:close])
+        if ref is not None:
+            return {"ref": ref, "body": t[close + 1:].lstrip(), "quote": True, "verse": None}
+        t = t[close + 1:].lstrip()
+    line = t.split("\n", 1)[0]
+    ref = scripture_ref(line)
+    if ref is not None and line.find(ref.raw) <= 2:
+        i = t.find(ref.raw)
+        return {"ref": ref, "body": t[i + len(ref.raw):].lstrip(" \n"), "quote": False, "verse": None}
+    if VERSE_START_RE.match(t):
+        return {"ref": None, "body": t.strip(), "quote": False, "verse": int(re.match(r"\s*(\d{1,3})", t).group(1))}
+    return None
 
 
-def _other_quotes(v: SlideView, main: str) -> list[dict]:
-    """Further quoted passages in their own boxes (a sermon slide often shows two)."""
-    out = []
-    for b in v.boxes:
-        if b["text"] is main or norm(b["text"]) == norm(main):
+def _bracketed_verse(u: dict | None) -> bool:
+    """A unit the catechism rule counts as a verse: a bracketed reference with text under it."""
+    return bool(u and u["quote"] and u["ref"] and compact(u["body"]))
+
+
+def scripture_units(v: SlideView) -> tuple[list[dict], list[str]]:
+    """Every text box in reading order: the scripture units, and the text of the boxes that are not.
+
+    Nothing is dropped here. A box that is not a unit comes back as a string so the caller can put it
+    in the reference tag or flag it — silently discarding boxes is what hid missing verses for months.
+    Boxes repeating the same text (drop-shadow copies) are kept once."""
+    units: list[dict] = []
+    other: list[str] = []
+    seen: set[str] = set()
+    for b in sorted(v.boxes, key=_reading_order):
+        key = compact(b["text"])
+        if not key or key in seen:
             continue
-        q = _bracket_quote(b["text"])
-        if q is not None:
-            out.append(q)
+        seen.add(key)
+        u = _unit(b["text"])
+        if u is None:
+            other.append(norm(b["text"]).strip())
+        else:
+            units.append(u)
+    return units, other
+
+
+def _resolve_refs(units: list[dict], ctx: DeckContext) -> list[dict]:
+    """Give every unit a reference, in reading order. `origin` is where it came from.
+
+    A unit without a printed reference inherits one only when the range contains its first verse
+    number: a blank tag is a visible gap, a wrong tag goes on air. The nearest reference already
+    resolved on this slide comes first, so a passage continuing in a second box keeps its own; any
+    other reference printed on the slide comes next, because some slides print it under the text."""
+    printed = [u["ref"] for u in units if u["ref"] is not None]
+    out, here = [], None
+    for u in units:
+        ref, origin = u["ref"], "slide"
+        if ref is None:
+            for cand, which in [(here, "slide")] + [(p, "slide") for p in printed] + \
+                               [(ctx.last_ref, "last"), (ctx.title_ref, "title")]:
+                if cand is not None and u["verse"] is not None and cand.contains(u["verse"]):
+                    ref, origin = cand, which
+                    break
+        if ref is None:
+            origin = None
+        else:
+            here = ref
+        out.append({**u, "ref": ref, "origin": origin})
     return out
+
+
+def _scripture_decision(body_units: list[dict], other: list[str]) -> Decision:
+    """Rule id and flags from the first unit; the rest ride along as `extra`, as they always have."""
+    first = body_units[0]
+    heading = next((t for t in other if page_ref(t) is None and compact(t)), None)
+    if heading is not None:
+        m = _BRACKET_TITLE_RE.match(heading)
+        heading = m.group("t").strip() if m else heading
+    flags, fields = [], {"ref": first["ref"], "body": first["body"], "quote": first["quote"],
+                         "extra": [{"ref": u["ref"], "body": u["body"]} for u in body_units[1:]],
+                         "heading": heading}
+    if any(u["origin"] in ("last", "title") for u in body_units):
+        flags.append("review:inherited_reference")
+    if any(u["ref"] is None for u in body_units):
+        flags.append("review:reference_unknown")
+    if len(other) > 1 or (other and heading is None):
+        flags.append("review:text_dropped")  # a box we could use for neither caption nor tag
+    if first["origin"] == "slide":
+        rule = "R205" if first["quote"] else "R200"
+        reason = "reference at start" + (" (bracketed quote)" if first["quote"] else "")
+        return Decision(K.SCRIPTURE_BODY, rule, reason, fields, sorted(flags))
+    if first["ref"] is not None:
+        fields["inherited_ref"] = True
+        return Decision(K.SCRIPTURE_BODY, "R210", f"verse number continues the {first['origin']} reference",
+                        fields, sorted(flags), confidence=0.8)
+    return Decision(K.SCRIPTURE_BODY, "R211", "verse-numbered text outside every known reference",
+                    fields, sorted(flags), confidence=0.6)
 
 
 def classify_slide(slide: dict, ctx: DeckContext) -> Decision:
@@ -189,40 +274,27 @@ def _classify(v: SlideView, c: str, pics: int, groups: int, media: int, ctx: Dec
     # catechism (제N문 at a line start): question + answer on caption pages, each bracketed verse on its own.
     # After announcements (a 소식 line may mention 제3문), before scripture (the verse box is usually the longest)
     if CATECHISM_RE.search(v.text):
-        quotes = [(b, _bracket_quote(b["text"])) for b in sorted(v.boxes, key=lambda b: (b.get("bbox") or [0, 0])[1::-1])]
-        verses = [q for _, q in quotes if q]
-        lines = [ln.strip() for b, q in quotes if not q for ln in norm(b["text"]).splitlines() if compact(ln)]
+        quotes = [(b, _unit(b["text"])) for b in sorted(v.boxes, key=_reading_order)]
+        # a verse box here is a bracketed reference with text under it, as it was before _unit existed
+        verses = [{"ref": u["ref"], "body": u["body"]} for _, u in quotes if u and _bracketed_verse(u)]
+        lines = [ln.strip() for b, u in quotes if not _bracketed_verse(u)
+                 for ln in norm(b["text"]).splitlines() if compact(ln)]
         # question on its own line, the answer below: a 2-line tail left a blank line on the 3-line bar
         ans = next((i for i, ln in enumerate(lines) if re.match(r"(답(?![가-힣])|A\s*[.:])", ln)), 1)
         qa = "\n".join(p for p in (" ".join(lines[:ans]), " ".join(lines[ans:])) if p)
         return Decision(K.CATECHISM, "R170", "제N문 question" + (f" + {len(verses)} bracketed verse(s)" if verses else ""),
                         {"qa": qa, "verses": verses})
 
-    # scripture: reference at the start, or verse-numbered continuation of the last reference
-    head = norm(main).lstrip()[:40]
-    ref = scripture_ref(head)
-    if v.clen >= 30 and ref is not None and (head.startswith(("[", "［")) or norm(main).lstrip().find(ref.raw) <= 2):
-        body = norm(main).lstrip()
-        if body.startswith(("[", "［")):
-            body = _after_bracket(body, ref)
-        else:
-            body = body[body.find(ref.raw) + len(ref.raw):].lstrip(" \n")
-        return Decision(K.SCRIPTURE_BODY, "R200" if not BRACKET_REF_RE.match(main) else "R205",
-                        "reference at start" + (" (bracketed quote)" if BRACKET_REF_RE.match(main) else ""),
-                        {"ref": ref, "body": body, "quote": bool(BRACKET_REF_RE.match(main)),
-                         "extra": _other_quotes(v, main)})
-    if v.clen >= 30 and VERSE_START_RE.match(norm(main)) and (ctx.last_ref is not None or ctx.title_ref is not None):
-        first = int(re.match(r"\s*(\d{1,3})", norm(main)).group(1))
-        # inherit only a reference whose verse range contains the first verse number:
-        # a blank tag is a visible gap, a wrong tag goes on air
-        for cand, which in ((ctx.last_ref, "last"), (ctx.title_ref, "title")):
-            if cand is not None and cand.contains(first):
-                return Decision(K.SCRIPTURE_BODY, "R210", f"verse number continues the {which} reference",
-                                {"ref": cand, "body": norm(main).strip(), "quote": False, "inherited_ref": True},
-                                ["review:inherited_reference"], confidence=0.8)
-        return Decision(K.SCRIPTURE_BODY, "R211", "verse-numbered text outside every known reference",
-                        {"ref": None, "body": norm(main).strip(), "quote": False},
-                        ["review:reference_unknown"], confidence=0.6)
+    # scripture: every box that starts with a reference or a verse number is a unit, in reading order.
+    # Anchored to the main box so this claims no slide the older, narrower test would have left alone.
+    units, other = scripture_units(v)
+    main_u = _unit(main)
+    if v.clen >= 30 and main_u is not None and (
+            any(u["ref"] for u in units) or ctx.last_ref is not None or ctx.title_ref is not None):
+        resolved = _resolve_refs(units, ctx)
+        body_units = [u for u in resolved if compact(u["body"])]
+        if body_units:
+            return _scripture_decision(body_units, other)
 
     # hymn before graphic: score pages also carry several drawn shapes
     if groups >= 2 and pics >= 1 and v.clen <= 120:

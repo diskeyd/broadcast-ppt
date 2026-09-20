@@ -2,6 +2,7 @@ from broadcast_ppt.mapping.split import pack
 from broadcast_ppt.mapping.textfit import WidthModel
 from broadcast_ppt.rules import kinds as K
 from broadcast_ppt.rules.classify import DeckContext, classify_slide
+from broadcast_ppt.rules.fields import scripture_ref
 
 
 def test_pack_respects_fit_and_order():
@@ -18,6 +19,14 @@ def test_pack_breaks_an_oversized_unit():
     assert all(len(c) <= 10 for c in chunks) and len(chunks) >= 3
 
 
+def test_pack_keeps_each_unit_on_its_own_line():
+    units = ["1 가나다 라마바 사아자", "2 차카타 파하가 나다라", "3 짧다"]
+    chunks = pack(units, lambda t: len(t) <= 30, sep="\n")
+    # the tiny-last-chunk rebalance must move whole units, never two words across a verse boundary
+    assert all(line[:1].isdigit() for c in chunks for line in c.split("\n"))
+    assert "\n".join(chunks) == "\n".join(units)
+
+
 def test_width_model_monotonic_and_scale():
     m = WidthModel()
     short, long_ = "가나다", "가나다" * 30
@@ -27,8 +36,10 @@ def test_width_model_monotonic_and_scale():
     assert wide.estimate_lines(long_, 9_000_000, 26) <= m.estimate_lines(long_, 9_000_000, 26)
 
 
-def _slide(index, text, kinds=None, full_bleed=False):
-    boxes = [{"kind": "TEXT_BOX", "text": t, "bbox": [0, 0, 100, 100], "depth": 0} for t in text.split("||") if t]
+def _slide(index, text, kinds=None, full_bleed=False, tops=None):
+    """`tops` gives the boxes distinct y positions, so a test can put them on screen out of XML order."""
+    boxes = [{"kind": "TEXT_BOX", "text": t, "bbox": [0, tops[i] if tops else 0, 100, 100], "depth": 0}
+             for i, t in enumerate(t for t in text.split("||") if t)]
     return {"index": index, "text": "\n".join(b["text"] for b in boxes), "shapes": boxes,
             "kinds": kinds or {"TEXT_BOX": len(boxes)}, "full_bleed_picture": full_bleed, "keywords": [], "text_len": len(text)}
 
@@ -113,6 +124,77 @@ def test_ai_fallback_keeps_unknown_on_low_confidence_or_bad_answer(monkeypatch):
         assert (d.kind, d.rule_id) == (K.UNKNOWN, "R900")
     monkeypatch.setattr(ai, "ask", lambda p, m: (_ for _ in ()).throw(RuntimeError("model not found")))
     assert classify_deck(_ai_deck(text), fallback=ai.classify_view)[0].rule_id == "R900"
+
+
+def test_scripture_reads_every_box_in_reading_order():
+    ctx = DeckContext()
+    # XML order puts the longest box first; on screen a heading sits above it and a verse box below
+    s = _slide(20, "[사55:8-9] 8 가나다라마바사 아자차카타파하 가나다라마바사아자차카타파하 가나다라마||"
+                   "[제 삼 권, 아삽의 시]||"
+                   "17 하나다라마바사 아자차카타파하 가나다라마바사아자차카타파하 가나다라마바사",
+               tops=[200, 100, 300])
+    d = classify_slide(s, ctx)
+    assert d.kind == K.SCRIPTURE_BODY and d.rule_id == "R205"
+    # the heading is neither a reference nor verse-numbered: it fills the tag instead of being dropped
+    assert d.fields["heading"] == "제 삼 권, 아삽의 시"
+    assert d.fields["ref"].book == "이사야" and d.fields["body"].startswith("8 ")
+    # the verse box below used to vanish: only bracketed boxes were kept as extras
+    assert [u["body"][:2] for u in d.fields["extra"]] == ["17"]
+    assert "review:reference_unknown" in d.flags
+
+
+def test_scripture_takes_a_reference_printed_under_the_body():
+    ctx = DeckContext()
+    s = _slide(21, "26 가나다라마바사 아자차카타파하 가나다라마바사아자차카타파하 가나다라마바사||창세기50:22-26",
+               tops=[100, 200])
+    d = classify_slide(s, ctx)
+    assert d.rule_id == "R200" and d.fields["ref"].chapter == 50
+    assert d.fields["body"].startswith("26 ") and not d.fields["extra"]
+
+
+def test_scripture_extra_boxes_survive_without_a_reference_on_the_slide():
+    ctx = DeckContext(title_ref=scripture_ref("시편 73편 18-28절"))
+    s = _slide(22, "18 가나다라마바사 아자차카타파하 가나다라마바사아자차카타파하 가나다라||"
+                   "19 하나다라마바사 아자차카타파하 가나다라마바사아자차카타파하 가나다라",
+               tops=[100, 200])
+    d = classify_slide(s, ctx)
+    # R210/R211 used to build no `extra` key at all, so every sibling box was lost
+    assert d.rule_id == "R210" and len(d.fields["extra"]) == 1
+    assert d.fields["extra"][0]["ref"].chapter == 73
+
+
+def test_scripture_caption_puts_each_verse_on_its_own_line_and_uses_the_heading(tmp_path):
+    from pathlib import Path
+
+    from pptx import Presentation
+    from pptx.util import Inches
+
+    from broadcast_ppt.cli import CATALOG, WIDTHS
+    from broadcast_ppt.mapping.plan import PlanOptions, build_plan
+
+    prs = Presentation()
+    # the 성경봉독 card writes its chapter with 편, which used to leave the deck with no title reference
+    card = prs.slides.add_slide(prs.slide_layouts[6])
+    for i, part in enumerate(("성경봉독  Scripture Reading", "시편 73편 18-28절", "-  구 455쪽  -")):
+        card.shapes.add_textbox(Inches(1), Inches(1 + i), Inches(8), Inches(1)).text_frame.text = part
+    # heading above, verses below, and verses 1-3 fall outside the title reference: the tag stays unknown
+    s = prs.slides.add_slide(prs.slide_layouts[6])
+    s.shapes.add_textbox(Inches(1), Inches(1), Inches(8), Inches(1)).text_frame.text = "[제 삼 권, 아삽의 시]"
+    s.shapes.add_textbox(Inches(1), Inches(3), Inches(8), Inches(3)).text_frame.text = (
+        "1 가나다라마바사 아자차카타파하 2 하나다라마바사 아자차카타파하 3 마나다라마바사 아자차카타파하")
+    src = tmp_path / "psalm.pptx"
+    prs.save(str(src))
+
+    plan = build_plan(src, Path(CATALOG), Path(WIDTHS), PlanOptions())
+    assert (plan["slides"][0]["rule"], plan["slides"][1]["rule"]) == ("R120", "R211")
+    caps = [o for o in plan["ops"] if o["op"] == "template" and o["src"] == 2]
+    assert caps and all(o["fill"]["ref"] == "제 삼 권, 아삽의 시" for o in caps)
+    assert all("review:no_reference_tag" not in o.get("flags", []) for o in caps)
+    # every line of a caption starts with its verse number, and the line count stays honest
+    for o in caps:
+        assert all(line.split(" ")[0].isdigit() for line in o["fill"]["body"].split("\n"))
+        assert o["fit"]["est_lines"] <= o["fit"]["max_lines"]
+    assert sum(o["fill"]["body"].count("\n") + 1 for o in caps) == 3
 
 
 def test_overrides_ref_and_quote_card(tmp_path):

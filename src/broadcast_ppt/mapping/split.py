@@ -26,13 +26,14 @@ def _pieces(unit: str, fits: Callable[[str], bool]) -> list[str]:
     return out + ([cur] if cur else [])
 
 
-def pack(units: list[str], fits: Callable[[str], bool]) -> list[str]:
+def pack(units: list[str], fits: Callable[[str], bool], sep: str = " ") -> list[str]:
+    """`sep` joins units inside a chunk: "\\n" keeps each unit (a verse) on its own line."""
     chunks: list[str] = []
     cur = ""
     for unit in (u.strip() for u in units):
         if not unit:
             continue
-        cand = f"{cur} {unit}" if cur else unit
+        cand = f"{cur}{sep}{unit}" if cur else unit
         if fits(cand):
             cur = cand
             continue
@@ -44,12 +45,13 @@ def pack(units: list[str], fits: Callable[[str], bool]) -> list[str]:
         cur = pieces[-1] if pieces else ""
     if cur:
         chunks.append(cur)
-    # avoid a tiny last chunk: move the last unit of the previous chunk forward when both still fit
+    # avoid a tiny last chunk: move the last piece of the previous chunk forward when both still fit.
+    # Splitting on `sep` keeps whole units together, so a verse is never cut in half here.
     if len(chunks) >= 2 and len(chunks[-1]) < 0.35 * max(len(c) for c in chunks[:-1]):
-        prev_words = chunks[-2].split(" ")
-        if len(prev_words) > 3:
-            moved = " ".join(prev_words[-2:])
-            new_prev, new_last = " ".join(prev_words[:-2]), f"{moved} {chunks[-1]}"
+        prev = chunks[-2].split(sep)
+        take = 1 if sep != " " else 2
+        if len(prev) > take + 1:
+            new_prev, new_last = sep.join(prev[:-take]), f"{sep.join(prev[-take:])}{sep}{chunks[-1]}"
             if fits(new_last) and fits(new_prev):
                 chunks[-2], chunks[-1] = new_prev, new_last
     return chunks

@@ -343,6 +343,7 @@ uv run broadcast-ppt run "local\input\주일오전예배ppt(YYMMDD).pptx" --over
 | `review:empty_slide` | 글자도 사진도 없는 장 |
 | `review:graphic` | 도표나 질문지 장이라서 그대로 복사함 |
 | `review:unclassified` | 어느 규칙에도 안 맞아서 그대로 복사함 |
+| `review:text_dropped` | 성경 장에서 자막에도 참조 상자에도 넣지 못한 글상자가 있음(제목 줄, 쪽수 줄 등). 빠진 글자가 없는지 원본과 대조 |
 | `review:ai_classified` | 규칙으로 못 정한 장을 Gemini가 분류함(확신도 0.8 이상). 종류가 맞는지 확인. 글자는 원본 그대로 |
 | `deferred:hymn` | 찬송가 악보·가사 그림을 그대로 복사함. 크로마 처리는 나중에 |
 
