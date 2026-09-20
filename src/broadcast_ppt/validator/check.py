@@ -33,9 +33,8 @@ def validate_deck(deck: Path, plan: dict, catalog_path: Path, widths_path: Path 
     findings: list[Finding] = []
     prs = Presentation(str(deck))
     cat = load_catalog(catalog_path)
-    # stricter than the planner, but not blind: the planner uses the calibrated width factor (never
-    # under-estimated on the calibration set); the validator removes most of that bonus so warnings mark
-    # chunks that are close to overflowing, not every chunk.
+    # the planner works from the top of the measured width window; this is the bottom of it, so a
+    # warning marks a chunk that could overflow anywhere inside what was actually measured on air
     strict = strict_model(load_model(widths_path))
     ops = plan["ops"]
     slides = list(prs.slides)
@@ -125,6 +124,13 @@ def validate_deck(deck: Path, plan: dict, catalog_path: Path, widths_path: Path 
             for flag in op.get("flags", []):
                 if flag.startswith(("review:", "deferred:")):
                     findings.append(Finding("info", "review", op["out_index"], flag))
+        # a caption page after the first opens on a verse number. Starting mid-sentence means a verse
+        # was cut between two pages, which reads as broken text on air and nothing else here sees it
+        chunk = op.get("chunk") or {}
+        body = (op.get("fill") or {}).get("body") or ""
+        if chunk.get("i", 1) > 1 and body and not body.split(" ", 1)[0].strip().isdigit():
+            findings.append(Finding("warning", "verse_split", op["out_index"],
+                                    f"caption {chunk['i']} of {chunk.get('n')} starts mid-verse"))
 
     counts = Counter(f.level for f in findings)
     return {"deck": str(deck), "ok": counts["critical"] == 0,

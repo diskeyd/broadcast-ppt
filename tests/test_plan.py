@@ -428,3 +428,28 @@ def test_free_floating_short_boxes_are_not_a_shape_layout():
     s = _shape_slide(15)
     s["shapes"][2]["bbox"] = [700, 10, 200, 30]  # a label outside every drawn shape
     assert classify_slide(s, DeckContext()).kind != K.SHAPES_LAYOUT
+
+
+def test_validator_flags_a_caption_that_opens_mid_verse(tmp_path):
+    from pathlib import Path
+
+    from pptx import Presentation
+
+    from broadcast_ppt.cli import CATALOG, WIDTHS
+    from broadcast_ppt.validator.check import validate_deck
+
+    deck = tmp_path / "out.pptx"
+    prs = Presentation()
+    for _ in range(3):
+        prs.slides.add_slide(prs.slide_layouts[6])
+    prs.save(str(deck))
+    # the shape the packer used to produce: page 2 of 2 opening on a word instead of a verse number
+    plan = {"template": {"sha256": ""}, "source": {"path": str(deck), "sha256": ""}, "rules_version": "test",
+            "ops": [{"op": "copy", "out_index": 1, "chunk": {"i": 1, "n": 2}, "fill": {"body": "8 가나다 라마바"}},
+                    {"op": "copy", "out_index": 2, "chunk": {"i": 2, "n": 2}, "fill": {"body": "다 마시며 11 말하기를"}},
+                    {"op": "copy", "out_index": 3, "chunk": {"i": 1, "n": 1}, "fill": {"body": "절 번호로 시작하지 않는 첫 장"}}]}
+
+    rep = validate_deck(deck, plan, Path(CATALOG), Path(WIDTHS))
+    split = [f for f in rep["findings"] if f["check"] == "verse_split"]
+    # only the second page: the first page of a passage may legitimately open on the reference tail
+    assert [f["out_slide"] for f in split] == [2] and split[0]["level"] == "warning"
