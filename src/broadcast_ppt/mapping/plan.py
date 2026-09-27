@@ -352,6 +352,14 @@ def _hymn_plan(src: Path, slides: list[dict], decisions: list, mapper: Mapper,
                 missing.add(run[0])
         else:  # not even read as a score: what the reader saw on the first page is the only clue
             why.setdefault("unread", []).append({"slide": run[0], "read": _first_page_read(src, run, index)})
+    # a later run with no title band of its own (the chorus sung again) takes the title of the earlier song
+    # most of its lines come from
+    read = [m for first in sorted(found) for m, _ in [found[first]] if m.ocr]
+    for n, m in enumerate(read):
+        if not m.label:
+            keys = {hymns.key(t) for t in m.lines}
+            m.label = next((e.label for e in read[:n] if e.label
+                            and len(keys & {hymns.key(t) for t in e.lines}) * 2 >= len(keys)), "")
     # the index is tracked and learned on the Mac; a write on the broadcast PC would only block its git pull
     if sys.platform == "darwin":
         hymns.save_index(index)

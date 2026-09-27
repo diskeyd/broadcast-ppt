@@ -416,7 +416,7 @@ uv run broadcast-ppt run "local\input\주일오전예배ppt(YYMMDD).pptx" --over
 | `review:ai_classified` | 규칙으로 못 정한 장을 Gemini가 분류함(확신도 0.8 이상). 종류가 맞는지 확인. 글자는 원본 그대로 |
 | `review:hymn_matched` | 찬송 구간의 가사 자막을 `hymn.pptx`에 따로 만듦(방송본에는 원본 악보 그대로). 곡과 구간이 맞는지 한 번 확인 |
 | `review:hymn_range_guess` | 찬송 구간의 마지막 악보 장을 못 읽어서 그 곡 끝까지 넣음. 남는 절이 없는지 확인 |
-| `review:hymn_ocr` | 라이브러리에 없는 곡이라 악보 그림에서 읽은 가사로 자막을 만듦. 곡 제목은 없음. 띄어쓰기·오타 확인 |
+| `review:hymn_ocr` | 라이브러리에 없는 곡이라 악보 그림에서 읽은 가사로 자막을 만듦. 곡 제목은 첫 악보 맨 위 줄에서 읽음(같은 곡을 다시 부르는 구간도 같은 제목). 띄어쓰기·오타 확인 |
 | `deferred:hymn` | 악보에서 가사를 읽지 못해 그대로 복사함. 그 곡을 `local/hymns`에 넣고 `hymns`를 다시 실행하면 다음부터 자동 |
 
 ## 문제 해결

@@ -40,6 +40,8 @@ NUMBER_RE = re.compile(r"^\s*(\d{1,3})\s*[_장.]")
 # a weekly deck runs the songs together with the rest of the service, so a song can be followed by the
 # slide naming who prays. That is a person, never a lyric: it ends the song and never enters the index.
 PERSON_ROLE = re.compile(r"[가-힣]{2,4}\s*(?:권사|집사|장로|목사|전도사|사모|성도)\s*$")
+# a score page draws its lyrics under a staff; the only text above the first staff is the song title
+TITLE_BAND = 0.12
 LYRIC_LINE = re.compile(r"^[가-힣][가-힣0-9 .,!?~·\-–—()'\"]{3,29}$")
 
 
@@ -208,9 +210,9 @@ def _lettering(image: Path) -> list[Path]:
     return out
 
 
-def merge_reads(reads: list[list[tuple[float, str]]], gap: float = 30) -> list[str]:
-    """Lines read off several copies of one page, top to bottom: lines at the same height are one line,
-    and the reading that looks most like a lyric line wins."""
+def merge_reads(reads: list[list[tuple[float, str]]], gap: float = 0.025) -> list[tuple[float, str]]:
+    """Lines read off several copies of one page, top to bottom (positions as fractions of the page
+    height): lines at the same height are one line, and the reading that looks most like a lyric wins."""
     groups: list[list[tuple[float, str]]] = []
     for y, t in sorted((y, t) for read in reads for y, t in read if t.strip()):
         if groups and y - groups[-1][0][0] <= gap:
@@ -219,7 +221,21 @@ def merge_reads(reads: list[list[tuple[float, str]]], gap: float = 30) -> list[s
             groups.append([(y, t)])
     def score(t: str) -> tuple[bool, int]:
         return LYRIC_LINE.match(clean_lyric(t)) is not None, len(key(t))
-    return [max((t for _, t in g), key=score) for g in groups]
+    return [(g[0][0], max((t for _, t in g), key=score)) for g in groups]
+
+
+def _line_text(line) -> str:
+    """A line rebuilt from its words: the Korean engine often returns each syllable as a word of its own
+    (이 제 나 도), so words closer than a fifth of the letter height (a word space is about a quarter) are joined."""
+    words = list(line.words)
+    if not words:
+        return line.text
+    height = sorted(w.bounding_rect.height for w in words)[len(words) // 2]
+    out = words[0].text
+    for prev, w in zip(words, words[1:]):
+        gap = w.bounding_rect.x - (prev.bounding_rect.x + prev.bounding_rect.width)
+        out += ("" if gap < height / 5 else " ") + w.text
+    return out
 
 
 async def _win_read(engine, image: Path) -> list[tuple[float, str]]:
@@ -228,12 +244,14 @@ async def _win_read(engine, image: Path) -> list[tuple[float, str]]:
     file = await StorageFile.get_file_from_path_async(str(Path(image).resolve()))
     stream = await file.open_async(FileAccessMode.READ)
     bitmap = await (await BitmapDecoder.create_async(stream)).get_software_bitmap_async()
-    return [(line.words[0].bounding_rect.y if line.words else 0.0, line.text)
+    height = bitmap.pixel_height or 1
+    return [((line.words[0].bounding_rect.y if line.words else 0.0) / height, _line_text(line))
             for line in (await engine.recognize_async(bitmap)).lines]
 
 
-def ocr(image: Path) -> list[str]:
-    """Text lines on the picture, top to bottom. Empty where no recogniser is available."""
+def read_lines(image: Path) -> list[tuple[float, str]]:
+    """Text lines on the picture, top to bottom, each with its top as a fraction of the picture height.
+    Empty where no recogniser is available."""
     if not ocr_available():
         return []
     if sys.platform == "win32":
@@ -243,8 +261,15 @@ def ocr(image: Path) -> list[str]:
                            capture_output=True, encoding="utf-8", errors="replace")
         if r.returncode != 0:
             return []
-        lines = r.stdout.splitlines()
-    return [ln.strip() for ln in lines if ln.strip()]
+        lines = []
+        for row in r.stdout.splitlines():
+            top, _, text = row.partition("\t")
+            lines.append((float(top), text))
+    return [(y, t.strip()) for y, t in lines if t.strip()]
+
+
+def ocr(image: Path) -> list[str]:
+    return [t for _, t in read_lines(image)]
 
 
 def clean_lyric(line: str) -> str:
@@ -375,18 +400,24 @@ def match_run(src: Path, indices: list[int], index: dict, work: Path) -> RunResu
 
 def ocr_run(src: Path, indices: list[int], index: dict, work: Path) -> HymnMatch | None:
     """A score run the library has no song for, captioned from its own pages: the lyric lines read off
-    every page, in order. There is no title, so the first caption carries none."""
+    every page, in order. The first page's title band (above its first staff) names the song, and that
+    name goes on the first caption as a library song's label does."""
     blobs = _images(Path(src), indices)
     lines: list[str] = []
-    for i in indices:
-        if i not in blobs:
-            continue
+    title = ""
+    for n, i in enumerate(i for i in indices if i in blobs):
         sha = hashlib.sha1(blobs[i]).hexdigest()
         work.mkdir(parents=True, exist_ok=True)
         path = work / f"{sha}.png"
         path.write_bytes(blobs[i])
-        lines += [t for t in map(clean_lyric, ocr(path)) if LYRIC_LINE.match(t)]
+        for y, raw in read_lines(path):
+            if n == 0 and y < TITLE_BAND:
+                title = title or clean_lyric(re.sub(r"^[^가-힣0-9]+", "", raw))  # the ▪▪ mark reads as ':' or 담
+                continue
+            t = clean_lyric(raw)
+            if LYRIC_LINE.match(t):
+                lines.append(t)
     if not lines:
         return None
-    return HymnMatch(song="ocr", title=lines[0], label="", lines=lines, start=0, end=len(lines) - 1,
+    return HymnMatch(song="ocr", title=title or lines[0], label=title, lines=lines, start=0, end=len(lines) - 1,
                      guessed_end=False, ocr=True)

@@ -131,11 +131,13 @@ def test_clean_lyric_drops_repeat_signs_and_held_notes():
 def test_ocr_run_captions_a_song_the_library_lacks(tmp_path, monkeypatch):
     blobs = {3: b"page-a", 4: b"page-b"}
     monkeypatch.setattr(hymns, "_images", lambda src, idx: blobs)
-    pages = {b"page-a": ["F Major", ": 기뻐해요- 알지 못했던 날에도-"], b"page-b": ["우리가 노-래하는 오늘", "2"]}
-    monkeypatch.setattr(hymns, "ocr", lambda path: pages[path.read_bytes()])
+    pages = {b"page-a": [(0.04, ": 새 노래로 함께 부르며"), (0.13, "F Major"), (0.27, ": 기뻐해요- 알지 못했던 날에도-")],
+             b"page-b": [(0.05, "우리가 노-래하는 오늘"), (0.5, "2")]}
+    monkeypatch.setattr(hymns, "read_lines", lambda path: pages[path.read_bytes()])
     m = hymns.ocr_run(tmp_path / "deck.pptx", [3, 4], {"songs": [], "images": {}}, tmp_path)
-    assert m.ocr and m.label == "" and m.lines == ["기뻐해요 알지 못했던 날에도", "우리가 노래하는 오늘"]
-    assert (m.start, m.end) == (0, 1)
+    # the title band of the first page names the song; later pages have no title band
+    assert m.ocr and m.label == "새 노래로 함께 부르며"
+    assert m.lines == ["기뻐해요 알지 못했던 날에도", "우리가 노래하는 오늘"] and (m.start, m.end) == (0, 1)
 
 
 @pytest.mark.skipif(__import__("sys").platform != "win32", reason="Windows OCR engine")
@@ -163,9 +165,17 @@ def test_lettering_copies_keep_each_style_solid(tmp_path):
 
 
 def test_merge_reads_keeps_the_better_reading_per_line():
-    dark = [(10.0, "기뻐해요- 알지 못했던 날에도-"), (200.0, "&....??...")]
-    light = [(14.0, "V."), (205.0, "우리 모두가- 함께 걷는 길이라는걸--")]
-    assert hymns.merge_reads([dark, light]) == ["기뻐해요- 알지 못했던 날에도-", "우리 모두가- 함께 걷는 길이라는걸--"]
+    dark = [(0.27, "기뻐해요- 알지 못했던 날에도-"), (0.54, "&....??...")]
+    light = [(0.28, "V."), (0.545, "우리 모두가- 함께 걷는 길이라는걸--")]
+    assert [t for _, t in hymns.merge_reads([dark, light])] == ["기뻐해요- 알지 못했던 날에도-", "우리 모두가- 함께 걷는 길이라는걸--"]
+
+
+def test_line_text_joins_syllables_the_engine_split():
+    def word(text, x, w=40, h=40):
+        return SimpleNamespace(text=text, bounding_rect=SimpleNamespace(x=x, width=w, height=h))
+    # 이 제 read as syllables 4px apart, a real word gap of 30px before 나도
+    line = SimpleNamespace(text="이 제 나도", words=[word("이", 0), word("제", 44), word("나도", 114, w=80)])
+    assert hymns._line_text(line) == "이제 나도"
 
 
 def test_a_no_song_entry_without_a_reading_is_read_again(tmp_path, monkeypatch):
@@ -176,3 +186,18 @@ def test_a_no_song_entry_without_a_reading_is_read_again(tmp_path, monkeypatch):
     assert len(reads) == 1 and index["images"]["abc"]["read"] == ["기뻐해요 알지 못했던 날에도"]
     hymns._page(index, "abc", b"png", tmp_path)  # now it carries its reading: trusted
     assert len(reads) == 1
+
+
+def test_a_repeated_chorus_takes_the_title_of_its_song(tmp_path, monkeypatch):
+    from broadcast_ppt.mapping import plan
+    first = hymns.HymnMatch("ocr", "t", "새 노래로 함께 부르며", ["기뻐해요", "오늘도 노래하기 위해", "그리고 그 노래 나누기 위해"],
+                            0, 2, False, ocr=True)
+    again = hymns.HymnMatch("ocr", "t", "", ["오늘도 노래하기 위해", "그리고 그 노래 나누기 위해"], 0, 1, False, ocr=True)
+    runs = {19: first, 26: again}
+    monkeypatch.setattr(plan, "_hymn_runs", lambda *a: [[19, 20, 21], [26, 27, 28]])
+    monkeypatch.setattr(hymns, "match_run", lambda src, run, index, work: hymns.RunResult(None, readable=True))
+    monkeypatch.setattr(hymns, "ocr_run", lambda src, run, index, work: runs[run[0]])
+    monkeypatch.setattr(hymns, "load_index", lambda: {"songs": [{"id": "x"}], "images": {}})
+    monkeypatch.setattr(hymns, "save_index", lambda index: None)
+    found, _, _ = plan._hymn_plan(tmp_path / "d.pptx", [], [], SimpleNamespace(fam={"hymn": []}), set())
+    assert found[26][0].label == "새 노래로 함께 부르며"

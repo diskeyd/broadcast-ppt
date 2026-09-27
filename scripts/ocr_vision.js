@@ -1,4 +1,5 @@
-// Read the text off an image with the macOS recogniser, one line per output line.
+// Read the text off an image with the macOS recogniser, one line per output line:
+// "<top of the line as a fraction of the image height>\t<text>", top to bottom.
 //   osascript -l JavaScript scripts/ocr_vision.js <image>...
 // Used to identify a hymn score page; nothing is installed for it and it only runs on the Mac.
 ObjC.import('Vision');
@@ -14,7 +15,10 @@ function run(argv) {
     handler.performRequestsError($([req]), null);
     var res = req.results;
     for (var i = 0; i < res.count; i++) {
-      out.push(ObjC.unwrap(res.objectAtIndex(i).topCandidates(1).objectAtIndex(0).string));
+      var obs = res.objectAtIndex(i);
+      var box = obs.boundingBox;  // normalised, origin at the bottom left
+      var top = 1 - (box.origin.y + box.size.height);
+      out.push(top.toFixed(3) + '\t' + ObjC.unwrap(obs.topCandidates(1).objectAtIndex(0).string));
     }
   });
   return out.join('\n');
