@@ -484,3 +484,23 @@ def test_prayer_card_with_a_subtitle_instead_of_a_person():
     from broadcast_ppt.mapping.textfit import load_model
     m = Mapper(load_catalog(Path(CATALOG)), load_model(Path(WIDTHS)), PlanOptions())
     assert [o["op"] for o in m.map(3, d)] == ["copy"]
+
+
+def test_bracketed_title_in_the_verse_box_names_an_inherited_passage():
+    from pathlib import Path
+
+    from broadcast_ppt.cli import CATALOG, WIDTHS
+    from broadcast_ppt.mapping.catalog import load_catalog
+    from broadcast_ppt.mapping.plan import Mapper, PlanOptions
+    from broadcast_ppt.mapping.textfit import load_model
+    ctx = DeckContext()
+    ctx.title_ref = ctx.last_ref = scripture_ref("시편 100:1-5")
+    d = classify_slide(_slide(13, "[감사의 시]\n1 온 땅이여 여호와께 즐거운 찬송을 부를지어다\n"
+                                  "2 기쁨으로 여호와를 섬기며 노래하면서 그의 앞에 나아갈지어다"), ctx)
+    assert d.kind == K.SCRIPTURE_BODY and d.fields["heading"] == "감사의 시"
+    m = Mapper(load_catalog(Path(CATALOG)), load_model(Path(WIDTHS)), PlanOptions())
+    caps = [o for o in m.map(13, d) if o["op"] == "template"]
+    assert [o["fill"]["ref"] for o in caps] == ["감사의 시"]
+    # a reference printed on the slide still wins over the heading
+    d = classify_slide(_slide(14, "[감사의 시]\n[시100:1-2] 1 온 땅이여 여호와께 즐거운 찬송을 부를지어다"), ctx)
+    assert [o["fill"]["ref"] for o in m.map(14, d) if o["op"] == "template"] == ["시편100:1"]

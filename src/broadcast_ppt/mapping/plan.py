@@ -100,7 +100,7 @@ class Mapper:
         return {"op": "template", "src": src, "template_slide": tpl, "fill": {k: v for k, v in fill.items() if v is not None}, "note": note}
 
     def scripture_captions(self, src: int, ref: ScriptureRef | None, body: str, heading: str | None = None,
-                           division: bool = False) -> list[dict]:
+                           division: bool = False, prefer_heading: bool = False) -> list[dict]:
         units = [t for _, t in verse_chunks(body, ref)]
         if not division:
             # line breaks inside a verse are how the original slide was laid out, not content: the bar
@@ -121,8 +121,9 @@ class Mapper:
                 tag = f"{ref.book}{ref.chapter}:{v1}" + (f"-{v2}" if v2 != v1 else "")
             else:
                 tag = None
-            # a Psalms book division ([제 삼 권, 아삽의 시]) fills a tag the slide gives no reference for
-            if tag is None and heading and self.fits(tpl, heading, "ref"):
+            # a Psalms book division ([제 삼 권, 아삽의 시]) fills a tag the slide gives no reference for, and
+            # wins over a reference the slide only inherited: the slide's own name ([감사의 시]) is what it shows
+            if heading and (tag is None or prefer_heading) and self.fits(tpl, heading, "ref"):
                 tag = heading
             # never leave the template's sample reference in place: blank + review flag instead
             op = self.card(src, tpl, {"ref": tag if tag is not None else "", "body": chunk}, "scripture caption")
@@ -255,7 +256,8 @@ class Mapper:
         if d.kind == K.SCRIPTURE_BODY:
             ops = [self.copy(src, "scripture full screen")] if self.opts.scripture_both else []
             div = bool(f.get("division"))
-            ops += self.scripture_captions(src, f.get("ref"), f.get("body", ""), f.get("heading"), div)
+            ops += self.scripture_captions(src, f.get("ref"), f.get("body", ""), f.get("heading"), div,
+                                           prefer_heading=bool(f.get("inherited_ref") and f.get("heading_in_box")))
             for extra in f.get("extra") or []:  # further passages, in the order they are read
                 ops += self.scripture_captions(src, extra["ref"], extra["body"], f.get("heading"), div)
             return ops

@@ -98,21 +98,24 @@ def _unit(text: str) -> dict | None:
     headings ([제 삼 권, 아삽의 시]) are peeled one by one until a bracket holds a reference, so the
     reference is read from that bracket rather than from a fixed-length slice of the box."""
     t = norm(text).lstrip()
+    heading = None  # the first peeled bracket ([감사의 시]): the slide's own name for the passage
     while t.startswith(("[", "［")):
         close = _close_bracket(t)
         if close < 0:
             break
         ref = scripture_ref(t[1:close])
         if ref is not None:
-            return {"ref": ref, "body": t[close + 1:].lstrip(), "quote": True, "verse": None}
+            return {"ref": ref, "body": t[close + 1:].lstrip(), "quote": True, "verse": None, "heading": heading}
+        heading = heading or t[1:close].strip() or None
         t = t[close + 1:].lstrip()
     line = t.split("\n", 1)[0]
     ref = scripture_ref(line)
     if ref is not None and line.find(ref.raw) <= 2:
         i = t.find(ref.raw)
-        return {"ref": ref, "body": t[i + len(ref.raw):].lstrip(" \n"), "quote": False, "verse": None}
+        return {"ref": ref, "body": t[i + len(ref.raw):].lstrip(" \n"), "quote": False, "verse": None, "heading": heading}
     if VERSE_START_RE.match(t):
-        return {"ref": None, "body": t.strip(), "quote": False, "verse": int(re.match(r"\s*(\d{1,3})", t).group(1))}
+        return {"ref": None, "body": t.strip(), "quote": False, "verse": int(re.match(r"\s*(\d{1,3})", t).group(1)),
+                "heading": heading}
     return None
 
 
@@ -208,9 +211,12 @@ def _scripture_decision(body_units: list[dict], other: list[str]) -> Decision:
         m = _BRACKET_TITLE_RE.match(heading)
         division = m is not None
         heading = m.group("t").strip() if m else heading
+    elif first.get("heading"):  # [감사의 시] printed in the verse box itself: a bracketed title too
+        heading, division = first["heading"], True
     flags, fields = [], {"ref": first["ref"], "body": first["body"], "quote": first["quote"],
                          "extra": [{"ref": u["ref"], "body": u["body"]} for u in body_units[1:]],
-                         "heading": heading, "division": division}
+                         "heading": heading, "division": division,
+                         "heading_in_box": heading is not None and heading == first.get("heading")}
     if any(u["origin"] in ("last", "title") for u in body_units):
         flags.append("review:inherited_reference")
     if any(u["ref"] is None for u in body_units):
