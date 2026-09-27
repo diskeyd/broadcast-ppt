@@ -6,6 +6,7 @@ import hashlib
 import json
 import math
 import re
+import sys
 from dataclasses import asdict, dataclass, replace
 from datetime import datetime, UTC
 from pathlib import Path
@@ -277,6 +278,12 @@ class Mapper:
         return [self.copy(src, f"unmapped kind {d.kind}")]
 
 
+def _hymn_flags(m: hymns.HymnMatch) -> list[str]:
+    if m.ocr:
+        return ["review:hymn_ocr"]
+    return ["review:hymn_matched"] + (["review:hymn_range_guess"] if m.guessed_end else [])
+
+
 def _emphasis_in(body: str, phrases: list[dict]) -> list[dict]:
     """The source's emphasised phrases that this caption body contains, spelled as the body spells them."""
     out = []
@@ -320,9 +327,16 @@ def _hymn_plan(src: Path, slides: list[dict], decisions: list, mapper: Mapper,
         if res.match is not None:
             found[run[0]] = (res.match, run)
         elif res.readable:
-            missing.add(run[0])
-    hymns.save_index(index)
+            m = hymns.ocr_run(src, run, index, hymns.LIBRARY / "scores")
+            if m is not None:
+                found[run[0]] = (m, run)
+            else:
+                missing.add(run[0])
+    # the index is tracked and learned on the Mac; a write on the broadcast PC would only block its git pull
+    if sys.platform == "darwin":
+        hymns.save_index(index)
     why["matched"] = len(found)
+    why["ocr"] = sum(1 for m, _ in found.values() if m.ocr)
     return found, missing, why
 
 
@@ -357,7 +371,7 @@ def build_plan(src: Path, catalog_path: Path, widths_path: Path, opts: PlanOptio
         for op in mapper.hymn(first, m):
             op["out_index"] = len(hymn_ops) + 1
             op["kind"], op["rule"] = K.HYMN_IMAGE, "H400"
-            op["flags"] = ["review:hymn_matched"] + (["review:hymn_range_guess"] if m.guessed_end else [])
+            op["flags"] = _hymn_flags(m)
             hymn_ops.append(op)
     ctx = DeckContext.from_deck(doc)  # override text drops the same boilerplate lines the rules drop
     for s, d in zip(slides, decisions):
@@ -382,7 +396,7 @@ def build_plan(src: Path, catalog_path: Path, widths_path: Path, opts: PlanOptio
         elif s["index"] in hymn_at:
             m, run = hymn_at[s["index"]]
             d = replace(d, kind=K.HYMN_IMAGE, rule_id="H400", reason=f"hymn run of {len(run)} slides: {m.title}",
-                        flags=["review:hymn_matched"] + (["review:hymn_range_guess"] if m.guessed_end else []))
+                        flags=_hymn_flags(m))
             mapped = mapper.map(s["index"], d)
         elif s["index"] in hymn_missing:  # a score we could read but the library has no song for
             d = replace(d, kind=K.HYMN_IMAGE, rule_id="H401", reason="hymn run, not in the library",

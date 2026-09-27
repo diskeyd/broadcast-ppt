@@ -159,10 +159,10 @@ def _print_hymn_note(why: dict) -> None:
     elif not why.get("songs"):
         print(f"{head} 색인에 곡이 없습니다: local/hymns에 곡 파일을 넣고 `broadcast-ppt hymns`를 실행하세요.")
     elif not why.get("reader"):
-        print(f"{head} 이 PC에서는 악보에서 곡 이름을 읽을 수 없습니다(맥 전용). "
-              f"맥에서 같은 원본으로 plan을 한 번 돌린 뒤 local/hymns/index.json을 복사하세요.")
+        print(f"{head} 이 PC에서는 악보 글자를 읽을 수 없습니다. "
+              f"Windows는 설정 > 시간 및 언어 > 언어에 한국어가 있어야 하고, 다시 `uv sync`를 실행하세요.")
     else:
-        print(f"{head} 나머지는 라이브러리에 없는 곡이거나 악보를 읽지 못했습니다 (검수 표시 deferred:hymn 확인).")
+        print(f"{head} 나머지는 악보에서 가사를 읽지 못했습니다 (검수 표시 deferred:hymn 확인).")
 
 
 def cmd_plan(args) -> int:

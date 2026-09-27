@@ -2,13 +2,17 @@
 
 A hymn is a run of score images with no text on the slide, so the song is identified from the image:
 a cached sha1 -> song map, filled the first time a score is seen by reading the title and the lyric
-lines off the picture with the macOS text recogniser. The library pptx files are never copied — only
-their lyric text is used; the broadcast slides come from the template like every other caption.
+lines off the picture with the system text recogniser (Vision on the Mac, Windows.Media.Ocr on the
+broadcast PC). The library pptx files are never copied — only their lyric text is used; the broadcast
+slides come from the template like every other caption. A song the library does not have is captioned
+from the lyric lines read off its score pages.
 """
 
 from __future__ import annotations
 
+import asyncio
 import difflib
+import functools
 import hashlib
 import json
 import re
@@ -158,20 +162,53 @@ def save_index(data: dict, path: Path = INDEX) -> Path:
 # --- identifying a score image -------------------------------------------------------------------
 
 def ocr_available() -> bool:
-    """The score reader is macOS only; elsewhere only pages already in the index can be identified."""
-    return sys.platform == "darwin" and OCR_SCRIPT.exists()
+    """Vision on the Mac, the Windows OCR engine (Korean, else the user's languages) on the broadcast PC."""
+    if sys.platform == "darwin":
+        return OCR_SCRIPT.exists()
+    return sys.platform == "win32" and _win_engine() is not None
+
+
+@functools.cache
+def _win_engine():
+    try:
+        from winrt.windows.globalization import Language
+        from winrt.windows.media.ocr import OcrEngine
+    except ImportError:
+        return None
+    return OcrEngine.try_create_from_language(Language("ko")) or OcrEngine.try_create_from_user_profile_languages()
+
+
+async def _win_read(engine, image: Path) -> list[str]:
+    from winrt.windows.graphics.imaging import BitmapDecoder
+    from winrt.windows.storage import FileAccessMode, StorageFile
+    file = await StorageFile.get_file_from_path_async(str(Path(image).resolve()))
+    stream = await file.open_async(FileAccessMode.READ)
+    bitmap = await (await BitmapDecoder.create_async(stream)).get_software_bitmap_async()
+    return [line.text for line in (await engine.recognize_async(bitmap)).lines]
 
 
 def ocr(image: Path) -> list[str]:
-    """Text lines on the picture, read by the macOS recogniser. Empty anywhere else — the index is
-    built on the Mac and the cached sha1 map is what the Windows PC uses."""
+    """Text lines on the picture, top to bottom. Empty where no recogniser is available."""
     if not ocr_available():
         return []
-    r = subprocess.run(["osascript", "-l", "JavaScript", str(OCR_SCRIPT), str(image)],
-                       capture_output=True, encoding="utf-8", errors="replace")
-    if r.returncode != 0:
-        return []
-    return [ln.strip() for ln in r.stdout.splitlines() if ln.strip()]
+    if sys.platform == "win32":
+        lines = asyncio.run(_win_read(_win_engine(), image))
+    else:
+        r = subprocess.run(["osascript", "-l", "JavaScript", str(OCR_SCRIPT), str(image)],
+                           capture_output=True, encoding="utf-8", errors="replace")
+        if r.returncode != 0:
+            return []
+        lines = r.stdout.splitlines()
+    return [ln.strip() for ln in lines if ln.strip()]
+
+
+def clean_lyric(line: str) -> str:
+    """A lyric line as it is sung, from the line the recogniser read under the staff: repeat signs read
+    as ': ' go, a held syllable (허-락) closes up, held notes between words become one space."""
+    t = re.sub(r"^[\s:|.]+", "", line)
+    t = re.sub(r"(?<=[가-힣])[-–—~]+(?=[가-힣])", "", t)
+    t = re.sub(r"\s*[-–—~]+\s*", " ", t)
+    return re.sub(r"\s+", " ", t).strip()
 
 
 def _line_map(songs: list[dict]) -> dict[str, list[tuple[str, int]]]:
@@ -223,6 +260,7 @@ class HymnMatch:
     start: int
     end: int
     guessed_end: bool
+    ocr: bool = False  # captioned from the lyric lines read off the score, not from the library
 
 
 def _images(src: Path, indices: list[int]) -> dict[int, bytes]:
@@ -283,3 +321,22 @@ def match_run(src: Path, indices: list[int], index: dict, work: Path) -> RunResu
     end = len(song["lines"]) - 1 if last is None else last
     return RunResult(HymnMatch(song=song["id"], title=song["title"], label=song.get("label") or song["title"],
                                lines=song["lines"], start=first[1], end=max(end, first[1]), guessed_end=last is None))
+
+
+def ocr_run(src: Path, indices: list[int], index: dict, work: Path) -> HymnMatch | None:
+    """A score run the library has no song for, captioned from its own pages: the lyric lines read off
+    every page, in order. There is no title, so the first caption carries none."""
+    blobs = _images(Path(src), indices)
+    lines: list[str] = []
+    for i in indices:
+        if i not in blobs:
+            continue
+        sha = hashlib.sha1(blobs[i]).hexdigest()
+        work.mkdir(parents=True, exist_ok=True)
+        path = work / f"{sha}.png"
+        path.write_bytes(blobs[i])
+        lines += [t for t in map(clean_lyric, ocr(path)) if LYRIC_LINE.match(t)]
+    if not lines:
+        return None
+    return HymnMatch(song="ocr", title=lines[0], label="", lines=lines, start=0, end=len(lines) - 1,
+                     guessed_end=False, ocr=True)

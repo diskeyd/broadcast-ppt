@@ -119,3 +119,31 @@ def test_runs_need_three_score_slides_in_a_row():
 def test_a_slide_with_an_override_keeps_its_run_out():
     slides, decisions = zip(*[(s, d) for d, s in (_pic(n) for n in range(1, 4))])
     assert _hymn_runs(list(slides), list(decisions), {2}) == []
+
+
+def test_clean_lyric_drops_repeat_signs_and_held_notes():
+    assert hymns.clean_lyric(": 새 노래로 함께 부르며") == "새 노래로 함께 부르며"
+    assert hymns.clean_lyric("우리가 노-래하는 오늘") == "우리가 노래하는 오늘"
+    assert hymns.clean_lyric("반가워요 - 그길을 비춰준 아침에-") == "반가워요 그길을 비춰준 아침에"
+    assert hymns.clean_lyric("우리 모두가- 함께 걷는 길이라는걸--") == "우리 모두가 함께 걷는 길이라는걸"
+
+
+def test_ocr_run_captions_a_song_the_library_lacks(tmp_path, monkeypatch):
+    blobs = {3: b"page-a", 4: b"page-b"}
+    monkeypatch.setattr(hymns, "_images", lambda src, idx: blobs)
+    pages = {b"page-a": ["F Major", ": 기뻐해요- 알지 못했던 날에도-"], b"page-b": ["우리가 노-래하는 오늘", "2"]}
+    monkeypatch.setattr(hymns, "ocr", lambda path: pages[path.read_bytes()])
+    m = hymns.ocr_run(tmp_path / "deck.pptx", [3, 4], {"songs": [], "images": {}}, tmp_path)
+    assert m.ocr and m.label == "" and m.lines == ["기뻐해요 알지 못했던 날에도", "우리가 노래하는 오늘"]
+    assert (m.start, m.end) == (0, 1)
+
+
+@pytest.mark.skipif(__import__("sys").platform != "win32", reason="Windows OCR engine")
+def test_windows_ocr_reads_a_rendered_word(tmp_path):
+    from PIL import Image, ImageDraw, ImageFont
+    assert hymns.ocr_available(), "no Windows OCR engine for Korean or the user's languages"
+    img = Image.new("RGB", (900, 200), "white")
+    ImageDraw.Draw(img).text((40, 50), "HELLO WORLD", fill="black", font=ImageFont.load_default(size=72))
+    path = tmp_path / "word.png"
+    img.save(path)
+    assert "HELLO" in " ".join(hymns.ocr(path)).upper()
