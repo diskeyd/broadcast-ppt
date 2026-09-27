@@ -69,6 +69,11 @@ def ensure_keynote(timeout: float = 60) -> None:
     raise RuntimeError("Keynote did not respond to Apple events")
 
 
+# `open` answers with a reference even when Keynote opened nothing; sent back to `export`, that reference
+# crashes Keynote (uncaught exception in its Apple event handler). The script checks the document first.
+NO_DOC = "bppt: no document"
+
+
 def keynote_export(deck: Path, out_dir: Path) -> list[Path]:
     ensure_keynote()
     tmp = KEYNOTE_DOCS / "bppt-tmp"
@@ -80,6 +85,11 @@ def keynote_export(deck: Path, out_dir: Path) -> list[Path]:
 tell application "{APP}"
 set d to open POSIX file "{tmp / deck.name}"
 delay 3
+try
+get name of d
+on error
+error "{NO_DOC}" number 9001
+end try
 export d to POSIX file "{tmp / 'out'}" as slide images with properties {{image format:PNG, skipped slides:false}}
 close d saving no
 end tell
@@ -89,6 +99,9 @@ end timeout'''
             if r.returncode == 0 or "-609" not in r.stderr:
                 break
             time.sleep(5)
+        if NO_DOC in r.stderr:
+            raise RuntimeError("Keynote가 문서를 열지 못했습니다. Keynote 화면에 로그인·구독·복구 창이 떠 있는지 "
+                               "확인하고, 파일을 직접 더블클릭해 열리는지 본 뒤 다시 실행하세요.")
         if r.returncode != 0:
             raise RuntimeError(f"Keynote export failed: {r.stderr.strip()}")
         shutil.rmtree(out_dir, ignore_errors=True)
@@ -186,7 +199,11 @@ def main() -> int:
     c.add_argument("--gap", type=float, default=30.0)
     c.set_defaults(func=cmd_calibrate_cards)
     args = ap.parse_args()
-    return args.func(args)
+    try:
+        return args.func(args)
+    except RuntimeError as exc:
+        print(exc, file=sys.stderr)
+        return 1
 
 
 if __name__ == "__main__":
