@@ -3,16 +3,17 @@
 from __future__ import annotations
 
 import hashlib
+import math
 from pathlib import Path
 
 from pptx import Presentation
 
 from ..mapping.catalog import load_catalog
-from ..ooxml import P, REPO_ROOT
-from ..mapping.textfit import WidthModel, load_model
+from ..ooxml import A, AUTOFIT_LINE_HEIGHT, P, REPO_ROOT
+from ..mapping.textfit import WidthModel, load_model, strict_model
 from .clone import copy_foreign_slide, duplicate_template_slide
-from .fill import fill_shape, shape_by_order
-from .geometry import (EMU_PER_PT, box_of, cy_of, drop_blank_paragraphs, hide_shape, in_group, insets, one_line_height,
+from .fill import fill_shape, flat_segments, shape_by_order
+from .geometry import (EMU_PER_PT, box_of, cy_of, drop_blank_paragraphs, emphasize_runs, hide_shape, in_group, insets, one_line_height,
                        plain_line_spacing, runs_with_size, set_font_size, style_paragraphs, set_width, set_y, shift,
                        split_paragraph_boxes, text_align, translate, y_of)
 from .package import current_slide_ids, drop_section_list, remove_slides
@@ -39,6 +40,9 @@ def adjust_filled_shape(sp, spec: dict, op: dict, filled: dict, model: WidthMode
                 flags.append(f"font_size:{slot}")
     if op.get("para_style") and "body" in (spec.get("slot_map") or []):
         style_paragraphs(sp, op["para_style"])
+    # ponytail: bold is wider than the regular glyphs the width model was fitted on; the fit ignores it
+    if op.get("emph") and (spec.get("slot_map") or []) == ["body"]:
+        emphasize_runs(sp, op["emph"])
     if spec.get("hide_when_empty") and not any((op.get("fill") or {}).get(s) for s in spec.get("slot_map") or [] if s):
         hide_shape(sp)  # unknown reference: no empty tag box on air
     if spec.get("drop_empty_paragraphs"):
@@ -99,6 +103,34 @@ def fit_boxed_line(slide, entry: dict, spec: dict, model: WidthModel) -> list[st
             if here is not None:
                 translate(el, left + pad - here[0], 0)
     return flags
+
+
+def grow_bar(slide, entry: dict, spec: dict, model: WidthModel) -> list[str]:
+    """교회소식: an item longer than its one-line bar wraps, and the bar grows upward by whole lines with its
+    bottom edge where the template put it. Boxes above the text (the 환영 label) move up with it. The text is
+    measured exactly as the validator's text_wider_than_bar does, so the two never disagree."""
+    sp = shape_by_order(slide, spec["order"])
+    strict = strict_model(model)
+    sizes = [int(seg["key"][0]) / 100 if seg["key"][0] else 28 for seg in flat_segments(sp.find(f".//{{{P}}}txBody"))]
+    width = sum(strict.width_emu(seg["text"], sz) for seg, sz in
+                zip(flat_segments(sp.find(f".//{{{P}}}txBody")), sizes, strict=True))
+    ins = insets(sp)
+    bar = max(b["bbox"][0] + b["bbox"][2] for b in spec["backing"]) - spec["bbox"][0]
+    room = bar - ins["lIns"] - ins["rIns"]
+    if width <= room:
+        return []
+    # ponytail: a word-wrapped line holds a little less than the bar, so a tenth is kept in reserve
+    lines = math.ceil(width * 1.1 / room)
+    sp.find(f".//{{{A}}}bodyPr").set("wrap", "square")
+    set_width(sp, bar, keep_center=False)
+    dcy = int((lines - 1) * AUTOFIT_LINE_HEIGHT * max(sizes) * EMU_PER_PT)
+    shift(sp, -dcy, dcy)
+    for b in spec["backing"]:
+        shift(shape_by_order(slide, b["order"]), -dcy, dcy)
+    for sib in entry["shapes"].values():
+        if sib is not spec and sib.get("slot_map") and sib["bbox"][1] < spec["bbox"][1]:
+            shift(shape_by_order(slide, sib["order"]), -dcy)
+    return [f"grown:{lines}_lines"]
 
 
 def caption_band(catalog: dict) -> tuple[int, int, int, int]:
@@ -286,6 +318,9 @@ def build_deck(plan: dict, template: Path, catalog_path: Path, out: Path, force:
             for spec in entry["shapes"].values():
                 if spec.get("fit_backing"):
                     rec["flags"] += fit_boxed_line(slide, entry, spec, model)
+                elif (entry.get("family") or "").startswith("announcement") and spec.get("backing") \
+                        and "body" in (spec.get("slot_map") or []):
+                    rec["flags"] += grow_bar(slide, entry, spec, model)
             if entry.get("stack"):
                 layout_stack(slide, entry, model)
             if entry.get("shrink") and op.get("shrink_lines"):

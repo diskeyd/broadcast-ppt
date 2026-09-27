@@ -59,19 +59,60 @@ def style_paragraphs(sp_el, styles: list[dict]) -> None:
     """Per-paragraph {"sz": pt, "color": "RRGGBB"} on every run of that paragraph (catechism: orange question, smaller answer)."""
     for p, st in zip(sp_el.iter(f"{{{A}}}p"), styles, strict=False):
         for r in p.findall(f"{{{A}}}r"):
-            rpr = r.find(f"{{{A}}}rPr")
-            if rpr is None:
-                rpr = etree.Element(f"{{{A}}}rPr")
-                r.insert(0, rpr)
+            rpr = _rpr(r)
             if "sz" in st:
                 rpr.set("sz", str(int(round(st["sz"] * 100))))
             if "color" in st:
-                for old in [c for c in rpr if c.tag in {f"{{{A}}}{t}" for t in FILLS}]:  # a run holds one fill
-                    rpr.remove(old)
-                fill = etree.Element(f"{{{A}}}solidFill")
-                etree.SubElement(fill, f"{{{A}}}srgbClr", val=st["color"])
-                ln = rpr.find(f"{{{A}}}ln")  # schema order: ln, then the fill
-                rpr.insert(list(rpr).index(ln) + 1 if ln is not None else 0, fill)
+                _set_color(rpr, st["color"])
+
+
+def _rpr(r):
+    rpr = r.find(f"{{{A}}}rPr")
+    if rpr is None:
+        rpr = etree.Element(f"{{{A}}}rPr")
+        r.insert(0, rpr)
+    return rpr
+
+
+def _set_color(rpr, color: str) -> None:
+    for old in [c for c in rpr if c.tag in {f"{{{A}}}{t}" for t in FILLS}]:  # a run holds one fill
+        rpr.remove(old)
+    fill = etree.Element(f"{{{A}}}solidFill")
+    etree.SubElement(fill, f"{{{A}}}srgbClr", val=color)
+    ln = rpr.find(f"{{{A}}}ln")  # schema order: ln, then the fill
+    rpr.insert(list(rpr).index(ln) + 1 if ln is not None else 0, fill)
+
+
+def emphasize_runs(sp_el, phrases: list[dict]) -> None:
+    """Colour / bold the source's emphasised phrases inside the filled body: each run holding one is split
+    so the phrase has a run of its own, a copy of the run's rPr plus the colour and b="1"."""
+    for r in list(sp_el.iter(f"{{{A}}}r")):
+        text = r.findtext(f"{{{A}}}t", "")
+        cuts = []
+        for ph in phrases:
+            i = text.find(ph["text"])
+            if i >= 0 and not any(i < e and s < i + len(ph["text"]) for s, e, _ in cuts):
+                cuts.append((i, i + len(ph["text"]), ph))
+        if not cuts:
+            continue
+        pieces, at = [], 0
+        for s, e, ph in sorted(cuts, key=lambda c: c[0]):
+            pieces += [(text[at:s], None), (text[s:e], ph)]
+            at = e
+        pieces.append((text[at:], None))
+        anchor = r
+        for piece, ph in [pc for pc in pieces if pc[0]]:
+            nr = copy.deepcopy(r)
+            nr.find(f"{{{A}}}t").text = piece
+            if ph is not None:
+                rpr = _rpr(nr)
+                if ph.get("color"):
+                    _set_color(rpr, ph["color"])
+                if ph.get("bold"):
+                    rpr.set("b", "1")
+            anchor.addnext(nr)
+            anchor = nr
+        r.getparent().remove(r)
 
 
 def hide_shape(sp_el) -> None:

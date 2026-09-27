@@ -84,3 +84,41 @@ def test_split_paragraph_boxes_appends_one_box_per_paragraph():
     assert tree[0] is boxes[0] and tree[-1] is boxes[1]          # existing shape order unchanged
     assert boxes[1].find(f".//{{{P}}}cNvPr").get("id") == "9"
     assert tree[0].find(f".//{{{A}}}lnSpc") is None
+
+
+def _color(hexv, sz=None):
+    return f'<a:rPr{f" sz={chr(34)}{sz}{chr(34)}" if sz else ""}><a:solidFill><a:srgbClr val="{hexv}"/></a:solidFill></a:rPr>'
+
+
+def _para(runs, dflt=""):
+    ppr = f"<a:pPr><a:defRPr {dflt}/></a:pPr>" if dflt else ""
+    return "<a:p>" + ppr + "".join(f"<a:r>{rpr}<a:t>{t}</a:t></a:r>" for rpr, t in runs) + "</a:p>"
+
+
+def test_emphasis_reads_colour_and_size_against_the_passage_base():
+    from broadcast_ppt.analyzer.core import emphasis
+    # two passages in one box, each with its own base colour (요17:3 on yellow, 호6 on white)
+    sp = _sp(_para([(_color("B2A09C"), "[요17:3]"), (_color("FF9300"), "영생은"), (_color("FFD479"), " 곧 유일하신 참 하나님과 그가 보내신 자")])
+             + _para([(_color("B2A09C"), "[호6:3]"), ("", "3 그러므로 우리가 여호와를 알자 "), (_color("FFD479"), "힘써 여호와를 알자")]))
+    got = emphasis(sp.find(f"{{{P}}}txBody"))
+    assert [(e["text"], e["color"], e["bold"]) for e in got] == [("영생은", "FF9300", False), ("힘써 여호와를 알자", "FFD479", False)]
+    # a few words larger than the rest of their line become bold
+    sp = _sp(_para([('<a:rPr sz="2500"/>', "1 온 땅이여"), ('<a:rPr sz="2200"/>', " 여호와께 즐거운 찬송을 부를지어다")]))
+    assert emphasis(sp.find(f"{{{P}}}txBody")) == [{"text": "1 온 땅이여", "color": None, "bold": True}]
+    # a whole line a little larger than the next, all in one colour (시편 100:4): no emphasis
+    sp = _sp(_para([(_color("FF9300", 2400), "4 감사함으로 그의 문에 들어가며")])
+             + _para([(_color("FF9300", 2200), "찬송함으로 그의 궁정에 들어가서 그에게 감사하며")]))
+    assert emphasis(sp.find(f"{{{P}}}txBody")) == []
+
+
+def test_emphasize_runs_splits_the_body_run():
+    from broadcast_ppt.builder.geometry import emphasize_runs
+    sp = _sp(_para([('<a:rPr sz="2800"><a:ln w="1"/></a:rPr>', "오늘 들풀도 하물며 너희일까보냐 믿음이 작은 자들아")]))
+    emphasize_runs(sp, [{"text": "하물며 너희일까보냐", "color": "FFD479", "bold": True},
+                        {"text": "믿음이 작은 자들아", "color": "FFD479", "bold": False}])
+    runs = sp.findall(f".//{{{A}}}r")
+    assert [r.findtext(f"{{{A}}}t") for r in runs] == ["오늘 들풀도 ", "하물며 너희일까보냐", " ", "믿음이 작은 자들아"]
+    rpr = runs[1].find(f"{{{A}}}rPr")
+    assert rpr.get("b") == "1" and rpr.get("sz") == "2800"
+    assert [c.tag.split("}")[1] for c in rpr] == ["ln", "solidFill"]  # schema order kept
+    assert runs[0].find(f"{{{A}}}rPr/{{{A}}}solidFill") is None and runs[3].find(f"{{{A}}}rPr").get("b") is None

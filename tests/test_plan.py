@@ -504,3 +504,38 @@ def test_bracketed_title_in_the_verse_box_names_an_inherited_passage():
     # a reference printed on the slide still wins over the heading
     d = classify_slide(_slide(14, "[감사의 시]\n[시100:1-2] 1 온 땅이여 여호와께 즐거운 찬송을 부를지어다"), ctx)
     assert [o["fill"]["ref"] for o in m.map(14, d) if o["op"] == "template"] == ["시편100:1"]
+
+
+def test_long_announcement_grows_its_bar_upward():
+    from pathlib import Path
+
+    import pytest
+    from pptx import Presentation
+
+    from broadcast_ppt.builder.build import grow_bar
+    from broadcast_ppt.builder.clone import duplicate_template_slide
+    from broadcast_ppt.builder.fill import fill_shape, shape_by_order
+    from broadcast_ppt.builder.geometry import box_of
+    from broadcast_ppt.cli import CATALOG, WIDTHS
+    from broadcast_ppt.mapping.catalog import load_catalog
+    from broadcast_ppt.mapping.plan import TEMPLATE
+    from broadcast_ppt.mapping.textfit import load_model
+    from broadcast_ppt.ooxml import REPO_ROOT
+
+    tpl = REPO_ROOT / "local/templates/24.상반기.pptx"
+    if not tpl.exists():
+        pytest.skip("template deck is local only")
+    cat, model = load_catalog(Path(CATALOG)), load_model(Path(WIDTHS))
+    entry = cat["slides"][TEMPLATE["announcement_item"]]
+    spec = next(s for s in entry["shapes"].values() if s.get("backing"))
+    prs = Presentation(str(tpl))
+    for body, lines in (("적극 초청합시다!", 0), ("오늘은 가족들과 함께하는 날, 복음의 일가를 이루는 기회로 삼고 함께 기도합시다!", 2)):
+        slide, _ = duplicate_template_slide(prs, prs.slides[TEMPLATE["announcement_item"] - 1])
+        sp = shape_by_order(slide, spec["order"])
+        fill_shape(sp, spec, {"label": "교회 소식 – 3. [행사] : ", "body": body})
+        before = box_of(sp)
+        flags = grow_bar(slide, entry, spec, model)
+        after = box_of(sp)
+        assert flags == ([f"grown:{lines}_lines"] if lines else [])
+        assert after[1] + after[3] == before[1] + before[3]  # the bottom edge stays put
+        assert (after[3] > before[3]) == bool(lines)

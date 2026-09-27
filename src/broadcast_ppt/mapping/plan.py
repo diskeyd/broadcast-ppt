@@ -10,7 +10,7 @@ from dataclasses import asdict, dataclass, replace
 from datetime import datetime, UTC
 from pathlib import Path
 
-from ..analyzer.core import analyze_file
+from ..analyzer.core import analyze_file, flatten
 from ..rules import ai
 from ..rules import kinds as K
 from ..rules.classify import DeckContext, classify_deck, view_of
@@ -277,6 +277,16 @@ class Mapper:
         return [self.copy(src, f"unmapped kind {d.kind}")]
 
 
+def _emphasis_in(body: str, phrases: list[dict]) -> list[dict]:
+    """The source's emphasised phrases that this caption body contains, spelled as the body spells them."""
+    out = []
+    for ph in phrases:
+        m = re.search(r"\s+".join(map(re.escape, ph["text"].split())), body)
+        if m:
+            out.append({**ph, "text": m.group(0)})
+    return out
+
+
 def _hymn_runs(slides: list[dict], decisions: list, skip: set[int]) -> list[list[int]]:
     """Consecutive score slides: picture-only with exactly one picture. A run is what tells a hymn
     from a photo — one score page on its own looks like any other picture."""
@@ -395,7 +405,12 @@ def build_plan(src: Path, catalog_path: Path, widths_path: Path, opts: PlanOptio
             mapped = mapper.map(s["index"], d)
         else:
             mapped = mapper.map(s["index"], d)
+        phrases = [e for sh in flatten(s.get("shapes", [])) for e in sh.get("emph", [])]
         for m in mapped:
+            if phrases and d.kind in (K.SCRIPTURE_BODY, K.CAPTION_SENTENCE) and m["op"] == "template" and m["fill"].get("body"):
+                emph = _emphasis_in(m["fill"]["body"], phrases)
+                if emph:
+                    m["emph"] = emph
             m["out_index"] = len(ops) + 1
             m["kind"] = d.kind
             m["rule"] = d.rule_id

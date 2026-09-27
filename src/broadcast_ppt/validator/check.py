@@ -84,6 +84,10 @@ def validate_deck(deck: Path, plan: dict, catalog_path: Path, widths_path: Path 
                 slot = slot_map[0]
                 if mode == "fill" and slot not in fill:
                     findings.append(Finding("critical", "empty_fill", n, f"slot '{slot}' not filled; template sample text remains"))
+            elif op.get("emph") and slot_map == ["body"]:
+                # emphasis split the body into styled runs: the box must read exactly the filled body
+                if "".join(s["text"] for s in segs).strip() != fill.get("body", "").replace("\n", " ").strip():
+                    findings.append(Finding("critical", "extra_template_text", n, "emphasised body differs from the planned text"))
             else:
                 if mode == "fill" and len(segs) > len(slot_map):
                     findings.append(Finding("critical", "extra_template_text", n,
@@ -111,7 +115,8 @@ def validate_deck(deck: Path, plan: dict, catalog_path: Path, widths_path: Path 
                 if lines > room:
                     findings.append(Finding("warning", "lines_fit", n, f"estimated {lines} lines in a {room}-line box (strict width)"))
             # single-line boxes: filled text wider than the bar it sits on
-            if bp.get("wrap") == "none" and spec.get("backing"):
+            grown = sp.find(f".//{{{A}}}bodyPr").get("wrap") == "square"  # a 교회소식 bar grown to more lines
+            if bp.get("wrap") == "none" and spec.get("backing") and not grown:
                 width = sum(strict.width_emu(seg["text"], int(seg["key"][0]) / 100 if seg["key"][0] else 28) for seg in segs)
                 bar = max(b["bbox"][0] + b["bbox"][2] for b in spec["backing"]) - spec["bbox"][0]
                 if width + bp["lIns"] + bp["rIns"] > bar:

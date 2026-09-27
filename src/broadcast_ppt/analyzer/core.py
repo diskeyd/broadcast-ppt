@@ -297,6 +297,75 @@ def shape_kind(sh) -> str:
     return "UNKNOWN"
 
 
+_BRACKET_RUN = re.compile(r"^\s*[\[［].*[\]］]\s*$")
+
+
+def _run_style(r, dflt) -> tuple:
+    """(colour, size, bold) a run is drawn with: its own rPr, then the paragraph's defRPr (Keynote writes
+    the paragraph's look there). A scheme colour is kept as a key only, it is never written back."""
+    rpr = r.find("a:rPr", NS)
+    def attr(name):
+        v = rpr.get(name) if rpr is not None else None
+        return v if v is not None else (dflt.get(name) if dflt is not None else None)
+    color = None
+    for el in (rpr, dflt):
+        fill = el.find("a:solidFill", NS) if el is not None else None
+        if fill is not None and len(fill):
+            c = fill[0]
+            color = c.get("val", "").upper() if c.tag.endswith("srgbClr") else "scheme:" + etree.tostring(c).decode()
+            break
+    sz = attr("sz")
+    return color, int(sz) if sz else None, attr("b") in ("1", "true")
+
+
+def emphasis(txBody) -> list[dict]:
+    """Phrases the original sets apart inside a passage: [{"text", "color" (RRGGBB or None), "bold"}].
+
+    The unit is the stretch after each bracketed reference ([요17:3] …), so two passages with different
+    base colours in one box are read apart. Inside it the look most characters share is the base; a run in
+    another colour keeps that colour and a larger run becomes bold (the caption has one size). A passage
+    drawn in one look throughout has no phrase: it is all emphasis, which is none. Size counts only against
+    another size in the same paragraph: a whole line set a little larger than the next (100:4 at 24pt over
+    22pt) is layout, a few words larger than the rest of their line are emphasis."""
+    units: list[list[tuple]] = [[]]
+    for pi, p in enumerate(txBody.findall("a:p", NS)):
+        ppr = p.find("a:pPr", NS)
+        dflt = ppr.find("a:defRPr", NS) if ppr is not None else None
+        for r in p.findall("a:r", NS):
+            t = r.findtext("a:t", "", NS)
+            if _BRACKET_RUN.match(t):
+                units.append([])
+            elif t.strip():
+                units[-1].append((pi, t, _run_style(r, dflt)))
+    out = []
+    for unit in units:
+        weight = Counter()
+        for _, t, st in unit:
+            weight[st] += len(re.sub(r"\s", "", t))
+        if len(weight) < 2:
+            continue
+        base_color, base_sz, base_b = weight.most_common(1)[0][0]
+        para_sizes: dict[int, set] = {}
+        for pi, _, st in unit:
+            para_sizes.setdefault(pi, set()).add(st[1])
+        prev = None
+        for pi, t, (color, sz, b) in unit:
+            # ponytail: an inherited size (None) counts as smaller than any explicit one, true of the decks seen
+            bigger = sz is not None and len(para_sizes[pi]) > 1 and all(o is None or sz > o for o in para_sizes[pi] - {sz})
+            style = (color if color != base_color and color and not color.startswith("scheme:") else None,
+                     bigger or (b and not base_b))
+            if style == (None, False):
+                prev = None
+                continue
+            if prev and prev["para"] == pi and (prev["color"], prev["bold"]) == style:
+                prev["text"] += t
+            else:
+                prev = {"para": pi, "text": t, "color": style[0], "bold": style[1]}
+                out.append(prev)
+    return [{"text": e["text"].strip(), "color": e["color"], "bold": e["bold"]} for e in out
+            if len(re.sub(r"[\s\d]", "", e["text"])) >= 2]
+
+
 def walk_shapes(shapes, part, ctx: Context, master, depth: int = 0) -> list[dict]:
     out: list[dict] = []
     for sh in shapes:
@@ -328,6 +397,9 @@ def walk_shapes(shapes, part, ctx: Context, master, depth: int = 0) -> list[dict
             text = "\n".join(paras).strip()
             if text:
                 d["text"] = text
+                emph = emphasis(sh.text_frame._txBody)
+                if emph:
+                    d["emph"] = emph
             if fonts:
                 d["fonts"] = sorted(fonts)
             if "font_pt" in d:
