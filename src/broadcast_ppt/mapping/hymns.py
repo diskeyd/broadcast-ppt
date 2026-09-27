@@ -186,26 +186,50 @@ def reader_language() -> str | None:
     return engine.recognizer_language.language_tag if engine is not None else None
 
 
-def _enlarged(image: Path) -> Path:
-    """A score page is small (960x720 on a 4:3 deck) and the Windows engine misses lyric lines that small;
-    twice the size reads them. The engine's own size ceiling is kept."""
-    from PIL import Image
+def _lettering(image: Path) -> list[Path]:
+    """Two black-on-white copies of a score page at twice the size: its dark lettering alone and its light
+    lettering alone. A page mixes both line by line (navy lyrics with a white outline, white lyrics with a
+    dark shadow, on a transparent page) and the Windows engine reads neither off the page as drawn; each
+    copy leaves one style solid and the other as an outline."""
+    from PIL import Image, ImageChops
     with Image.open(image) as im:
-        scale = min(2.0, 2600 / max(im.size))
-        if scale <= 1.0:
-            return image
-        out = image.with_name(image.stem + "@2x.png")
-        im.convert("RGB").resize((int(im.width * scale), int(im.height * scale)), Image.LANCZOS).save(out)
+        rgba = im.convert("RGBA")
+    scale = min(2.0, 2600 / max(rgba.size))  # the engine's own size ceiling is kept
+    if scale > 1.0:
+        rgba = rgba.resize((int(rgba.width * scale), int(rgba.height * scale)), Image.LANCZOS)
+    gray, opaque = rgba.convert("L"), rgba.getchannel("A").point(lambda v: 255 if v > 128 else 0)
+    out = []
+    for name, cut in (("dark", lambda v: 255 if v < 110 else 0), ("light", lambda v: 255 if v > 200 else 0)):
+        page = Image.new("L", rgba.size, 255)
+        page.paste(0, mask=ImageChops.multiply(gray.point(cut), opaque))
+        path = image.with_name(f"{image.stem}.{name}.png")
+        page.save(path)
+        out.append(path)
     return out
 
 
-async def _win_read(engine, image: Path) -> list[str]:
+def merge_reads(reads: list[list[tuple[float, str]]], gap: float = 30) -> list[str]:
+    """Lines read off several copies of one page, top to bottom: lines at the same height are one line,
+    and the reading that looks most like a lyric line wins."""
+    groups: list[list[tuple[float, str]]] = []
+    for y, t in sorted((y, t) for read in reads for y, t in read if t.strip()):
+        if groups and y - groups[-1][0][0] <= gap:
+            groups[-1].append((y, t))
+        else:
+            groups.append([(y, t)])
+    def score(t: str) -> tuple[bool, int]:
+        return LYRIC_LINE.match(clean_lyric(t)) is not None, len(key(t))
+    return [max((t for _, t in g), key=score) for g in groups]
+
+
+async def _win_read(engine, image: Path) -> list[tuple[float, str]]:
     from winrt.windows.graphics.imaging import BitmapDecoder
     from winrt.windows.storage import FileAccessMode, StorageFile
     file = await StorageFile.get_file_from_path_async(str(Path(image).resolve()))
     stream = await file.open_async(FileAccessMode.READ)
     bitmap = await (await BitmapDecoder.create_async(stream)).get_software_bitmap_async()
-    return [line.text for line in (await engine.recognize_async(bitmap)).lines]
+    return [(line.words[0].bounding_rect.y if line.words else 0.0, line.text)
+            for line in (await engine.recognize_async(bitmap)).lines]
 
 
 def ocr(image: Path) -> list[str]:
@@ -213,7 +237,7 @@ def ocr(image: Path) -> list[str]:
     if not ocr_available():
         return []
     if sys.platform == "win32":
-        lines = asyncio.run(_win_read(_win_engine(), _enlarged(Path(image))))
+        lines = merge_reads([asyncio.run(_win_read(_win_engine(), p)) for p in _lettering(Path(image))])
     else:
         r = subprocess.run(["osascript", "-l", "JavaScript", str(OCR_SCRIPT), str(image)],
                            capture_output=True, encoding="utf-8", errors="replace")

@@ -290,6 +290,18 @@ def _hymn_flags(m: hymns.HymnMatch) -> list[str]:
     return ["review:hymn_matched"] + (["review:hymn_range_guess"] if m.guessed_end else [])
 
 
+def _text_under_picture(slide: dict) -> bool:
+    """A picture covering the slide sits above its text: what is on air is that picture (often a screenshot
+    of the slide with its emphasis painted in), and the caption is built from the text box under it."""
+    seen_text = False
+    for sh in slide.get("shapes", []):
+        if compact(sh.get("text") or ""):
+            seen_text = True
+        elif seen_text and sh.get("kind") in ("PICTURE", "ph:PICTURE") and (sh.get("area_frac") or 0) >= 0.9:
+            return True
+    return False
+
+
 def _emphasis_in(body: str, phrases: list[dict]) -> list[dict]:
     """The source's emphasised phrases that this caption body contains, spelled as the body spells them."""
     out = []
@@ -428,6 +440,8 @@ def build_plan(src: Path, catalog_path: Path, widths_path: Path, opts: PlanOptio
         else:
             mapped = mapper.map(s["index"], d)
         phrases = [e for sh in flatten(s.get("shapes", [])) for e in sh.get("emph", [])]
+        if d.kind in (K.SCRIPTURE_BODY, K.CAPTION_SENTENCE) and _text_under_picture(s):
+            d = replace(d, flags=sorted(set(d.flags) | {"review:text_under_picture"}))
         for m in mapped:
             if phrases and d.kind in (K.SCRIPTURE_BODY, K.CAPTION_SENTENCE) and m["op"] == "template" and m["fill"].get("body"):
                 emph = _emphasis_in(m["fill"]["body"], phrases)

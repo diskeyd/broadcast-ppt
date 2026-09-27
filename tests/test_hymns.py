@@ -147,3 +147,22 @@ def test_windows_ocr_reads_a_rendered_word(tmp_path):
     path = tmp_path / "word.png"
     img.save(path)
     assert "HELLO" in " ".join(hymns.ocr(path)).upper()
+
+
+def test_lettering_copies_keep_each_style_solid(tmp_path):
+    from PIL import Image
+    page = Image.new("RGBA", (400, 200), (0, 0, 0, 0))  # a transparent score page
+    page.paste((17, 34, 66, 255), (20, 20, 180, 60))      # navy lyric
+    page.paste((255, 255, 255, 255), (20, 120, 180, 160))  # white lyric
+    path = tmp_path / "p.png"
+    page.save(path)
+    dark, light = (Image.open(p).convert("L") for p in hymns._lettering(path))
+    assert dark.size == (800, 400)
+    assert dark.getpixel((100, 80)) == 0 and dark.getpixel((100, 280)) == 255
+    assert light.getpixel((100, 280)) == 0 and light.getpixel((100, 80)) == 255
+
+
+def test_merge_reads_keeps_the_better_reading_per_line():
+    dark = [(10.0, "기뻐해요- 알지 못했던 날에도-"), (200.0, "&....??...")]
+    light = [(14.0, "V."), (205.0, "우리 모두가- 함께 걷는 길이라는걸--")]
+    assert hymns.merge_reads([dark, light]) == ["기뻐해요- 알지 못했던 날에도-", "우리 모두가- 함께 걷는 길이라는걸--"]

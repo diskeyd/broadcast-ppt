@@ -539,3 +539,11 @@ def test_long_announcement_grows_its_bar_upward():
         assert flags == ([f"grown:{lines}_lines"] if lines else [])
         assert after[1] + after[3] == before[1] + before[3]  # the bottom edge stays put
         assert (after[3] > before[3]) == bool(lines)
+
+
+def test_text_under_a_full_slide_picture_is_flagged():
+    from broadcast_ppt.mapping.plan import _text_under_picture
+    text = {"kind": "TEXT_BOX", "text": "17 우리 주 예수 그리스도의 하나님"}
+    background = {"kind": "PICTURE", "area_frac": 1.0}
+    assert not _text_under_picture({"shapes": [background, text]})       # a background behind the text
+    assert _text_under_picture({"shapes": [background, text, background]})  # a screenshot over it

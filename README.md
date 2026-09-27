@@ -410,6 +410,7 @@ uv run broadcast-ppt run "local\input\주일오전예배ppt(YYMMDD).pptx" --over
 | `review:empty_slide` | 글자도 사진도 없는 장 |
 | `review:graphic` | 도표나 질문지 장이라서 그대로 복사함 |
 | `review:unclassified` | 어느 규칙에도 안 맞아서 그대로 복사함 |
+| `review:text_under_picture` | 원본 장 위에 화면 전체를 덮는 그림(장을 캡처한 그림 등)이 있어, 방송에 보이는 건 그 그림이고 자막은 그 아래 글상자에서 만듦. 그림에만 있는 강조 색은 자막에 안 옴. 글자가 그림과 같은지 확인 |
 | `review:text_dropped` | 넣을 자리가 없어 빠진 글상자가 있음. 성경 장에서는 자막에도 참조 상자에도 못 넣은 줄(제목 줄, 쪽수 줄 등), 도형 장에서는 도형 안에 들어 있지 않아 배치에서 제외한 줄(출처 줄 등). 빠진 글자가 없는지 원본과 대조 |
 | `review:shapes_layout` | 글자가 든 도형 2~4개짜리 장이라서 도형을 하단 띠 자리로 옮기고 배경을 크로마로 바꿈. 위치와 크기를 눈으로 확인하고, 원본 그대로가 나으면 수정 파일에 `N: {op: copy}` |
 | `review:ai_classified` | 규칙으로 못 정한 장을 Gemini가 분류함(확신도 0.8 이상). 종류가 맞는지 확인. 글자는 원본 그대로 |
