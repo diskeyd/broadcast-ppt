@@ -284,6 +284,10 @@ def _classify(v: SlideView, c: str, pics: int, groups: int, media: int, ctx: Dec
             if people:
                 p = people[0]
                 return Decision(K.PRAYER_TITLE, "R100", "keyword 기도 + name/role", {"label": "기도", "name": p["name"], "role": p["role"]})
+            # the fixed Sunday item names the prayer instead of the person praying (기 도 Prayer / 함께 세우는 기도);
+            # matched by its name only: a free sentence with 기도 in it is a caption, not this card
+            if "함께세우는기도" in c:
+                return Decision(K.PRAYER_TITLE, "R101", "keyword 함께 세우는 기도", {"label": "기도", "subtitle": "함께 세우는 기도"})
         if "묵상" in c:
             quote = quoted_title(v.text)
             if not quote:  # quote written without quotation marks: the longest line that is not the label

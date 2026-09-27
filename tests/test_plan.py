@@ -453,3 +453,25 @@ def test_validator_flags_a_caption_that_opens_mid_verse(tmp_path):
     split = [f for f in rep["findings"] if f["check"] == "verse_split"]
     # only the second page: the first page of a passage may legitimately open on the reference tail
     assert [f["out_slide"] for f in split] == [2] and split[0]["level"] == "warning"
+
+
+def test_each_announcement_item_is_one_slide():
+    from pathlib import Path
+
+    from broadcast_ppt.cli import CATALOG, WIDTHS
+    from broadcast_ppt.mapping.catalog import load_catalog
+    from broadcast_ppt.mapping.plan import Mapper, PlanOptions
+    from broadcast_ppt.mapping.textfit import load_model
+    from broadcast_ppt.rules.fields import announcement_items
+
+    m = Mapper(load_catalog(Path(CATALOG)), load_model(Path(WIDTHS)), PlanOptions())
+    items = announcement_items("환영 : 오신 분들을 환영합니다\n[행사] : 다음 주 주일 오후,\n함께 모여\n기도합시다!\n[수련회] : 모두 초청합시다!")
+    ops = m.announcements(1, items)
+    assert [o["fill"]["body"] for o in ops] == ["오신 분들을 환영합니다", "다음 주 주일 오후, 함께 모여 기도합시다!", "모두 초청합시다!"]
+
+
+def test_prayer_card_with_a_subtitle_instead_of_a_person():
+    d = classify_slide(_slide(3, "기 도  Prayer||함께 세우는 기도"), DeckContext())
+    assert d.kind == K.PRAYER_TITLE and d.rule_id == "R101" and d.fields["subtitle"] == "함께 세우는 기도"
+    # the name/role form still wins
+    assert classify_slide(_slide(3, "기 도||Prayer||홍길동 장로"), DeckContext()).rule_id == "R100"

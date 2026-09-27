@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import functools
 import hashlib
 import json
 import math
@@ -210,20 +209,12 @@ class Mapper:
         for it in items:
             if it["no"] == 1 and it["title"].replace(" ", "") == "환영":
                 label = f"교회 소식 – {it['no']}. {it['title']}"
-                tpl = TEMPLATE["announcement_first"]
-                for chunk in pack([it["body"]], functools.partial(self.fits, tpl)):
-                    ops.append(self.card(src, tpl, {"label": label, "body": chunk}, "announcement"))
+                ops.append(self.card(src, TEMPLATE["announcement_first"], {"label": label, "body": it["body"]}, "announcement"))
                 continue
             title = f"[{it['title']}] : " if it["title"] else ""
             label = f"교회 소식 – {it['no']}. {title}"
-            tpl = TEMPLATE["announcement_item"]
-            spec = self._body_spec(tpl, "label")
-            inner = spec["bbox"][2] - spec["bodyPr"]["lIns"] - spec["bodyPr"]["rIns"]
-            label_w = self.model.width_emu(label, self._sz(spec, "label"))
-            def fits(t):
-                return label_w + self.model.width_emu(t, self._sz(spec, "body")) <= inner  # noqa: B023
-            for chunk in pack([it["body"]], fits):
-                ops.append(self.card(src, tpl, {"label": label, "body": chunk}, "announcement"))
+            # one slide per item: the operator reads an item as one notice, never split across pages
+            ops.append(self.card(src, TEMPLATE["announcement_item"], {"label": label, "body": it["body"]}, "announcement"))
         return ops
 
     def map(self, src: int, d) -> list[dict]:
@@ -239,7 +230,8 @@ class Mapper:
                 ops.append(self.copy(src, "prayer text full screen"))
             return ops
         if d.kind == K.PRAYER_TITLE:
-            return [self.card(src, TEMPLATE["prayer"], {"label": "기도 ", "person": f"– {f['name']} {f['role']}"}, "prayer card")]
+            person = f"– {f['name']} {f['role']}" if f.get("name") else f"– {f['subtitle']}"
+            return [self.card(src, TEMPLATE["prayer"], {"label": "기도 ", "person": person}, "prayer card")]
         if d.kind == K.SCRIPTURE_TITLE:
             ref, page = f.get("ref"), f.get("page")
             testament = (page or {}).get("testament") or (ref.testament if ref else None)
