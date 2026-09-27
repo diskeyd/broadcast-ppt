@@ -230,8 +230,9 @@ class Mapper:
                 ops.append(self.copy(src, "prayer text full screen"))
             return ops
         if d.kind == K.PRAYER_TITLE:
-            person = f"– {f['name']} {f['role']}" if f.get("name") else f"– {f['subtitle']}"
-            return [self.card(src, TEMPLATE["prayer"], {"label": "기도 ", "person": person}, "prayer card")]
+            if not f.get("name"):  # 함께 세우는 기도: the original page is what goes on air, not a chroma card
+                return [self.copy(src, "prayer title full screen")]
+            return [self.card(src, TEMPLATE["prayer"], {"label": "기도 ", "person": f"– {f['name']} {f['role']}"}, "prayer card")]
         if d.kind == K.SCRIPTURE_TITLE:
             ref, page = f.get("ref"), f.get("page")
             testament = (page or {}).get("testament") or (ref.testament if ref else None)

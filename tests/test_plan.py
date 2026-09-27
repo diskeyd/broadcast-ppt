@@ -475,3 +475,12 @@ def test_prayer_card_with_a_subtitle_instead_of_a_person():
     assert d.kind == K.PRAYER_TITLE and d.rule_id == "R101" and d.fields["subtitle"] == "함께 세우는 기도"
     # the name/role form still wins
     assert classify_slide(_slide(3, "기 도||Prayer||홍길동 장로"), DeckContext()).rule_id == "R100"
+    # and it goes on air as the original page, not as a chroma card
+    from pathlib import Path
+
+    from broadcast_ppt.cli import CATALOG, WIDTHS
+    from broadcast_ppt.mapping.catalog import load_catalog
+    from broadcast_ppt.mapping.plan import Mapper, PlanOptions
+    from broadcast_ppt.mapping.textfit import load_model
+    m = Mapper(load_catalog(Path(CATALOG)), load_model(Path(WIDTHS)), PlanOptions())
+    assert [o["op"] for o in m.map(3, d)] == ["copy"]
