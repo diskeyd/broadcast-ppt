@@ -325,9 +325,13 @@ def _images(src: Path, indices: list[int]) -> dict[int, bytes]:
 
 def _page(index: dict, sha: str, blob: bytes, work: Path) -> tuple[str, int, int] | None:
     """Which song and which lyric lines this score page shows, from the cache or from OCR."""
-    if sha in index["images"]:
-        hit = index["images"][sha] or {}
-        return (hit["song"], hit["line"], hit["last"]) if hit.get("song") else None
+    hit = index["images"].get(sha) or {}
+    # a "no song" entry is trusted only with what was read stored beside it: one written where nothing
+    # could read the page (the broadcast PC before it had a reader) would otherwise block it for good
+    if hit.get("song"):
+        return hit["song"], hit["line"], hit["last"]
+    if "read" in hit:
+        return None
     work.mkdir(parents=True, exist_ok=True)
     path = work / f"{sha}.png"
     path.write_bytes(blob)

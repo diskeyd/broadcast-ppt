@@ -166,3 +166,13 @@ def test_merge_reads_keeps_the_better_reading_per_line():
     dark = [(10.0, "기뻐해요- 알지 못했던 날에도-"), (200.0, "&....??...")]
     light = [(14.0, "V."), (205.0, "우리 모두가- 함께 걷는 길이라는걸--")]
     assert hymns.merge_reads([dark, light]) == ["기뻐해요- 알지 못했던 날에도-", "우리 모두가- 함께 걷는 길이라는걸--"]
+
+
+def test_a_no_song_entry_without_a_reading_is_read_again(tmp_path, monkeypatch):
+    reads = []
+    monkeypatch.setattr(hymns, "ocr", lambda path: reads.append(path) or ["기뻐해요 알지 못했던 날에도"])
+    index = {"songs": [], "images": {"abc": {"song": None, "ocr": 0}}}  # written where nothing could read
+    hymns._page(index, "abc", b"png", tmp_path)
+    assert len(reads) == 1 and index["images"]["abc"]["read"] == ["기뻐해요 알지 못했던 날에도"]
+    hymns._page(index, "abc", b"png", tmp_path)  # now it carries its reading: trusted
+    assert len(reads) == 1
