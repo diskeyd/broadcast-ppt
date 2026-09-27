@@ -278,6 +278,12 @@ class Mapper:
         return [self.copy(src, f"unmapped kind {d.kind}")]
 
 
+def _first_page_read(src: Path, run: list[int], index: dict) -> list[str]:
+    blob = hymns._images(src, run[:1]).get(run[0])
+    hit = index["images"].get(hashlib.sha1(blob).hexdigest()) if blob else None
+    return (hit or {}).get("read", [])
+
+
 def _hymn_flags(m: hymns.HymnMatch) -> list[str]:
     if m.ocr:
         return ["review:hymn_ocr"]
@@ -317,7 +323,7 @@ def _hymn_plan(src: Path, slides: list[dict], decisions: list, mapper: Mapper,
     runs = _hymn_runs(slides, decisions, overridden)
     index = hymns.load_index() if hymns.INDEX.exists() else {"songs": [], "images": {}}
     why = {"runs": len(runs), "matched": 0, "songs": len(index["songs"]),
-           "index": hymns.INDEX.exists(), "reader": hymns.ocr_available(),
+           "index": hymns.INDEX.exists(), "reader": hymns.ocr_available(), "reader_lang": hymns.reader_language(),
            "template": "hymn" in mapper.fam}
     if not runs or not why["template"] or not index["songs"]:
         return {}, set(), why
@@ -332,6 +338,8 @@ def _hymn_plan(src: Path, slides: list[dict], decisions: list, mapper: Mapper,
                 found[run[0]] = (m, run)
             else:
                 missing.add(run[0])
+        else:  # not even read as a score: what the reader saw on the first page is the only clue
+            why.setdefault("unread", []).append({"slide": run[0], "read": _first_page_read(src, run, index)})
     # the index is tracked and learned on the Mac; a write on the broadcast PC would only block its git pull
     if sys.platform == "darwin":
         hymns.save_index(index)

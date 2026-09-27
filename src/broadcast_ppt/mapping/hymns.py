@@ -178,6 +178,27 @@ def _win_engine():
     return OcrEngine.try_create_from_language(Language("ko")) or OcrEngine.try_create_from_user_profile_languages()
 
 
+def reader_language() -> str | None:
+    """The language the score reader reads in, for the plan's hymn note ("ko" is what the lyrics need)."""
+    if sys.platform == "darwin":
+        return "ko-KR (Vision)" if OCR_SCRIPT.exists() else None
+    engine = _win_engine() if sys.platform == "win32" else None
+    return engine.recognizer_language.language_tag if engine is not None else None
+
+
+def _enlarged(image: Path) -> Path:
+    """A score page is small (960x720 on a 4:3 deck) and the Windows engine misses lyric lines that small;
+    twice the size reads them. The engine's own size ceiling is kept."""
+    from PIL import Image
+    with Image.open(image) as im:
+        scale = min(2.0, 2600 / max(im.size))
+        if scale <= 1.0:
+            return image
+        out = image.with_name(image.stem + "@2x.png")
+        im.convert("RGB").resize((int(im.width * scale), int(im.height * scale)), Image.LANCZOS).save(out)
+    return out
+
+
 async def _win_read(engine, image: Path) -> list[str]:
     from winrt.windows.graphics.imaging import BitmapDecoder
     from winrt.windows.storage import FileAccessMode, StorageFile
@@ -192,7 +213,7 @@ def ocr(image: Path) -> list[str]:
     if not ocr_available():
         return []
     if sys.platform == "win32":
-        lines = asyncio.run(_win_read(_win_engine(), image))
+        lines = asyncio.run(_win_read(_win_engine(), _enlarged(Path(image))))
     else:
         r = subprocess.run(["osascript", "-l", "JavaScript", str(OCR_SCRIPT), str(image)],
                            capture_output=True, encoding="utf-8", errors="replace")
@@ -288,8 +309,9 @@ def _page(index: dict, sha: str, blob: bytes, work: Path) -> tuple[str, int, int
     path.write_bytes(blob)
     text = ocr(path)
     found = match(index["songs"], text)
+    # an unmatched page keeps the first lines read, so a run that went wrong shows what the reader saw
     index["images"][sha] = ({"song": found[0], "line": found[1], "last": found[2]} if found
-                            else {"song": None, "ocr": sum(1 for t in text if LYRIC_LINE.match(t.strip()))})
+                            else {"song": None, "ocr": sum(1 for t in text if LYRIC_LINE.match(t.strip())), "read": text[:4]})
     return found
 
 

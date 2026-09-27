@@ -97,11 +97,15 @@ def _para(runs, dflt=""):
 
 def test_emphasis_reads_colour_and_size_against_the_passage_base():
     from broadcast_ppt.analyzer.core import emphasis
-    # two passages in one box, each with its own base colour (요17:3 on yellow, 호6 on white)
+    # two passages in one box (요17:3 yellow with orange, 호6 plain with yellow): every explicit colour is kept
     sp = _sp(_para([(_color("B2A09C"), "[요17:3]"), (_color("FF9300"), "영생은"), (_color("FFD479"), " 곧 유일하신 참 하나님과 그가 보내신 자")])
              + _para([(_color("B2A09C"), "[호6:3]"), ("", "3 그러므로 우리가 여호와를 알자 "), (_color("FFD479"), "힘써 여호와를 알자")]))
     got = emphasis(sp.find(f"{{{P}}}txBody"))
-    assert [(e["text"], e["color"], e["bold"]) for e in got] == [("영생은", "FF9300", False), ("힘써 여호와를 알자", "FFD479", False)]
+    assert [(e["text"], e["color"], e["bold"]) for e in got] == [
+        ("영생은", "FF9300", False), ("곧 유일하신 참 하나님과 그가 보내신 자", "FFD479", False), ("힘써 여호와를 알자", "FFD479", False)]
+    # two colours with no plain text (아버지 red vs 아버지의 재산 brown): both kept
+    sp = _sp(_para([(_color("941100"), "아버지"), (_color("945200"), " vs 아버지의 재산")]))
+    assert [e["color"] for e in emphasis(sp.find(f"{{{P}}}txBody"))] == ["941100", "945200"]
     # a few words larger than the rest of their line become bold
     sp = _sp(_para([('<a:rPr sz="2500"/>', "1 온 땅이여"), ('<a:rPr sz="2200"/>', " 여호와께 즐거운 찬송을 부를지어다")]))
     assert emphasis(sp.find(f"{{{P}}}txBody")) == [{"text": "1 온 땅이여", "color": None, "bold": True}]

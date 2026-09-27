@@ -322,9 +322,10 @@ def emphasis(txBody) -> list[dict]:
     """Phrases the original sets apart inside a passage: [{"text", "color" (RRGGBB or None), "bold"}].
 
     The unit is the stretch after each bracketed reference ([요17:3] …), so two passages with different
-    base colours in one box are read apart. Inside it the look most characters share is the base; a run in
-    another colour keeps that colour and a larger run becomes bold (the caption has one size). A passage
-    drawn in one look throughout has no phrase: it is all emphasis, which is none. Size counts only against
+    colours in one box are read apart. A unit drawn in two or more colours keeps every explicit colour
+    (요17:3 yellow with orange, 아버지 red vs 아버지의 재산 brown); plain text (no colour, or a theme colour)
+    stays the caption's own. A unit in one colour throughout keeps none: it is all emphasis, which is none
+    (시편 100:4 all orange). A larger run becomes bold, the caption having one size. Size counts only against
     another size in the same paragraph: a whole line set a little larger than the next (100:4 at 24pt over
     22pt) is layout, a few words larger than the rest of their line are emphasis."""
     units: list[list[tuple]] = [[]]
@@ -344,7 +345,8 @@ def emphasis(txBody) -> list[dict]:
             weight[st] += len(re.sub(r"\s", "", t))
         if len(weight) < 2:
             continue
-        base_color, base_sz, base_b = weight.most_common(1)[0][0]
+        _, base_sz, base_b = weight.most_common(1)[0][0]
+        colors = {st[0] for _, _, st in unit}
         para_sizes: dict[int, set] = {}
         for pi, _, st in unit:
             para_sizes.setdefault(pi, set()).add(st[1])
@@ -352,7 +354,7 @@ def emphasis(txBody) -> list[dict]:
         for pi, t, (color, sz, b) in unit:
             # ponytail: an inherited size (None) counts as smaller than any explicit one, true of the decks seen
             bigger = sz is not None and len(para_sizes[pi]) > 1 and all(o is None or sz > o for o in para_sizes[pi] - {sz})
-            style = (color if color != base_color and color and not color.startswith("scheme:") else None,
+            style = (color if len(colors) > 1 and color and not color.startswith("scheme:") else None,
                      bigger or (b and not base_b))
             if style == (None, False):
                 prev = None

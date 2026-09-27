@@ -350,7 +350,8 @@ def cmd_gui(args) -> int:
                                   out=None, template=None, force=False, validate=True)
     log = io.StringIO()
     try:
-        with contextlib.redirect_stderr(log):
+        # the plan table, the validation line and the hymn note are printed to stdout: keep both streams
+        with contextlib.redirect_stdout(log), contextlib.redirect_stderr(log):
             cmd_run(run_args)
     except Exception as exc:
         traceback.print_exc(file=log)
