@@ -119,3 +119,12 @@ def test_gui_without_a_template_says_so_and_writes_nothing_next_to_the_source(tm
     assert cli.main(["gui", "--work", str(tmp_path / "work")]) == 1
     assert "템플릿" in boxes["showerror"] and "담당자" in boxes["showerror"]
     assert list(src.parent.iterdir()) == [src]
+
+
+def test_keep_source_moves_the_original_into_its_work_folder_once(tmp_path):
+    src = _deck(tmp_path / "입력" / "주일.pptx")
+    work = tmp_path / "work" / "주일"
+    work.mkdir(parents=True)
+    kept = cli._keep_source(src, work)
+    assert kept == work / "주일.pptx" and kept.is_file() and not src.exists()
+    assert cli._keep_source(kept, work) == kept and kept.is_file()  # re-run from the work folder leaves it alone

@@ -328,6 +328,22 @@ def _gui_message(reports: list[tuple[str, dict]], outs: list[Path]) -> tuple[boo
     return bad, f"{head}\n\n원본과 같은 폴더에 저장했습니다:\n{saved}{tail}"
 
 
+def _keep_source(src: Path, work: Path) -> Path:
+    """Move the original into its work folder so the month's review finds deck, plan and logs together.
+
+    Returns where the original is now; a deck still open in PowerPoint stays where it was.
+    """
+    kept = work / src.name
+    if kept.resolve() == src.resolve():  # re-run picked the copy already kept here
+        return src
+    try:
+        kept.unlink(missing_ok=True)  # Windows rename refuses an existing target
+        shutil.move(src, kept)
+    except OSError:
+        return src
+    return kept
+
+
 def cmd_gui(args) -> int:
     """Double-click entry point: pick a deck, leave the result beside it, keep the JSON in the work folder."""
     import tkinter as tk
@@ -376,6 +392,9 @@ def cmd_gui(args) -> int:
         if (work / rep).is_file():
             reports.append((dest.name, json.loads((work / rep).read_text(encoding="utf-8"))))
     bad, text = _gui_message(reports, outs)
+    kept = _keep_source(src, work)
+    if kept != src:
+        text += f"\n\n원본은 결과 폴더로 옮겼습니다:\n  {kept}"
     (messagebox.showerror if bad else messagebox.showinfo)("확인 필요" if bad else "변환 완료", text)
     return 1 if bad else 0
 
