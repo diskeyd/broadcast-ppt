@@ -360,7 +360,7 @@ def _hymn_plan(src: Path, slides: list[dict], decisions: list, mapper: Mapper,
             keys = {hymns.key(t) for t in m.lines}
             m.label = next((e.label for e in read[:n] if e.label
                             and len(keys & {hymns.key(t) for t in e.lines}) * 2 >= len(keys)), "")
-    # the index is tracked and learned on the Mac; a write on the broadcast PC would only block its git pull
+    # the index is not in git: it is learned on the Mac and copied to the broadcast PC by hand
     if sys.platform == "darwin":
         hymns.save_index(index)
     why["matched"] = len(found)

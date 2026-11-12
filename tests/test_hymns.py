@@ -197,6 +197,8 @@ def test_a_repeated_chorus_takes_the_title_of_its_song(tmp_path, monkeypatch):
     monkeypatch.setattr(plan, "_hymn_runs", lambda *a: [[19, 20, 21], [26, 27, 28]])
     monkeypatch.setattr(hymns, "match_run", lambda src, run, index, work: hymns.RunResult(None, readable=True))
     monkeypatch.setattr(hymns, "ocr_run", lambda src, run, index, work: runs[run[0]])
+    (tmp_path / "index.json").write_text("{}", encoding="utf-8")   # the real index is not in git: point at a stand-in
+    monkeypatch.setattr(hymns, "INDEX", tmp_path / "index.json")
     monkeypatch.setattr(hymns, "load_index", lambda: {"songs": [{"id": "x"}], "images": {}})
     monkeypatch.setattr(hymns, "save_index", lambda index: None)
     found, _, _ = plan._hymn_plan(tmp_path / "d.pptx", [], [], SimpleNamespace(fam={"hymn": []}), set())
